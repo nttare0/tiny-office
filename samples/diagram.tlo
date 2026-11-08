@@ -1,0 +1,14 @@
+---
+app: diagram
+title: Who does what at the bakery
+kind: org
+---
+- Rosa Alvarez | Owner
+  - Teo Lind | Head baker
+    - Mina Okafor | Bread
+    - Jules Park | Pastry
+  - Dee Chen | Front of house
+    - Sam Ruiz | Counter, mornings
+  - Avi Stern | Deliveries
+
+~ Jules Park -- Dee Chen: the Saturday specials

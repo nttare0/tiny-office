@@ -1,0 +1,12 @@
+---
+app: diagram
+title: An order, from the counter to the bag
+kind: lanes
+---
+- Customer: Orders at the counter
+- Counter: Writes the ticket
+- Counter: Paid?
+- Kitchen: Slices and wraps
+- Kitchen: Anything from the oven?
+- Counter: Calls the name
+- Customer: Takes the bag

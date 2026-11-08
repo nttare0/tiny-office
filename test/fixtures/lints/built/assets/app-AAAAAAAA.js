@@ -1,0 +1,1 @@
+export const app = { templates: () => import(`./templates-write-AAAAAAAA.js`), lang: () => import(`./lang-fr-AAAAAAAA.js`), math: (m) => m.import({ ln: Math.log }), editor: () => import(`./write-editor-AAAAAAAA.js`) };

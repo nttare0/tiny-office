@@ -1,0 +1,14 @@
+---
+app: cal
+title: Opening the Red Hook shop
+view: gantt
+---
+- 2027-01-04 to 2027-01-29: Lease and permits
+  - [x] 2027-01-04 to 2027-01-08: Sign the lease
+  - 2027-01-11 to 2027-01-29: Health and fire permits {done=40%}
+- 2027-02-01 to 2027-03-19: Build-out
+  - 2027-02-01 to 2027-02-19: Walls, floor, plumbing
+  - 2027-02-22 to 2027-03-05: The oven arrives {color=red}
+  - 2027-03-08 to 2027-03-19: Counter and shelves
+- 2027-03-22 to 2027-04-02: Hiring and training {color=blue}
+- 2027-04-10: Opening day {color=red}

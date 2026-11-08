@@ -1,0 +1,10 @@
+---
+app: calc
+title: Dinner at the place on Smith Street
+---
+food = 164.50
+drinks = 58
+tax = (food + drinks) * 8.875%
+tip = (food + drinks) * 20%
+total = food + drinks + tax + tip
+total / 6

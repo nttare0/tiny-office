@@ -1,0 +1,14 @@
+---
+app: draw
+title: The bakery's home page, sketched
+alt: A phone-shaped wireframe: a header, a hero picture, three cards, a button.
+---
+Kind | X | Y | W | H | Style | Label
+--- | --- | --- | --- | --- | --- | ---
+r | 24 | 2 | 32 | 46 | 0 |
+r | 26 | 4 | 28 | 4 | 1 | Rosa's Bakery
+r | 26 | 10 | 28 | 12 | 1b | the window at seven
+o | 26 | 24 | 8 | 8 | 1 | Bread
+o | 36 | 24 | 8 | 8 | 1 | Pastry
+o | 46 | 24 | 8 | 8 | 1 | Coffee
+o | 30 | 36 | 20 | 5 | 2g | Order ahead

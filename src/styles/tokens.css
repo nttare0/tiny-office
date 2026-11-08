@@ -1,0 +1,128 @@
+/* Tokens: the colours, type, radii and shadows everything is built from. Light at :root, dark under
+   [data-theme=dark] (set by the theme script in the page before the first paint and kit/ui/theme.ts after). The dark
+   theme keeps the separation Paul asked for: the page darker than the panels, text a step lighter, edges
+   that can be seen (3:1), the accent lighter with dark words on it. test/contrast.test.ts reads every pair. */
+@layer tokens {
+  :root {
+    /* The type is IBM Plex, the site's own (fonts.css), with the system's stack behind it while a face is on its way and
+       for the scripts Plex is not shipped for. Arabic, Hebrew (and Yiddish) and Hindi in Plex's own, Urdu in the device's Nastaliq (below). */
+    --to-font-system: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    --to-font: 'IBM Plex Sans', 'IBM Plex Sans Arabic', 'IBM Plex Sans Hebrew', 'IBM Plex Sans Devanagari', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    --to-font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, Consolas, 'Liberation Mono', 'Courier New', monospace;
+    /* The home page's wordmark (kit.css .to-header .to-brand) and the Serif look. */
+    --to-font-serif: 'IBM Plex Serif', Charter, 'Bitstream Charter', 'Iowan Old Style', 'Palatino Linotype', Georgia, 'Noto Serif', serif;
+
+    --to-bg: hsl(0 0% 97.5%);
+    --to-surface: hsl(0 0% 100%);
+    --to-surface-2: hsl(240 4.8% 95.9%);
+    --to-border: hsl(240 4.9% 83.9%);
+    --to-border-strong: hsl(240 5% 64.9%);
+    --to-ink: hsl(240 5.9% 10%);
+    --to-ink-2: hsl(240 5.3% 26.1%);
+    /* The quietest text still has to read on the greyest surface: 6.9:1 on --to-surface-2. */
+    --to-ink-3: hsl(240 5.2% 33.9%);
+    --to-accent: hsl(243.4 75.4% 58.6%);
+    --to-accent-soft: hsl(226.5 100% 93.9%);
+    --to-on-accent: hsl(0 0% 100%);
+    --to-danger: hsl(0 72.2% 50.6%);
+    --to-success: hsl(142.1 76.2% 36.3%);
+    /* Go, under words: the green deep enough for white words (the link guard's button). */
+    --to-go: hsl(142.1 76.2% 27%);
+    --to-warning: hsl(32.1 94.6% 43.7%);
+    /* How long a short link has left (the arrival banner): over a week, within a week, the last day. Filled, with words that read on them. */
+    --to-ok-bg: hsl(142.4 71.8% 29.2%);
+    --to-ok-ink: hsl(0 0% 100%);
+    --to-soon-bg: hsl(43.3 96.4% 56.3%);
+    --to-soon-ink: hsl(240 5.9% 10%);
+    --to-last-bg: hsl(0 73.7% 41.8%);
+    --to-last-ink: hsl(0 0% 100%);
+    /* Paper: white in both themes, a page stays a page, so its ink, its lines and its accent are the light theme's whatever the theme. */
+    --to-paper: hsl(0 0% 100%);
+    --to-paper-ink: hsl(240 5.9% 10%);
+    --to-paper-muted: hsl(240 5.2% 33.9%);
+    --to-paper-line: hsl(240 4.9% 83.9%);
+    --to-paper-shade: hsl(240 4.8% 95.9%);
+    --to-paper-accent: hsl(243.4 75.4% 58.6%);
+    --to-placeholder: var(--to-ink-3);
+    --to-input-bg: var(--to-surface);
+    --to-input-border: var(--to-border);
+
+    /* Radii and shadows in em: as round and as deep as the words they hold are large, in the document or the nav. */
+    --to-radius: 0.5em;
+    --to-radius-sm: 0.375em;
+    --to-radius-pill: 999em;
+    --to-shadow: 0 1px 0.125em hsl(240 3.8% 46.1% / 12%);
+    --to-shadow-pop: 0 0.25em 1em rgb(0 0 0 / 16%);
+    /* The header is nav: its height is the nav's (kit.css, --to-nav-font), wherever it is reckoned with. */
+    --to-header-h: calc(3.5 * var(--to-nav-font));
+    /* The app's bar, one row: a finger's target and its padding, in the nav's scale (kit.css, the bar's place). */
+    --to-bar-h: calc(3.5 * var(--to-nav-font));
+    /* The column's height, what a canvas or a map fills: <to-chrome> sets it as measured (kit/ui/chrome.ts);
+       until then, and for an editor drawn alone, the screen less the header and the bar. */
+    --to-col-h: calc(100dvh - var(--to-header-h) - var(--to-bar-h));
+    /* A finger's target, 44 of the stylesheet's pixels: the document's here, the nav's on every nav element (kit.css).
+       A finger does not grow with the words: the document's grows to the nav's limit (120%) and no further, so at 200% a
+       row's grip, tick and menu leave its words the room (the review of 2026-10-11: 114px each had left a task 25px). */
+    --to-touch: min(2.75rem, calc(2.75 * var(--to-nav-font)));
+    --to-max-w: 67.5rem;
+    /* The column's side insets: the gutter (or the notch), or half of what the window has over the measure and the
+       gutter, whichever is more. Worked out here, where both readers inherit it: the column's padding (kit.css .to-main)
+       and the home page's header, whose wordmark starts where the column does (Paul, 2026-10-12: "keep the logo aligned
+       with the list of apps below"). The 100% is the reader's own: the window's width, for both. */
+    --to-col-inset-l: max(var(--to-gutter), env(safe-area-inset-left), (100% - var(--to-max-w)) / 2 + var(--to-gutter));
+    --to-col-inset-r: max(var(--to-gutter), env(safe-area-inset-right), (100% - var(--to-max-w)) / 2 + var(--to-gutter));
+    /* A row's inset inside the column, from its hover box to its icon (kit.css .to-app-open), in the document's scale;
+       the home page's wordmark is set in by as much, so its first letter stands on the icons' edge. */
+    --to-row-inset: calc(0.5 * var(--to-scale));
+    /* A field's inside, from its border to its words (kit.css, the fields), in the field's own ems: the title's box,
+       and the title an app's page shows before the app is there (kit.css, #to-first). */
+    --to-field-pad: 0.625em;
+    /* The line: body text's, and the tighter one of headings and labels. */
+    --to-line: 1.5;
+    --to-line-label: 1.25;
+    /* The gutter: a number of the scale's 16px (12 on a narrow screen, responsive.css), the document's here and the
+       nav's on every nav element. */
+    --to-gutter-k: 1;
+    --to-gutter: calc(var(--to-gutter-k) * 1rem);
+    color-scheme: light;
+  }
+  /* Urdu reads in Nastaliq (Paul, 2026-10-11: the best path for colloquial speakers; docs/translation.md §8): the
+     device's own, which every iPhone, Android from 8 and Windows ship, and the Arabic stack (the device's Naskh) where
+     none is there. No font is bundled. Nastaliq's letters climb and fall further than Naskh's, so its lines are taller. */
+  :lang(ur) {
+    --to-font: 'Noto Nastaliq Urdu', 'Urdu Typesetting', 'Jameel Noori Nastaleeq', 'Awami Nastaliq', var(--to-font-system);
+    --to-line: 1.9;
+    --to-line-label: 1.6;
+  }
+  :root[data-theme='dark'] {
+    --to-bg: hsl(240 6% 8%);
+    --to-surface: hsl(240 5.1% 15%);
+    --to-surface-2: hsl(240 5.7% 18.2%);
+    --to-border: hsl(240 5.3% 58%);
+    --to-border-strong: hsl(240 5% 68%);
+    --to-ink: hsl(240 9.1% 91.8%);
+    --to-ink-2: hsl(240 7.3% 84%);
+    --to-ink-3: hsl(240 5.6% 73%);
+    --to-accent: hsl(229.4 100% 78.3%);
+    --to-accent-soft: hsl(243.5 40.8% 27%);
+    --to-on-accent: hsl(240 5.9% 11%);
+    --to-danger: hsl(0 98.6% 67.9%);
+    --to-success: hsl(141.6 72.4% 55.2%);
+    --to-go: var(--to-success);
+    /* The paper follows the theme (Paul, 2026-10-10: the Word Processor respects dark mode); print and the drawn pages stay white. */
+    --to-paper: hsl(240 5.3% 12.5%);
+    --to-paper-ink: hsl(240 9.1% 92%);
+    --to-paper-muted: hsl(240 6% 76%);
+    --to-paper-line: hsl(240 5% 42%);
+    --to-paper-shade: hsl(240 5.2% 18.5%);
+    --to-paper-accent: hsl(229.4 100% 78.3%);
+    --to-warning: hsl(43.3 100% 53.4%);
+    --to-ok-bg: hsl(142.8 64.2% 24.1%);
+    --to-soon-bg: hsl(37.7 92.1% 50.2%);
+    --to-last-bg: hsl(0 70% 35.3%);
+    --to-input-bg: hsl(240 5.9% 11%);
+    --to-shadow: 0 1px 0.125em rgb(0 0 0 / 24%);
+    --to-shadow-pop: 0 0.25em 1em rgb(0 0 0 / 50%);
+    color-scheme: dark;
+  }
+}

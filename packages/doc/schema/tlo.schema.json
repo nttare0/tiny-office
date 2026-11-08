@@ -1,0 +1,365 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/aboard-io/tinylittleoffice/main/packages/doc/schema/tlo.schema.json",
+  "title": "A Tiny Little Office document",
+  "description": "The kernel’s document (src/doc/model.ts) as JSON: what toJson gives and fromJson takes (src/api.ts; `tinyoffice json`). Written from the types by scripts/schema.ts (so a change is made there).",
+  "$ref": "#/$defs/Doc",
+  "$defs": {
+    "Attrs": {
+      "description": "What any block may end with: \"{#id .cls key=value}\".",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "cls": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "kv": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "Block": {
+      "description": "The eight kinds of block.",
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "k": {
+              "const": "h"
+            },
+            "level": {
+              "enum": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6
+              ]
+            },
+            "runs": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/Run"
+              }
+            },
+            "a": {
+              "$ref": "#/$defs/Attrs"
+            }
+          },
+          "required": [
+            "k",
+            "level",
+            "runs"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "k": {
+              "const": "p"
+            },
+            "runs": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/Run"
+              }
+            },
+            "a": {
+              "$ref": "#/$defs/Attrs"
+            }
+          },
+          "required": [
+            "k",
+            "runs"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "k": {
+              "const": "li"
+            },
+            "depth": {
+              "type": "number"
+            },
+            "ord": {
+              "const": true
+            },
+            "done": {
+              "type": "boolean"
+            },
+            "runs": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/Run"
+              }
+            },
+            "a": {
+              "$ref": "#/$defs/Attrs"
+            }
+          },
+          "required": [
+            "k",
+            "depth",
+            "runs"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "k": {
+              "const": "quote"
+            },
+            "runs": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/Run"
+              }
+            },
+            "a": {
+              "$ref": "#/$defs/Attrs"
+            }
+          },
+          "required": [
+            "k",
+            "runs"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "k": {
+              "const": "hr"
+            },
+            "a": {
+              "$ref": "#/$defs/Attrs"
+            }
+          },
+          "required": [
+            "k"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "k": {
+              "const": "table"
+            },
+            "cols": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/Column"
+              }
+            },
+            "rows": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "a": {
+              "$ref": "#/$defs/Attrs"
+            }
+          },
+          "required": [
+            "k",
+            "cols",
+            "rows"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "k": {
+              "const": "fence"
+            },
+            "lang": {
+              "type": "string"
+            },
+            "body": {
+              "type": "string"
+            },
+            "a": {
+              "$ref": "#/$defs/Attrs"
+            }
+          },
+          "required": [
+            "k",
+            "lang",
+            "body"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "k": {
+              "const": "edge"
+            },
+            "from": {
+              "type": "string"
+            },
+            "to": {
+              "type": "string"
+            },
+            "dir": {
+              "$ref": "#/$defs/Dir"
+            },
+            "label": {
+              "type": "string"
+            },
+            "a": {
+              "$ref": "#/$defs/Attrs"
+            }
+          },
+          "required": [
+            "k",
+            "from",
+            "to",
+            "dir"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "ColType": {
+      "description": "What a table's column holds.",
+      "enum": [
+        "text",
+        "number",
+        "money",
+        "percent",
+        "date",
+        "time",
+        "check",
+        "url",
+        "rich",
+        "long",
+        "icon",
+        "name",
+        "option"
+      ]
+    },
+    "Column": {
+      "description": "A column of a table: its name and what it holds.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/$defs/ColType"
+        },
+        "currency": {
+          "description": "A money column's currency: a symbol (\"£\") or an ISO 4217 code (\"GBP\"); none takes the document's, else \"$\".",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "type"
+      ],
+      "additionalProperties": false
+    },
+    "Dir": {
+      "description": "An edge's direction.",
+      "enum": [
+        "->",
+        "<-",
+        "<->",
+        "--"
+      ]
+    },
+    "Doc": {
+      "description": "A document: its header and its blocks.",
+      "type": "object",
+      "properties": {
+        "head": {
+          "$ref": "#/$defs/Head"
+        },
+        "blocks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Block"
+          }
+        }
+      },
+      "required": [
+        "head",
+        "blocks"
+      ],
+      "additionalProperties": false
+    },
+    "Head": {
+      "description": "The header: lowercase keys, string values (title, by, created; an app's own settings).",
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "Run": {
+      "description": "Words with their marks. An icon or a footnote is a run of its own with no words (atomic: it counts as one character).",
+      "type": "object",
+      "properties": {
+        "t": {
+          "type": "string"
+        },
+        "b": {
+          "const": true
+        },
+        "i": {
+          "const": true
+        },
+        "u": {
+          "const": true
+        },
+        "s": {
+          "const": true
+        },
+        "h": {
+          "description": "Highlighted.",
+          "const": true
+        },
+        "c": {
+          "description": "Code: set in a monospace face, its words verbatim (a backtick span).",
+          "const": true
+        },
+        "href": {
+          "description": "Where these words link.",
+          "type": "string"
+        },
+        "ic": {
+          "description": "An icon in the line, by name.",
+          "type": "string"
+        },
+        "fn": {
+          "description": "A footnote: the note's words as inline Markdown.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "t"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

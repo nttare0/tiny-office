@@ -1,0 +1,26 @@
+---
+app: write
+title: A letter to the block
+---
+# Dear neighbors {.title}
+
+*Carroll Gardens · Thursday, October 15*
+
+The stoop sale is on for Saturday, rain or shine. Bring what you no longer need and a folding table if you have one.
+
+## What we still need
+
+- [ ] Someone with a van, for the leftovers to Housing Works
+- [x] A coffee urn, borrowed from the church on Court Street
+- [ ] Chalk for the sidewalk signs
+
+## Money
+
+Item | Cost:money
+--- | ---
+Permit | 25
+Signs | 12
+Coffee and cups | 40
+Total | =SUM(B1:B3)
+
+Whatever we make goes to the community fridge on Smith Street.^[Last year: $612, in a coffee can.]

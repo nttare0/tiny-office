@@ -1,0 +1,12 @@
+---
+app: sheet
+title: Rent, split four ways
+chart: bar
+---
+Room | Rent:money | Square feet:number | Per foot:money
+--- | --- | --- | ---
+Front, big window | 1450 | 160 | =B1/C1
+Middle | 1200 | 130 | =B2/C2
+Back, by the fire escape | 1100 | 120 | =B3/C3
+Loft | 950 | 90 | =B4/C4
+Total | =SUM(B1:B4) | =SUM(C1:C4) | =B5/C5

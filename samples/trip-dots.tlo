@@ -1,0 +1,13 @@
+---
+app: trip
+title: Bakeries worth the subway ride
+units: miles
+route: dots
+---
+Place | Lat:number | Lon:number | Note
+--- | --- | --- | ---
+Rosa's, Carroll Gardens | 40.6795 | -73.9983 | Saturday bagels, sell out by eleven
+L'imprimerie, Bushwick | 40.7006 | -73.9222 | Croissants, the real thing
+Bien Cuit, Boerum Hill | 40.6866 | -73.9898 | Miche by the slice
+Librae, East Village | 40.7262 | -73.9825 | Cardamom buns
+Radio Bakery, Greenpoint | 40.7301 | -73.9544 | Pistachio croissant, go early

@@ -1,0 +1,281 @@
+/* The type: IBM Plex, from the site's own files (public/fonts/, IBM's release under the SIL Open Font License, its
+   licence beside them; Paul, 2026-10-11: "We use Plex everywhere!"). Nothing is fetched from another host: the policy's
+   font-src is 'self' alone (public/_headers). Plex Sans is the interface and the Sans look, Plex Serif the Serif look,
+   Plex Mono code and the Typewriter; Arabic, Hebrew and Yiddish, and Hindi in Plex Sans Arabic, Plex Sans Hebrew and Plex
+   Sans Devanagari. Two weights, 400 and 600, roman and italic for Sans and Serif. Each face waits behind its unicode-range, so a page in a script Plex
+   does not draw (Bengali, Korean, Japanese, Chinese: the device's) downloads nothing; swap shows the words in the
+   device's face standing in for it while a face is on its way. index.html preloads Plex Sans Regular and SemiBold,
+   which every page draws. scripts/dependencies.ts FONTS lists the files (docs/dependencies.md); test/fonts.test.ts
+   holds them to this.
+
+   The swap moves nothing (Paul, 2026-10-12: "What can we do about fouc"): before each Sans, Serif and Mono face, a face
+   of the same family, weight and style that is the device's own (local()), sized to Plex. The last face declared is
+   tried first, so the browser draws in Plex once its file is in and in the stand-in until then, and the words take the
+   room Plex will: the same width (size-adjust, Plex's width over the stand-in's on a paragraph of English) and the same
+   line (ascent-, descent- and line-gap-override: Plex's 1025, 275 and 0 of 1000, over the size). Each stand-in names
+   faces that share their widths, so one size fits them all: Arial, Helvetica, Liberation Sans and Arimo for Sans;
+   Times New Roman, Times, Liberation Serif and Tinos for Serif (Georgia is wider than Times, and would need a size of
+   its own); Menlo, Courier New, Liberation Mono and Cousine for Mono (every one 0.6 of the size wide, as Plex Mono is).
+   The system's interface faces (San Francisco, Segoe UI) are not reachable by local() on every device and are not
+   Arial's width, so they are not among them. test/browser/first-paint.test.ts measures each size against Liberation's
+   faces, the twins of Arial, Times and Courier New the test box has, and a paragraph in each stand-in against Plex. */
+@layer tokens {
+  @font-face {
+    font-family: 'IBM Plex Sans';
+    src: local('Arial'), local('ArialMT'), local('Helvetica'), local('Liberation Sans'), local('LiberationSans'), local('Arimo');
+    font-weight: 400;
+    font-style: normal;
+    size-adjust: 100.54%;
+    ascent-override: 101.95%;
+    descent-override: 27.35%;
+    line-gap-override: 0%;
+    unicode-range: U+0000-052F, U+0E3F, U+1E00-1EFF, U+2000-215F, U+2190-22FF, U+2400-25FF, U+2713, U+274C, U+2B0E-2B11, U+FB01-FB02, U+FEFF, U+FFFD;
+  }
+  @font-face {
+    font-family: 'IBM Plex Sans';
+    src: url('/fonts/IBMPlexSans-Regular.woff2') format('woff2');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+    unicode-range: U+0000-052F, U+0E3F, U+1E00-1EFF, U+2000-215F, U+2190-22FF, U+2400-25FF, U+2713, U+274C, U+2B0E-2B11, U+FB01-FB02, U+FEFF, U+FFFD;
+  }
+  @font-face {
+    font-family: 'IBM Plex Sans';
+    src: local('Arial Italic'), local('Arial-ItalicMT'), local('Helvetica Oblique'), local('Helvetica-Oblique'), local('Liberation Sans Italic'), local('LiberationSans-Italic'), local('Arimo Italic');
+    font-weight: 400;
+    font-style: italic;
+    size-adjust: 98.92%;
+    ascent-override: 103.62%;
+    descent-override: 27.8%;
+    line-gap-override: 0%;
+    unicode-range: U+0000-052F, U+0E3F, U+1E00-1EFF, U+2000-215F, U+2190-22FF, U+2400-25FF, U+2713, U+274C, U+2B0E-2B11, U+FB01-FB02, U+FEFF, U+FFFD;
+  }
+  @font-face {
+    font-family: 'IBM Plex Sans';
+    src: url('/fonts/IBMPlexSans-Italic.woff2') format('woff2');
+    font-weight: 400;
+    font-style: italic;
+    font-display: swap;
+    unicode-range: U+0000-052F, U+0E3F, U+1E00-1EFF, U+2000-215F, U+2190-22FF, U+2400-25FF, U+2713, U+274C, U+2B0E-2B11, U+FB01-FB02, U+FEFF, U+FFFD;
+  }
+  @font-face {
+    font-family: 'IBM Plex Sans';
+    src: local('Arial Bold'), local('Arial-BoldMT'), local('Helvetica Bold'), local('Helvetica-Bold'), local('Liberation Sans Bold'), local('LiberationSans-Bold'), local('Arimo Bold');
+    font-weight: 600;
+    font-style: normal;
+    size-adjust: 97.04%;
+    ascent-override: 105.63%;
+    descent-override: 28.34%;
+    line-gap-override: 0%;
+    unicode-range: U+0000-052F, U+0E3F, U+1E00-1EFF, U+2000-215F, U+2190-22FF, U+2400-25FF, U+2713, U+274C, U+2B0E-2B11, U+FB01-FB02, U+FEFF, U+FFFD;
+  }
+  @font-face {
+    font-family: 'IBM Plex Sans';
+    src: url('/fonts/IBMPlexSans-SemiBold.woff2') format('woff2');
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
+    unicode-range: U+0000-052F, U+0E3F, U+1E00-1EFF, U+2000-215F, U+2190-22FF, U+2400-25FF, U+2713, U+274C, U+2B0E-2B11, U+FB01-FB02, U+FEFF, U+FFFD;
+  }
+  @font-face {
+    font-family: 'IBM Plex Sans';
+    src:
+      local('Arial Bold Italic'), local('Arial-BoldItalicMT'), local('Helvetica Bold Oblique'), local('Helvetica-BoldOblique'), local('Liberation Sans Bold Italic'),
+      local('LiberationSans-BoldItalic'), local('Arimo Bold Italic');
+    font-weight: 600;
+    font-style: italic;
+    size-adjust: 94.78%;
+    ascent-override: 108.15%;
+    descent-override: 29.01%;
+    line-gap-override: 0%;
+    unicode-range: U+0000-052F, U+0E3F, U+1E00-1EFF, U+2000-215F, U+2190-22FF, U+2400-25FF, U+2713, U+274C, U+2B0E-2B11, U+FB01-FB02, U+FEFF, U+FFFD;
+  }
+  @font-face {
+    font-family: 'IBM Plex Sans';
+    src: url('/fonts/IBMPlexSans-SemiBoldItalic.woff2') format('woff2');
+    font-weight: 600;
+    font-style: italic;
+    font-display: swap;
+    unicode-range: U+0000-052F, U+0E3F, U+1E00-1EFF, U+2000-215F, U+2190-22FF, U+2400-25FF, U+2713, U+274C, U+2B0E-2B11, U+FB01-FB02, U+FEFF, U+FFFD;
+  }
+  @font-face {
+    font-family: 'IBM Plex Serif';
+    src: local('Times New Roman'), local('TimesNewRomanPSMT'), local('Times'), local('Times-Roman'), local('Liberation Serif'), local('LiberationSerif'), local('Tinos');
+    font-weight: 400;
+    font-style: normal;
+    size-adjust: 115.28%;
+    ascent-override: 88.91%;
+    descent-override: 23.85%;
+    line-gap-override: 0%;
+    unicode-range: U+0000-052F, U+0E3F, U+1E00-1EFF, U+2000-215F, U+2190-22FF, U+2400-25FF, U+2713, U+274C, U+2B0E-2B11, U+FB01-FB02, U+FEFF, U+FFFD;
+  }
+  /* The home page's wordmark before the app (kit.css, #to-first): the Serif's stand-in above under a name of its own, so
+     the page asks for no face of Plex before its first paint (budgets.json: five requests, the two Sans faces among
+     them); the wordmark the shell draws is Plex Serif, in the same place. */
+  @font-face {
+    font-family: 'IBM Plex Serif Stand-in';
+    src: local('Times New Roman'), local('TimesNewRomanPSMT'), local('Times'), local('Times-Roman'), local('Liberation Serif'), local('LiberationSerif'), local('Tinos');
+    font-weight: 400;
+    font-style: normal;
+    size-adjust: 115.28%;
+    ascent-override: 88.91%;
+    descent-override: 23.85%;
+    line-gap-override: 0%;
+    unicode-range: U+0000-052F, U+0E3F, U+1E00-1EFF, U+2000-215F, U+2190-22FF, U+2400-25FF, U+2713, U+274C, U+2B0E-2B11, U+FB01-FB02, U+FEFF, U+FFFD;
+  }
+  @font-face {
+    font-family: 'IBM Plex Serif';
+    src: url('/fonts/IBMPlexSerif-Regular.woff2') format('woff2');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+    unicode-range: U+0000-052F, U+0E3F, U+1E00-1EFF, U+2000-215F, U+2190-22FF, U+2400-25FF, U+2713, U+274C, U+2B0E-2B11, U+FB01-FB02, U+FEFF, U+FFFD;
+  }
+  @font-face {
+    font-family: 'IBM Plex Serif';
+    src:
+      local('Times New Roman Italic'), local('TimesNewRomanPS-ItalicMT'), local('Times Italic'), local('Times-Italic'), local('Liberation Serif Italic'), local('LiberationSerif-Italic'),
+      local('Tinos Italic');
+    font-weight: 400;
+    font-style: italic;
+    size-adjust: 103.89%;
+    ascent-override: 98.66%;
+    descent-override: 26.47%;
+    line-gap-override: 0%;
+    unicode-range: U+0000-052F, U+0E3F, U+1E00-1EFF, U+2000-215F, U+2190-22FF, U+2400-25FF, U+2713, U+274C, U+2B0E-2B11, U+FB01-FB02, U+FEFF, U+FFFD;
+  }
+  @font-face {
+    font-family: 'IBM Plex Serif';
+    src: url('/fonts/IBMPlexSerif-Italic.woff2') format('woff2');
+    font-weight: 400;
+    font-style: italic;
+    font-display: swap;
+    unicode-range: U+0000-052F, U+0E3F, U+1E00-1EFF, U+2000-215F, U+2190-22FF, U+2400-25FF, U+2713, U+274C, U+2B0E-2B11, U+FB01-FB02, U+FEFF, U+FFFD;
+  }
+  @font-face {
+    font-family: 'IBM Plex Serif';
+    src: local('Times New Roman Bold'), local('TimesNewRomanPS-BoldMT'), local('Times Bold'), local('Times-Bold'), local('Liberation Serif Bold'), local('LiberationSerif-Bold'), local('Tinos Bold');
+    font-weight: 600;
+    font-style: normal;
+    size-adjust: 112.62%;
+    ascent-override: 91.01%;
+    descent-override: 24.42%;
+    line-gap-override: 0%;
+    unicode-range: U+0000-052F, U+0E3F, U+1E00-1EFF, U+2000-215F, U+2190-22FF, U+2400-25FF, U+2713, U+274C, U+2B0E-2B11, U+FB01-FB02, U+FEFF, U+FFFD;
+  }
+  @font-face {
+    font-family: 'IBM Plex Serif';
+    src: url('/fonts/IBMPlexSerif-SemiBold.woff2') format('woff2');
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
+    unicode-range: U+0000-052F, U+0E3F, U+1E00-1EFF, U+2000-215F, U+2190-22FF, U+2400-25FF, U+2713, U+274C, U+2B0E-2B11, U+FB01-FB02, U+FEFF, U+FFFD;
+  }
+  @font-face {
+    font-family: 'IBM Plex Serif';
+    src:
+      local('Times New Roman Bold Italic'), local('TimesNewRomanPS-BoldItalicMT'), local('Times Bold Italic'), local('Times-BoldItalic'), local('Liberation Serif Bold Italic'),
+      local('LiberationSerif-BoldItalic'), local('Tinos Bold Italic');
+    font-weight: 600;
+    font-style: italic;
+    size-adjust: 106.77%;
+    ascent-override: 96%;
+    descent-override: 25.76%;
+    line-gap-override: 0%;
+    unicode-range: U+0000-052F, U+0E3F, U+1E00-1EFF, U+2000-215F, U+2190-22FF, U+2400-25FF, U+2713, U+274C, U+2B0E-2B11, U+FB01-FB02, U+FEFF, U+FFFD;
+  }
+  @font-face {
+    font-family: 'IBM Plex Serif';
+    src: url('/fonts/IBMPlexSerif-SemiBoldItalic.woff2') format('woff2');
+    font-weight: 600;
+    font-style: italic;
+    font-display: swap;
+    unicode-range: U+0000-052F, U+0E3F, U+1E00-1EFF, U+2000-215F, U+2190-22FF, U+2400-25FF, U+2713, U+274C, U+2B0E-2B11, U+FB01-FB02, U+FEFF, U+FFFD;
+  }
+  @font-face {
+    font-family: 'IBM Plex Mono';
+    src: local('Menlo Regular'), local('Menlo-Regular'), local('Courier New'), local('CourierNewPSMT'), local('Liberation Mono'), local('LiberationMono'), local('Cousine');
+    font-weight: 400;
+    font-style: normal;
+    size-adjust: 100%;
+    ascent-override: 102.5%;
+    descent-override: 27.5%;
+    line-gap-override: 0%;
+    unicode-range: U+0000-052F, U+0E3F, U+1E00-1EFF, U+2000-215F, U+2190-22FF, U+2400-25FF, U+2713, U+274C, U+2B0E-2B11, U+FB01-FB02, U+FEFF, U+FFFD;
+  }
+  @font-face {
+    font-family: 'IBM Plex Mono';
+    src: url('/fonts/IBMPlexMono-Regular.woff2') format('woff2');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+    unicode-range: U+0000-052F, U+0E3F, U+1E00-1EFF, U+2000-215F, U+2190-22FF, U+2400-25FF, U+2713, U+274C, U+2B0E-2B11, U+FB01-FB02, U+FEFF, U+FFFD;
+  }
+  @font-face {
+    font-family: 'IBM Plex Mono';
+    src: local('Menlo Bold'), local('Menlo-Bold'), local('Courier New Bold'), local('CourierNewPS-BoldMT'), local('Liberation Mono Bold'), local('LiberationMono-Bold'), local('Cousine Bold');
+    font-weight: 600;
+    font-style: normal;
+    size-adjust: 100%;
+    ascent-override: 102.5%;
+    descent-override: 27.5%;
+    line-gap-override: 0%;
+    unicode-range: U+0000-052F, U+0E3F, U+1E00-1EFF, U+2000-215F, U+2190-22FF, U+2400-25FF, U+2713, U+274C, U+2B0E-2B11, U+FB01-FB02, U+FEFF, U+FFFD;
+  }
+  @font-face {
+    font-family: 'IBM Plex Mono';
+    src: url('/fonts/IBMPlexMono-SemiBold.woff2') format('woff2');
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
+    unicode-range: U+0000-052F, U+0E3F, U+1E00-1EFF, U+2000-215F, U+2190-22FF, U+2400-25FF, U+2713, U+274C, U+2B0E-2B11, U+FB01-FB02, U+FEFF, U+FFFD;
+  }
+  @font-face {
+    font-family: 'IBM Plex Sans Arabic';
+    src: url('/fonts/IBMPlexSansArabic-Regular.woff2') format('woff2');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+    unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFC;
+  }
+  @font-face {
+    font-family: 'IBM Plex Sans Arabic';
+    src: url('/fonts/IBMPlexSansArabic-SemiBold.woff2') format('woff2');
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
+    unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFC;
+  }
+  @font-face {
+    font-family: 'IBM Plex Sans Hebrew';
+    src: url('/fonts/IBMPlexSansHebrew-Regular.woff2') format('woff2');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+    unicode-range: U+0590-05FF, U+FB1D-FB4F;
+  }
+  @font-face {
+    font-family: 'IBM Plex Sans Hebrew';
+    src: url('/fonts/IBMPlexSansHebrew-SemiBold.woff2') format('woff2');
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
+    unicode-range: U+0590-05FF, U+FB1D-FB4F;
+  }
+  @font-face {
+    font-family: 'IBM Plex Sans Devanagari';
+    src: url('/fonts/IBMPlexSansDevanagari-Regular.woff2') format('woff2');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+    unicode-range: U+0900-097F, U+200C-200D, U+25CC, U+A8E0-A8FF;
+  }
+  @font-face {
+    font-family: 'IBM Plex Sans Devanagari';
+    src: url('/fonts/IBMPlexSansDevanagari-SemiBold.woff2') format('woff2');
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
+    unicode-range: U+0900-097F, U+200C-200D, U+25CC, U+A8E0-A8FF;
+  }
+}

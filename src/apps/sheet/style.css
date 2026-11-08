@@ -1,0 +1,535 @@
+/* Sheet: the grid of inputs in a scroll box of its own, the formula strip above it, the chart under it. */
+@layer apps {
+  to-sheet-editor {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  /* The headline a model names ({big=…}): one figure, large, and what it is. */
+  .sheet-big {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    padding: 0.5rem 0 0.25rem;
+  }
+  .sheet-big b {
+    font-size: 2.125rem;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+  .sheet-big span {
+    color: var(--to-ink-3);
+  }
+
+  /* Under the bar, a strip of one height: the selected cells' reference and the raw formula, typed into here or in the cell. Nothing under it moves as the selection does. */
+  .sheet-fx {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    height: 2.75rem;
+    flex: none;
+    padding: 0 0.625rem;
+    margin-left: var(--to-bleed-l);
+    margin-right: var(--to-bleed-r);
+    background: var(--to-surface);
+  }
+  .sheet-fx .ref {
+    font-family: var(--to-font-mono);
+    font-weight: 600;
+    font-size: 0.8125rem;
+    min-width: 3rem;
+    text-align: center;
+    padding: 0.3125rem 0.375rem;
+    border-radius: var(--to-radius-sm);
+    background: var(--to-surface-2);
+    color: var(--to-ink-2);
+    white-space: nowrap;
+  }
+  .sheet-fx .fx {
+    flex: 1;
+    min-width: 0;
+    height: 2rem;
+    padding: 0 0.625rem;
+    border: 1px solid var(--to-input-border);
+    border-radius: var(--to-radius-sm);
+    background: var(--to-input-bg);
+    color: var(--to-ink);
+    font: 0.875rem var(--to-font-mono);
+  }
+  .sheet-fx .fx:focus-visible {
+    outline: 0.125rem solid var(--to-accent);
+    outline-offset: -1px;
+  }
+
+  /* The table scrolls in a box of its own, both ways, so the page under it holds still; the header rows and the row numbers are stuck to its edges. */
+  .sheet-scroll {
+    overflow: auto;
+    max-height: calc(var(--to-col-h) - 8.375rem);
+    min-height: 13.75rem;
+    overscroll-behavior: contain;
+    margin-left: var(--to-bleed-l);
+    margin-right: var(--to-bleed-r);
+    border-top: 1px solid var(--to-border);
+    background: var(--to-surface);
+  }
+  table.sheet {
+    --sheet-row-w: 2.5rem;
+    --sheet-add-w: 2.75rem;
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+    table-layout: fixed;
+    min-width: 26.25rem;
+  }
+  table.sheet th,
+  table.sheet td {
+    border-right: 1px solid var(--to-border);
+    border-bottom: 1px solid var(--to-border);
+    padding: 0;
+    height: 2rem;
+  }
+  table.sheet th {
+    background: var(--to-surface-2);
+    color: var(--to-ink-3);
+    font-weight: 400;
+    font-size: 0.75rem;
+    text-align: center;
+    user-select: none;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+  table.sheet thead tr.names th {
+    top: 2rem;
+    border-top: 1px solid var(--to-border);
+  }
+  /* The letters over the columns, the numbers down the side and the corner are the sheet's own controls, not cells: no shading, no lines, muted type (opaque, as they are stuck over the cells scrolling under them). The side is as narrow as its widest number and 8px. */
+  table.sheet thead tr:first-child th,
+  table.sheet th.row,
+  table.sheet td.corner {
+    border: 0;
+    background: var(--to-surface);
+  }
+  table.sheet col.gutter,
+  table.sheet th.row {
+    width: var(--sheet-row-w);
+    font-size: 0.75rem;
+  }
+  table.sheet th.row {
+    top: auto;
+    left: 0;
+  }
+  /* The cells' left edge, now the side draws none. */
+  table.sheet tbody td:nth-child(2),
+  table.sheet tr.names th:nth-child(2) {
+    border-left: 1px solid var(--to-border);
+  }
+  table.sheet td.corner {
+    position: sticky;
+    left: 0;
+    top: 0;
+    z-index: 2;
+  }
+  table.sheet tr.names td.corner {
+    top: 2rem;
+  }
+  /* A column's letter is a button opening what can be done to it. */
+  table.sheet .col-head,
+  table.sheet .row-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.125rem;
+    width: 100%;
+    height: 2rem;
+    border: 0;
+    border-radius: var(--to-radius-sm);
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+  }
+  table.sheet .row-num {
+    justify-content: flex-end;
+    padding: 0 0.25rem;
+  }
+  table.sheet .col-head:hover,
+  table.sheet .row-num:hover,
+  table.sheet .col-head[aria-expanded='true'],
+  table.sheet .row-num[aria-expanded='true'] {
+    background: var(--to-border);
+    color: var(--to-ink);
+  }
+  table.sheet .col-head:focus-visible,
+  table.sheet .row-num:focus-visible,
+  table.sheet .add-col-btn:focus-visible {
+    outline: 0.125rem solid var(--to-accent);
+    outline-offset: -0.125rem;
+  }
+  /* The columns' names, a row of their own under the letters: typed over where they stand. */
+  table.sheet .cn {
+    width: 100%;
+    height: 2rem;
+    border: 0;
+    padding: 0 0.5rem;
+    background: transparent;
+    color: var(--to-ink);
+    font: 600 0.875rem var(--to-font);
+    text-align: left;
+  }
+  table.sheet .cn::placeholder {
+    color: var(--to-placeholder);
+    font-weight: 400;
+  }
+  /* The + at the end of the header: one more column, a tap away; the height of a thumb on a phone. */
+  table.sheet col.add {
+    width: var(--sheet-add-w);
+  }
+  table.sheet td.add-col {
+    position: sticky;
+    top: 0;
+    width: var(--sheet-add-w);
+    border: 0;
+    background: var(--to-surface);
+    vertical-align: top;
+    z-index: 1;
+  }
+  table.sheet .add-col-btn {
+    display: grid;
+    place-items: center;
+    width: 100%;
+    min-height: 2.75rem;
+    border: 0;
+    border-radius: var(--to-radius-sm);
+    background: transparent;
+    color: var(--to-ink-3);
+    cursor: pointer;
+  }
+  table.sheet .add-col-btn:hover {
+    background: var(--to-border);
+    color: var(--to-ink);
+  }
+  table.sheet .add-col-btn:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+  /* Explicit column widths: the table is as wide as its columns and scrolls. */
+  table.sheet.sized {
+    min-width: 0;
+  }
+  table.sheet .grip {
+    position: absolute;
+    top: 0;
+    right: -0.375rem;
+    width: 0.75rem;
+    height: 100%;
+    cursor: col-resize;
+    touch-action: none;
+    z-index: 2;
+  }
+  table.sheet .grip::after {
+    content: '';
+    position: absolute;
+    inset: 0.375rem 0.3125rem;
+    border-radius: 1px;
+    background: var(--to-border-strong);
+    opacity: 0;
+  }
+  table.sheet .grip:hover::after,
+  table.sheet .grip:focus-visible::after {
+    opacity: 1;
+  }
+  table.sheet .grip:focus-visible {
+    outline: 0.125rem solid var(--to-accent);
+    outline-offset: -0.125rem;
+  }
+  table.sheet.picking td:not(.sel) input {
+    cursor: cell;
+  }
+  table.sheet td {
+    position: relative;
+  }
+  table.sheet td input {
+    width: 100%;
+    height: 2rem;
+    border: 0;
+    padding: 0 0.5rem;
+    background: transparent;
+    color: var(--to-ink);
+    font: 0.875rem var(--to-font-mono);
+    text-overflow: ellipsis;
+    /* A double tap edits; it never zooms the page. */
+    touch-action: manipulation;
+  }
+  table.sheet td input:focus-visible {
+    outline: none;
+  }
+  table.sheet td input.num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  table.sheet td input.err {
+    color: var(--to-danger);
+  }
+  /* A locked cell is the model's own: shaded, its words a little quieter; a name is a label. */
+  table.sheet td input.locked {
+    background: var(--to-surface-2);
+    color: var(--to-ink-2);
+  }
+  table.sheet td input.named {
+    font-family: var(--to-font);
+    font-weight: 600;
+  }
+  /* A checkbox cell is one button to a tap or a click (the whole cell: 44px under a finger), drawn as a box: 24px, a 2px border in the ink, empty or holding a thick check in the accent. Its input, under it, takes the keys (Space ticks) and shows nothing. */
+  table.sheet td input.tick {
+    color: transparent;
+    caret-color: transparent;
+  }
+  table.sheet td .tick-btn {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    border: 0;
+    padding: 0;
+    background: transparent;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  table.sheet td .tick-btn .box {
+    box-sizing: border-box;
+    display: grid;
+    place-items: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    border: 0.125rem solid var(--to-ink);
+    border-radius: 0.25rem;
+    color: var(--to-accent);
+  }
+  table.sheet td .tick-btn .box svg {
+    stroke-width: 4;
+  }
+  /* An option cell: the words its column holds come up as it is typed in (the browser's own list), and its caret opens them; the browser's own arrow is hidden for ours. */
+  table.sheet td input.option {
+    padding-right: 1.75rem;
+  }
+  table.sheet td input.option::-webkit-calendar-picker-indicator {
+    display: none !important;
+  }
+  table.sheet td .opt-btn {
+    position: absolute;
+    right: 0.125rem;
+    top: 50%;
+    transform: translateY(-50%);
+    display: grid;
+    place-items: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    padding: 0;
+    border: 0;
+    border-radius: 0.25rem;
+    background: transparent;
+    color: var(--to-ink-3);
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  table.sheet td .opt-btn:hover {
+    background: var(--to-border);
+    color: var(--to-ink);
+  }
+  /* A rich cell is its words' editor, one line high, in the cell's own type. */
+  table.sheet td to-text.rich .tx {
+    min-height: 2rem;
+    padding: 0 0.5rem;
+    font: 0.875rem/2rem var(--to-font);
+    color: var(--to-ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  table.sheet td to-text.rich .tx > *,
+  table.sheet td to-text.rich .tx-list > * {
+    white-space: pre;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  table.sheet td to-text.rich.locked .tx {
+    background: var(--to-surface-2);
+    color: var(--to-ink-2);
+  }
+  /* A link's cell: the address, and a small way to open it. */
+  table.sheet td input.link {
+    padding-right: 1.75rem;
+    color: var(--to-accent);
+  }
+  table.sheet td .go {
+    position: absolute;
+    right: 0.25rem;
+    top: 50%;
+    transform: translateY(-50%);
+    display: grid;
+    place-items: center;
+    width: 1.375rem;
+    height: 1.375rem;
+    border-radius: 0.25rem;
+    color: var(--to-ink-3);
+  }
+  table.sheet td.sel {
+    box-shadow: inset 0 0 0 0.125rem var(--to-accent);
+    background: var(--to-accent-soft);
+  }
+  table.sheet td.in {
+    background: color-mix(in srgb, var(--to-accent) 12%, transparent);
+  }
+  table.sheet td.filling {
+    box-shadow: inset 0 0 0 1px var(--to-accent);
+    background: color-mix(in srgb, var(--to-accent) 8%, transparent);
+  }
+  /* The cell a formula was just pointed at, by the arrow keys or a tap: a soft tint and a dashed edge in the accent, gentler than the selected cell's solid one, gone when the caret moves on (editor.ts pointed). */
+  table.sheet td.pointed {
+    outline: 0.125rem dashed var(--to-accent);
+    outline-offset: -0.125rem;
+    background: color-mix(in srgb, var(--to-accent) 10%, transparent);
+  }
+  table.sheet td.sel input {
+    background: transparent;
+  }
+  /* The handle at the block's corner: dragged, it carries the cells on. */
+  table.sheet td .fill {
+    position: absolute;
+    right: -0.3125rem;
+    bottom: -0.3125rem;
+    width: 0.625rem;
+    height: 0.625rem;
+    border-radius: 0.125rem;
+    background: var(--to-accent);
+    border: 1px solid var(--to-surface);
+    cursor: crosshair;
+    touch-action: none;
+    z-index: 3;
+  }
+  /* The dot stays small; under a finger it is a 44px thing to hold. */
+  table.sheet td .fill::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+  }
+  /* A column's name beside its letter: shown while the names' row is away (a phone with the keyboard up, below). */
+  table.sheet .col-head .nm {
+    display: none;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--to-ink);
+    font-weight: 600;
+    margin-inline-start: 0.25rem;
+  }
+  /* The menus a column head or a row number opens have no button of their own in the bar. */
+  .sheet-rowmenu > button,
+  .sheet-colmenu > button {
+    display: none;
+  }
+  .sheet-more {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    margin: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px dashed var(--to-border);
+    border-radius: var(--to-radius);
+    background: transparent;
+    color: var(--to-ink-2);
+    font: inherit;
+    cursor: pointer;
+  }
+  .sheet-more .to-hint {
+    margin: 0;
+  }
+  .sheet-chart {
+    margin: 1rem 0 0;
+  }
+  /* A chart put in goes above the table. */
+  .sheet-chart.above {
+    margin: 0 0 0.75rem;
+  }
+  .sheet-chart svg {
+    display: block;
+    width: 100%;
+    max-width: 45rem;
+    height: auto;
+    border: 1px solid var(--to-border);
+    border-radius: var(--to-radius);
+    background: var(--to-paper);
+  }
+  /* A phone: every box a finger lands in is 16px, so Safari has no reason to zoom in. */
+  .sheet-fx .fx {
+    touch-action: manipulation;
+  }
+  @media (pointer: coarse) {
+    table.sheet td input,
+    table.sheet .cn,
+    .sheet-fx .fx {
+      font-size: 1rem;
+    }
+    /* Under a finger, a row and a column's head are 44px: the row numbers and letters are buttons a thumb can hit. */
+    table.sheet th,
+    table.sheet td,
+    table.sheet td input,
+    table.sheet .cn,
+    table.sheet .col-head,
+    table.sheet .row-num {
+      height: 2.75rem;
+    }
+    table.sheet td to-text.rich .tx {
+      min-height: 2.75rem;
+      font-size: 1rem;
+      line-height: 2.75rem;
+    }
+    table.sheet td .opt-btn {
+      right: 0;
+      width: 2rem;
+      height: 2.75rem;
+    }
+    table.sheet thead tr.names th,
+    table.sheet tr.names td.corner {
+      top: 2.75rem;
+    }
+    table.sheet .grip {
+      right: -0.75rem;
+      width: 1.5rem;
+    }
+    table.sheet .grip::after {
+      inset: 0.375rem 0.6875rem;
+    }
+    table.sheet td .fill::before {
+      inset: -1.0625rem;
+    }
+    /* A cell being typed in, the keyboard up (Paul, 2026-10-11: "no room to navigate"): the header has stepped aside
+       (kit/ui/chrome.ts), the formula strip is the column's top with the menu button at its end (responsive.css gives
+       the column's top back), the heads are one line, the letter and the name, and the table's box is the rest. Read
+       from the chrome's `editing` alone, which comes a frame after the focus: a tap that takes the focus from a cell
+       (a row's number) lands before the heads move, never on what moved under it. */
+    to-chrome[editing] .sheet-fx {
+      padding-inline-end: calc(3.5 * var(--to-nav-font));
+    }
+    to-chrome[editing] to-sheet-editor:not(:has(tr.names :focus)) table.sheet tr.names {
+      display: none;
+    }
+    to-chrome[editing] to-sheet-editor:not(:has(tr.names :focus)) table.sheet .col-head .nm {
+      display: inline;
+    }
+    to-chrome[editing] .sheet-scroll {
+      min-height: 0;
+      max-height: calc(var(--to-col-h) - 2.75rem - 1px - var(--to-gutter));
+    }
+  }
+  /* The bar's ABC is a phone keyboard's: nowhere else. */
+  @media not (pointer: coarse) {
+    to-bar.sheet-bar .cmd-sheet-letters {
+      display: none;
+    }
+  }
+}

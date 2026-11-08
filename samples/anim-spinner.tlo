@@ -1,0 +1,20 @@
+---
+app: anim
+title: Loading
+frames: 24
+fps: 12
+loop: bounce
+alt: A ring of three dots turns and grows under the word Loading.
+---
+Kind | X | Y | W | H | Style | Label
+--- | --- | --- | --- | --- | --- | ---
+t | 28 | 30 | 24 | 4 | 03= | Loading
+e | 34 | 14 | 4 | 4 | 2b |
+e | 38 | 14 | 4 | 4 | 2b |
+e | 42 | 14 | 4 | 4 | 2b |
+
+Shape | Keys
+--- | ---
+1 | 0,0,0,0,1,0; 23,0,-24,0,1.4,0
+2 | 0,0,0,0,1,0; 12,0,-24,0,1.4,0; 23,0,0,0,1,0
+3 | 0,0,0,0,1,0; 23,0,24,0,0.6,0,b

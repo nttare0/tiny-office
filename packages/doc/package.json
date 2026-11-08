@@ -1,0 +1,44 @@
+{
+  "name": "tinylittleoffice",
+  "version": "1.2.0-next",
+  "description": "Tiny Little Office from the command line and in Node: links from files, files from links, and the lint, the measures and the examples an agent checks a document by.",
+  "keywords": [
+    "office",
+    "documents",
+    "links",
+    "agents",
+    "llm",
+    "markdown"
+  ],
+  "homepage": "https://tinylittleoffice.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aboard-io/tinylittleoffice",
+    "directory": "packages/doc"
+  },
+  "bugs": {
+    "url": "https://github.com/aboard-io/tinylittleoffice/issues"
+  },
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": "./dist/api.js",
+    "./examples/*.json": "./examples/*.json",
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "tinylittleoffice": "dist/tinyoffice.js",
+    "tinyoffice": "dist/tinyoffice.js"
+  },
+  "files": [
+    "dist/api.js",
+    "dist/tinyoffice.js",
+    "dist/skill",
+    "examples",
+    "schema",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=24"
+  }
+}

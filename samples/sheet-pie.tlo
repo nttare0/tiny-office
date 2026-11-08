@@ -1,0 +1,12 @@
+---
+app: sheet
+title: Where the bakery's money goes
+chart: pie
+---
+Cost | Share:percent
+--- | ---
+Flour and butter | 31
+Wages | 38
+Rent | 17
+Power | 8
+Everything else | 6

@@ -1,0 +1,158 @@
+# Transparency, and how to say what this is
+
+Paul, 2026-10-09: the platform will be open-sourced; people concerned about security must be able to see for
+themselves. This is the pre-launch list for that, and the words we use for everyone else. Each item below is a
+piece of work with a check; the launch waits for the checks marked **gate**.
+
+The repository is open at https://github.com/aboard-io/tinylittleoffice (since 2026-10-11): every gate below
+(items 1, 2, 3 and 5) is built, and so is everything §2 asks for. What is left is marked *Not yet* or *Later*.
+
+## 1. Verifiable, not claimed
+
+The strongest fact is architectural: no server holds documents, so there is nothing to breach, subpoena or
+leak. Everything here makes that checkable by a stranger.
+
+1. **What leaves your browser** (gate). A page, `docs/network.md` and `/network` on the site, generated from
+   the code: every request the site can make (map tiles and place search, the short-link service, the service
+   worker under Save in browser, a share to a service), when it happens (only after a tap, or while a map is shown), what
+   it carries, and what stops it. A test in `test/network.test.ts` greps the site for every host it can reach
+   and fails if one is not on the page. The `connect-src` and `img-src` of the CSP are generated from the same
+   list.
+   *Pictures and embeds removed, 2026-10-11.* A document fetches nothing from any other
+   site: there are no pictures from the web, no proxy for them and no embeds (the code is kept on the branch
+   `web-pictures-and-embeds`). The CSP's `img-src` is the site, `data:`, `blob:` and the map's tiles (no
+   `https:` at large), and it has no `frame-src` or `media-src` of another site's, held by `test/csp.test.ts`.
+   *Built, 2026-10-10.* `src/kit/core/network.ts` is the one list of every host the site can reach (what, when,
+   what it carries, what stops it, the module, the CSP directive); every module that asks the web takes its
+   host from it. `scripts/network-doc.ts` (`npm run docs:network`, run first by `npm run build`) writes
+   `docs/network.md` and `public/network.html` (`/network`, plain HTML, no script, linked from About and the
+   README). `scripts/headers.ts` writes `connect-src` and `img-src` from the list (`test/csp.test.ts`: every
+   host in its directive and nothing else; the map's tiles left `connect-src`, which nothing used, and came back
+   to it on 2026-10-12, when a picture of a trip's map began fetching them to write them in). Builds are
+   not run in tests, so `test/network.test.ts` reads the source (`src/`, `tinier/`) instead of the built site: every
+   host must be on the list (or localhost, or an XML namespace; tests exempt, said why), `src/` names hosts only through the list, and the committed page must be
+   what the list says.
+2. **A threat model** (gate). `docs/threat-model.md`: what we protect against (the host learning a document;
+   a short link's service reading one; a shared link altered in transit; a scam link or a tracking picture
+   inside a document), what we do not (someone you gave
+   the link to passing it on; a compromised device or browser extension; a password sent alongside its link), and why each
+   design choice follows. Plain words, no reassurance.
+   *Built, 2026-10-10.* `docs/threat-model.md`: what is protected against and what is not (a lost phone with
+   Saved on, the browser's history and sync, a screenshot and everything the link passes through added to
+   the list), a table of each design choice and its threat, what the Cloudflare host can see (the static
+   files' requests, the shortener's ciphertext rows and D1's own history), and "If you
+   find a hole", which names GitHub's private vulnerability reporting (item 8). It says plainly that whoever serves the code could read
+   the fragment, and that item 3 is the answer (built the same day). About links it. *2026-10-11:* About says the
+   list in the page's language itself, and links the whole document in the public repository, said to be in English.
+3. **Reproducible, attested builds** (gate). `npm run build` from a tag gives byte-identical `dist/`;
+   `scripts/verify-deploy.ts` fetches the live site, hashes every file and compares with the tag's build;
+   the live site serves `/version.json` (commit, tag, build time, the CSP hashes) and a build attestation
+   (GitHub's artifact attestation on the release). The CSP's script hashes are listed in the release notes.
+   *Built, 2026-10-10.* Two builds of one commit are the same bytes: `scripts/reproducible.ts`
+   (`npm run build:verify`) builds it twice in fresh checkouts at different paths and depths
+   (`scripts/builds.ts`), hashes every file and prints the first difference, and compares this checkout's
+   `dist/` too when it is that commit's build. The one source of difference was the API build
+   (`vite.api.config.ts`): a library build keeps the bundler's `//#region <path>` notes, which named where
+   node_modules was on the building machine; they are off. The build writes `dist/version.json`
+   (`scripts/version.ts`: the commit, its tag or "", the commit's own date in UTC, the policy's script
+   hashes; the shape is `src/kit/core/version.ts`), checked by `scripts/check-build.ts`; About reads it when it opens and says "Running commit abc1234", a link to the
+   commit on GitHub (`github.com` is on the list, `src/kit/core/network.ts` `source`). `scripts/verify-deploy.ts`
+   (`npm run verify-deploy -- <url> [commit]`) reads the site's `/version.json`, builds that commit in a fresh
+   checkout (or uses `dist/` when it is that build), fetches every file but `_headers`, and prints a table;
+   exit 1 on any difference. The release is the `release` job of `.github/workflows/deploy.yml`. Signed
+   tags: `docs/github-setup.md`. CI (`.github/workflows/ci.yml`) runs `npm run build:verify` after its build.
+   *The deploy, from a tag, 2026-10-11 (Paul: "GitHub Actions can handle the deploy to
+   Cloudflare").* A deploy is a tag `v*`, and runs on a public GitHub runner with a public log (the repository's
+   Actions tab, the workflow Deploy): `.github/workflows/deploy.yml` runs `scripts/deploy.mjs`, the same script a
+   maintainer's machine runs, with the three credentials as repository secrets given to that step alone (and taken
+   out of the environment by the script before any check, so no test or dependency sees them): every check CI runs,
+   the shortener's migrations, the two Workers, the command line on npm with provenance. The same job then runs
+   `npm run verify-deploy -- https://tinylittleoffice.com/` and fails if a live file is not the build. A second job,
+   with no Cloudflare or npm credential, builds the tag again, `build:verify`, `check-build`, checks that build is
+   what the site serves, makes a byte-stable archive, attests `dist/**` and the archive
+   (`actions/attest-build-provenance`), and makes the release with the notes (`scripts/release-notes.ts`: the commit,
+   the tag, the script hashes, how to check). Every action is pinned by its commit hash, never a tag
+   (`test/deploy.test.ts`). docs/self-host.md, "How tinylittleoffice.com is deployed", is how to check one yourself.
+4. **Dependencies you can read in one sitting.** `docs/dependencies.md` generated from package.json: each
+   dependency, its exact version, its license, the native API it beat and why (the standing rule), and the
+   size it adds. Nothing vendored minified; the lockfile committed; `npm audit` in CI with no ignores.
+   *Built, 2026-10-10.* `npm run docs:deps` (`scripts/dependencies.ts`) writes it from package.json, the
+   lockfile and `scripts/dependencies.json`, the one-line reasons it refuses to run without; the sizes come
+   from a build (`-- --sizes`), shared among each chunk's modules; `test/dependencies.test.ts` and CI hold
+   the page current; CI runs `npm audit` with no ignores.
+   *The type, 2026-10-11.* The fonts are IBM Plex (Sans, Serif and Mono; Sans Arabic and Sans
+   Devanagari behind their `unicode-range`), self-hosted: IBM's own woff2 files, copied as released into
+   `public/fonts/` with the SIL Open Font License beside them, named with their versions in docs/dependencies.md's
+   Type (`scripts/dependencies.ts` `FONTS`), served by the site under `font-src 'self'` and nothing else
+   (`test/csp.test.ts`). Their bytes together are a line of `budgets.json` (`fonts`), and `scripts/check-build.ts`
+   fails a build that names a face it does not hold.
+5. **The crypto in the open** (gate). One short document each, with test vectors in the repo and the fact
+   that it is WebCrypto with no library: `docs/crypto/password.md` (a password the app makes, HKDF → AES-GCM: parameters, the sealed
+   payload form), `docs/crypto/short-links.md` (AES-256-GCM, the key in the fragment, that a short link cannot be
+   changed or recalled, what tinier stores and for how long, what its logs hold: nothing).
+   *Built, 2026-10-10.* The two documents, with the byte layouts; the vectors in `test/vectors/password.json`
+   and `short-links.json`, checked by
+   `test/crypto-vectors.test.ts` against the kit and against WebCrypto called by hand. `sealAt` (crypt.ts)
+   and `sealShortAt` (short.ts) take a fixed IV for the vectors; a test fails if the site calls either. "Logs
+   nothing" for tinier is held by `test/tinier.test.ts`.
+6. **Self-hosting as a first-class path.** `npm run deploy` against anyone's Cloudflare account (the
+   shortener included), a `docs/self-host.md` that takes thirty minutes, and the site's About naming the
+   commit it runs so a self-hoster's copy is distinguishable.
+   *Built, 2026-10-10:* `docs/self-host.md` (the two Workers, D1, the names to change, the policy's
+   `connect-src`, `npm run deploy`). The About dialog's commit waits for `/version.json` (item 3).
+7. **No telemetry, asserted.** No analytics, no error reporting, no fonts from a CDN, no fetch the person did
+   not cause; a test asserts the built site contains no such host, and the threat model says so.
+   *Built, 2026-10-10 (the threat model's sentence waits for item 2).* `test/network.test.ts` fails on any
+   analytics, error-reporting, font-CDN, tag-manager or session-recording host (a deny-list of 22) anywhere in
+   `src/`, `tinier/`, `public/`, `index.html`, `vite.config.ts` and `wrangler.jsonc`; About says,
+   in one sentence, that the site asks the web for nothing you did not cause, and links /network.
+8. **Hygiene.** `LICENSE` (MIT) and a brief README, and nothing else at the root (Paul, 2026-10-12: "We really
+   only want license and README, both as brief as possible"); `test/repository.test.ts` holds the root to the
+   license and a README of at most forty lines. A hole is reported through GitHub's private vulnerability
+   reporting, which the README and docs/threat-model.md name. *Not yet:* release tags signed (docs/github-setup.md).
+9. **Later:** an independent audit of the crypto and the shortener, published in full; a public test
+   dashboard; a signed SBOM with each release.
+
+## 2. The GitHub repository, set up for visibility
+
+Done once, before the repo went public; Paul renamed it, moved it to the aboard-io organization and opened it on
+2026-10-11. The settings set by hand are docs/github-setup.md.
+
+- Name `tinylittleoffice` (*met*: aboard-io/tinylittleoffice); description "A free office suite where your document is the link. No account; nothing kept unless you choose; the code open."
+  (2026-10-11: the earlier description said nothing was kept as an absolute); the website
+  field; topics: `office-suite`, `privacy`, `local-first`, `no-backend`, `pwa`, `web-components`, `lit`,
+  `cloudflare-workers`, `typescript`, `url-as-document`, `markdown`.
+- A README for a stranger that says the truth about saving (§3).
+- Social preview image from the Office mark; the per-app share cards in `public/og/`.
+- Discussions off; issues are the one place, with labels for the apps and the kit. A hole goes to the private
+  vulnerability report.
+- Branch protection on `main`: CI green required (every check a deploy runs: types, strings, unit, browser,
+  build with its budgets, the smoke run in Chromium and WebKit; then the lints, `npm audit` and the build made
+  twice), signed commits recommended, no force-push; releases from tags with the attestation and the CSP hashes.
+  Dependabot asks for npm updates weekly, grouped (`.github/dependabot.yml`).
+- `LICENSE`, the README, and `.github/` with the CI workflow, the deploy workflow (on a tag: deploy, verify the
+  live site, build, attest, publish `dist/` as the release's artifact) and Dependabot's settings.
+- The tree's earlier history is in the same repo (tagged `v0-before-rebuild`, the tree before the kernel and editor of
+  docs/kernel.md): keep it; docs/history/README.md says what it is.
+- A `docs/` index page listing every document in the folder, so a reader starts from one place.
+
+*Built:* the README, `docs/README.md` (the index, held to the folder by `test/docs.test.ts`), `LICENSE`, and
+`.github/`: the CI workflow, running every check the deploy runs (`test/repository.test.ts` compares them), the
+release workflow (§1 item 3) and Dependabot; the package's metadata names the repository. The settings
+(description, topics, Discussions, labels, the ruleset on `main`) are a checklist in `docs/github-setup.md`.
+
+## 3. How to explain it
+
+Never as an absolute (Paul, 2026-10-11: "Saying we never save anything is wrong; we should say that's the
+default"). Save in browser is off by default, and then nothing is
+kept on the device and nothing on any server; turning it on is a choice, and keeps documents and short links on the device, never on
+a server; a short link is the one thing a server holds, the document encrypted with a key the server never sees,
+until it expires. No document ever reaches us otherwise.
+
+The words now are the README's first two paragraphs, and in a sentence, for About, the page's description and the
+share cards: *A tiny office suite where the link is the document. No accounts. Nothing is saved anywhere unless you
+choose to keep it on this device.*
+
+The metaphor still holds: the note passed in class. The note is the thing, not a reference to something kept
+elsewhere. Lead with "the link is the document", not "the URL encodes the document"; the technical readers find
+the second behind the first. For the threat model and the network page, use none of these words.

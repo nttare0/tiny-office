@@ -1,0 +1,649 @@
+/* Deck: the current slide as a canvas in its format's shape, the headline and words typed on it at the size
+   they will be (the layout's sizes in the canvas's own width), the theme's paper and decoration behind, the
+   speaker notes under it, the rail of thumbnails beside or below, the sheets to print, and the show. */
+@layer apps {
+  to-deck-editor {
+    display: flex;
+    flex-direction: column;
+    gap: var(--to-gutter);
+    min-height: 0;
+  }
+  .deck-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 10.5rem;
+    gap: var(--to-gutter);
+    align-items: start;
+    min-width: 0;
+  }
+  /* The slide, its speaker notes under it, one width: the window's, but the slide never taller than what can be
+     seen under the bar (as wide as that allows, centred in the room beside the rail). */
+  .deck-stage {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+    min-width: 0;
+    width: 100%;
+    max-width: max(20rem, (var(--to-col-h) - 4.25rem) * var(--deck-w) / var(--deck-h));
+    margin-inline: auto;
+    /* Every length on the canvas in cqw (its margin --deck-m, the layout's type) is a part of the slide's width: the
+       stage is the container, as wide as the canvas, so 1cqw is a hundredth of the slide as the layout counts it. */
+    container-type: inline-size;
+  }
+  .deck-stage[data-format='zine'],
+  .deck-stage[data-format='comic'],
+  .deck-stage[data-format='badges'] {
+    max-width: 32.5rem;
+  }
+  .deck-stage[data-format='booklet'],
+  .deck-stage[data-format='brochure'],
+  .deck-stage[data-format='poster'] {
+    max-width: 35rem;
+  }
+
+  /* ---- the canvas: the slide in its own shape, white paper in either theme, the deck's theme over it ---- */
+  .deck-canvas {
+    --deck-paper: var(--to-paper);
+    --deck-ink: var(--to-paper-ink);
+    --deck-muted: var(--to-paper-muted);
+    --deck-accent: var(--to-paper-accent);
+    --deck-m: 6.67cqw;
+    position: relative;
+    width: 100%;
+    aspect-ratio: var(--deck-w) / var(--deck-h);
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    /* The layout's margins: 64 of 960 round the words, 40 of 960 under them (the foot's room, footnotes and all). */
+    padding: var(--deck-m) var(--deck-m) 4.17cqw;
+    color: var(--deck-ink);
+    background: var(--deck-paper) var(--deck-deco, none) center / 100% 100% no-repeat;
+    border: 1px solid var(--to-border);
+    border-radius: var(--to-radius);
+    box-shadow: var(--to-shadow);
+    font-family: var(--to-font);
+    overflow: hidden;
+    /* A double tap edits, it never zooms the page. */
+    touch-action: manipulation;
+  }
+  .deck-canvas .tx {
+    font-size: var(--deck-body);
+    line-height: 1.3;
+    color: inherit;
+    caret-color: var(--deck-accent);
+  }
+  .deck-canvas .tx.blank::before {
+    color: var(--deck-muted);
+    opacity: 0.7;
+  }
+  .deck-head {
+    display: flex;
+    align-items: center;
+    gap: 2.5cqw;
+    min-height: 7.5cqw;
+    margin-bottom: 2.9cqw;
+  }
+  .deck-title {
+    flex: 1;
+    min-width: 0;
+  }
+  .deck-title .tx,
+  .deck-title .tx h1,
+  .deck-title .tx h2,
+  .deck-title .tx h3,
+  .deck-title .tx h4,
+  .deck-title .tx p,
+  .deck-title .tx li {
+    font-size: var(--deck-title);
+    font-weight: 600;
+    line-height: 1.15;
+    margin: 0;
+  }
+  .deck-title .tx li::before {
+    content: none;
+  }
+  /* The words take the room under the headline. The canvas keeps the slide's shape at every width and its type is the
+     layout's, scaled with it: on a phone the words are small, as a slide held at arm's length is, never cut and never
+     a taller page (Paul, 2026-10-13: "the same aspect ratio forever and shrink the text when in edit mode"). */
+  .deck-words-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4.2cqw;
+    flex: 1;
+    min-height: auto;
+  }
+  .lay-2 .deck-words-row,
+  .lay-i .deck-words-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .deck-canvas .tx > *,
+  .deck-canvas .tx-list > * {
+    margin: 0 0 0.45em;
+  }
+  /* Nothing under the last line: the words end where the layout's do (the app's rules outrank the kit's last-child reset). */
+  .deck-canvas .tx > :last-child,
+  .deck-canvas .tx-list > :last-child {
+    margin-bottom: 0;
+  }
+  .deck-canvas .tx li {
+    padding-left: calc(1.1em + var(--d, 0) * 1.4em);
+  }
+  .deck-canvas .tx li::before {
+    color: var(--deck-accent);
+  }
+  .deck-canvas .tx a {
+    color: var(--deck-accent);
+  }
+  .deck-canvas .tx blockquote {
+    color: var(--deck-muted);
+    border-color: var(--deck-muted);
+  }
+  /* A title slide: everything centred; the words under the title are the subtitle, in the muted ink. */
+  .lay-t .deck-head {
+    flex-direction: column;
+    justify-content: center;
+    margin-top: auto;
+  }
+  .lay-t .deck-title .tx {
+    text-align: center;
+  }
+  .lay-t .deck-words-row {
+    flex: 0 0 auto;
+    margin-bottom: auto;
+  }
+  .lay-t .deck-words .tx {
+    text-align: center;
+    color: var(--deck-muted);
+  }
+  .lay-t .deck-words .tx li {
+    padding-left: 0;
+  }
+  .lay-t .deck-words .tx li::before {
+    content: none;
+  }
+  /* Prose on a printed page: paragraphs, from the top, at reading size. */
+  .deck-canvas.prose .tx {
+    line-height: 1.4;
+  }
+  /* The slide's icon: a button that is the icon, or a quiet place for one. */
+  .deck-pick {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 7.5cqw;
+    height: 7.5cqw;
+    padding: 0;
+    color: var(--deck-icon);
+    background: transparent;
+    border: 1px dashed transparent;
+    border-radius: var(--to-radius-sm);
+    cursor: pointer;
+    position: relative;
+  }
+  @media (pointer: coarse) {
+    /* 44px to a finger, whatever size the icon is drawn. */
+    .deck-pick::before {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: max(100%, 2.75rem);
+      height: max(100%, 2.75rem);
+      transform: translate(-50%, -50%);
+    }
+  }
+  .deck-pick svg {
+    width: 100%;
+    height: 100%;
+  }
+  .deck-pick.empty {
+    color: var(--deck-muted);
+    border-color: color-mix(in srgb, var(--deck-muted) 40%, transparent);
+    opacity: 0.6;
+  }
+  .deck-pick:hover,
+  .deck-pick:focus-visible,
+  .deck-big:hover,
+  .deck-big:focus-visible {
+    opacity: 1;
+    border-color: var(--deck-accent);
+    outline: none;
+  }
+  .lay-t .deck-pick {
+    width: 10cqw;
+    height: 10cqw;
+  }
+  .deck-big {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    color: var(--deck-icon);
+    background: transparent;
+    border: 1px dashed transparent;
+    border-radius: var(--to-radius);
+    cursor: pointer;
+    font: inherit;
+  }
+  .deck-big svg {
+    width: 60%;
+    height: auto;
+  }
+  .deck-big.empty {
+    color: var(--deck-muted);
+    border-color: color-mix(in srgb, var(--deck-muted) 40%, transparent);
+    font-size: 1rem;
+  }
+  /* A document shown on the slide: its picture, a card to tap for its menu. */
+  .deck-sub {
+    flex: 1;
+    min-height: 0;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    border: 1px solid var(--to-border);
+    border-radius: var(--to-radius);
+    cursor: pointer;
+    overflow: hidden;
+  }
+  .deck-sub:focus-visible {
+    outline: 0.125rem solid var(--to-accent);
+  }
+  .deck-sub svg {
+    display: block;
+    max-width: 100%;
+    max-height: 100%;
+  }
+  /* Footnotes at the slide's foot, numbered as their marks are, each typed where it is drawn (kit/draw/notes.ts), at the
+     layout's 15 of 960: every length on the canvas scales with it, so a phone's small slide keeps its shape. */
+  .deck-fn {
+    margin: auto 0 0;
+    padding: 0.6em 0 0;
+    font-size: 1.56cqw;
+    color: var(--deck-muted);
+    border-top: 1px solid color-mix(in srgb, var(--deck-muted) 40%, transparent);
+  }
+  .deck-fn li {
+    margin: 0.15em 0;
+  }
+  .deck-canvas .deck-fn .tx {
+    font-size: 1em;
+    line-height: 1.3;
+    caret-color: var(--deck-accent);
+  }
+  .deck-num {
+    position: absolute;
+    right: 2cqw;
+    bottom: 1.4cqw;
+    font-size: 1.56cqw;
+    color: var(--deck-muted);
+    pointer-events: none;
+  }
+  /* The menu a document on the slide opens has no button of its own in the bar. */
+  .deck-submenu > button {
+    display: none;
+  }
+  .lay-t .deck-words .tx.blank::before {
+    text-align: center;
+  }
+  /* The speaker notes are labelled as such (Paul, 2026-10-10) and have room round them, as the slide's words do; the hint sits where the words will. */
+  .deck-notes-head {
+    margin: 0.75rem 0 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--to-ink-3);
+  }
+  .deck-notes .tx {
+    min-height: 2.4em;
+    padding: 0.75rem;
+    font-size: 1rem;
+    color: var(--to-ink-2);
+    background: var(--to-surface);
+    border: 1px dashed var(--to-border);
+    border-radius: var(--to-radius);
+  }
+  .deck-notes .tx blockquote {
+    margin: 0;
+    padding-left: 0;
+    border: 0;
+    color: inherit;
+    font-style: normal;
+  }
+
+  /* ---- the rail ---- */
+  .deck-rail {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: calc(var(--to-col-h) - 4rem);
+    overflow: auto;
+    padding: 0.125rem;
+    touch-action: manipulation;
+  }
+  .deck-rail:focus {
+    outline: none;
+  }
+  /* A thumbnail and its grip: the grip alone takes a drag (kit/text/rows.ts), so a finger on the rail still scrolls it. */
+  .deck-slot {
+    position: relative;
+    flex: none;
+  }
+  .deck-slot.dragging {
+    opacity: 0.5;
+  }
+  .deck-slot.ranged .deck-thumb {
+    border-color: var(--to-accent);
+    box-shadow: 0 0 0 0.125rem color-mix(in srgb, var(--to-accent) 45%, transparent);
+  }
+  .deck-grip {
+    position: absolute;
+    right: 0.25rem;
+    top: 0.25rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.375rem;
+    height: 1.375rem;
+    padding: 0;
+    color: var(--to-ink-3);
+    background: var(--to-surface);
+    border: 1px solid var(--to-border);
+    border-radius: 0.1875rem;
+    cursor: grab;
+    opacity: 0;
+  }
+  .deck-slot:hover .deck-grip,
+  .deck-slot.ranged .deck-grip,
+  .deck-thumb:focus-visible + .deck-grip {
+    opacity: 1;
+  }
+  @media (pointer: coarse) {
+    .deck-grip {
+      opacity: 1;
+    }
+  }
+  .deck-thumb {
+    position: relative;
+    display: block;
+    width: 100%;
+    padding: 0;
+    background: var(--to-paper);
+    border: 0.125rem solid var(--to-border);
+    border-radius: 0.25rem;
+    cursor: pointer;
+    overflow: hidden;
+    flex: none;
+  }
+  .deck-thumb svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  .deck-thumb .n {
+    position: absolute;
+    left: 0.25rem;
+    top: 0.125rem;
+    font-size: 0.6875rem;
+    color: var(--to-ink-3);
+    background: var(--to-surface);
+    padding: 0 0.25rem;
+    border-radius: 0.1875rem;
+  }
+  .deck-thumb[aria-current='true'] {
+    border-color: var(--to-accent);
+  }
+  .deck-thumb:focus-visible {
+    outline: 0.125rem solid var(--to-accent);
+    outline-offset: 1px;
+  }
+  .deck-end {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.625rem 0.375rem;
+    font-size: 0.6875rem;
+    text-align: center;
+    color: var(--to-ink-3);
+    border: 0.125rem dashed var(--to-border);
+    border-radius: 0.25rem;
+  }
+
+  /* ---- the sheets to print ---- */
+  .deck-sheets {
+    display: flex;
+    flex-direction: column;
+    gap: var(--to-gutter);
+    align-items: center;
+  }
+  .deck-sheet {
+    width: 100%;
+    max-width: 51rem;
+    border: 1px solid var(--to-border);
+    border-radius: 0.1875rem;
+    box-shadow: var(--to-shadow);
+    background: #fff;
+  }
+  .deck-sheet svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  /* ---- the show: the slide is one picture, as large as the screen allows ---- */
+  /* The slide centred in one cell, the one being left under it. Two fingers zoom it (editor.ts pinchZoom):
+     --deck-zoom is its width over its whole-screen width, 1 to 4, and the show scrolls to the rest; a slide larger
+     than the show starts at its edge (auto margins take no room they lack), so all of it can be reached. */
+  .deck-show {
+    user-select: none;
+    /* Sideways, a finger swipes to the next slide (editor.ts); up and down it scrolls what is taller than the screen. */
+    touch-action: pan-y;
+    position: fixed;
+    inset: 0;
+    background: #111;
+    z-index: 100;
+    display: grid;
+    grid-template: 100% / 100%;
+    cursor: pointer;
+    overflow: auto;
+  }
+  .deck-show[data-zoomed] {
+    touch-action: pan-x pan-y;
+  }
+  .deck-show .frame,
+  .deck-show .was {
+    position: relative;
+    grid-area: 1 / 1;
+    margin: auto;
+    width: calc(min(100vw, 160dvh) * var(--deck-zoom, 1));
+    aspect-ratio: 16 / 10;
+    background: #fff;
+  }
+  .deck-show .frame > svg,
+  .deck-show .was svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  /* The show's controls are nav (kit.css's list): a finger's size up to 120% and no further, so at 200% they stay on the
+     screen, wrapping before they would leave it. Light icons on the pill's dark backing in either theme: the buttons
+     themselves are clear (a white button had drawn white on white in the light theme). */
+  .deck-show .ctl {
+    position: fixed;
+    right: 0.75rem;
+    top: 0.75rem;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    max-width: calc(100vw - 1.5rem);
+    gap: 0.25em;
+    padding: 0.25em;
+    background: rgb(0 0 0 / 55%);
+    border-radius: var(--to-radius-pill);
+  }
+  .deck-show .ctl .to-btn {
+    color: #fafafa;
+    background: transparent;
+    border-color: transparent;
+  }
+  .deck-show .ctl .to-btn:hover,
+  .deck-show .ctl .to-btn[aria-pressed='true'] {
+    background: rgb(255 255 255 / 18%);
+  }
+  .deck-show .pos {
+    position: fixed;
+    left: 0.875rem;
+    bottom: 0.75rem;
+    font-size: 0.75rem;
+    color: #a1a1aa;
+  }
+  .deck-show .notes {
+    position: fixed;
+    left: 0.875rem;
+    right: 0.875rem;
+    bottom: 2.25rem;
+    max-height: 30dvh;
+    overflow: auto;
+    padding: 0.75rem;
+    font-size: 0.9375rem;
+    line-height: 1.4;
+    color: #fafafa;
+    background: rgb(0 0 0 / 70%);
+    border-radius: var(--to-radius);
+    cursor: auto;
+  }
+  .deck-show .notes p {
+    margin: 0.3em 0;
+  }
+  /* A short screen (a phone on its side): the controls small and off the slide's corner, the notes a strip at the foot. */
+  @media (max-height: 500px) {
+    .deck-show .ctl {
+      top: auto;
+      bottom: 0.5rem;
+      right: 0.5rem;
+      padding: 0.125em;
+    }
+    .deck-show .ctl .to-btn {
+      width: 2rem;
+      height: 2rem;
+      min-width: 0;
+      min-height: 0;
+    }
+    .deck-show .notes {
+      max-height: 40dvh;
+      bottom: 0.5rem;
+      right: 9rem;
+      font-size: 0.8125rem;
+      padding: 0.5rem;
+    }
+  }
+  .deck-show .notes small {
+    color: #a1a1aa;
+  }
+  /* A new slide arrives over the one being left (.was), which stays put underneath: no flash of the
+     background between them. Each transition is its own motion, slow enough to follow. */
+  .deck-show .frame.tr-fade {
+    animation: deck-fade 0.6s ease-in-out both;
+  }
+  .deck-show .frame.tr-slide {
+    animation: deck-slide-in 0.55s cubic-bezier(0.22, 0.8, 0.3, 1) both;
+  }
+  .deck-show .frame.tr-slide.back {
+    animation-name: deck-slide-back;
+  }
+  .deck-show .was.tr-slide {
+    animation: deck-slide-out 0.55s cubic-bezier(0.22, 0.8, 0.3, 1) both;
+  }
+  .deck-show .was.tr-slide.back {
+    animation-name: deck-slide-out-back;
+  }
+  .deck-show .frame.tr-zoom {
+    animation: deck-zoom-in 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+  .deck-show .was.tr-zoom {
+    animation: deck-zoom-out 0.6s ease-in both;
+  }
+  .deck-show .was.tr-cut {
+    display: none;
+  }
+  @keyframes deck-fade {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes deck-slide-in {
+    from {
+      transform: translateX(100%);
+    }
+  }
+  @keyframes deck-slide-back {
+    from {
+      transform: translateX(-100%);
+    }
+  }
+  @keyframes deck-slide-out {
+    to {
+      transform: translateX(-30%);
+      opacity: 0.4;
+    }
+  }
+  @keyframes deck-slide-out-back {
+    to {
+      transform: translateX(30%);
+      opacity: 0.4;
+    }
+  }
+  @keyframes deck-zoom-in {
+    from {
+      transform: scale(0.6);
+      opacity: 0;
+    }
+  }
+  @keyframes deck-zoom-out {
+    to {
+      transform: scale(1.25);
+      opacity: 0;
+    }
+  }
+
+  /* ---- phones: the rail runs under the slide, a row that scrolls sideways; while typing, it is the bar's upper row ---- */
+  @media (max-width: 760px) {
+    .deck-body {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .deck-rail {
+      flex-direction: row;
+      max-height: none;
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding-bottom: 0.25rem;
+    }
+    /* While a box is typed in (to-chrome[editing]) the rail leaves the flow for the column's foot, right above the bar
+       and placed as the bar is (kit.css: by the column, over the scrolling main), so with the keyboard up the whole
+       slide stands above it and every other slide is a tap away, with no room wasted under the slide (Paul, 2026-10-13:
+       "a quick way to jump to other slides without leaving edit mode… put the deck preview above the edit bar"; "get rid
+       of all the space below the slides and make sure we can see the whole slide above when we switch into edit"). */
+    to-chrome[editing] .to-column > main > to-deck-editor .deck-rail {
+      position: absolute;
+      inset-inline: 0;
+      bottom: var(--to-bar-h);
+      z-index: 2;
+      padding: 0.25rem var(--to-gutter) 0.125rem;
+      background: var(--to-bg);
+      border-top: 1px solid var(--to-border);
+    }
+    .deck-slot {
+      width: 6rem;
+    }
+    .deck-end {
+      flex: none;
+      width: 6rem;
+      box-sizing: border-box;
+    }
+  }
+}

@@ -1,0 +1,12 @@
+---
+app: trip
+title: A Saturday across Brooklyn
+units: miles
+---
+Place | Lat:number | Lon:number | Note
+--- | --- | --- | ---
+Brooklyn Bridge Park | 40.7024 | -73.9961 | Walk the piers first, before the crowds
+Court Street | 40.6861 | -73.9924 | The coffee urn is behind the church
+Prospect Park | 40.6602 | -73.9690 | Long Meadow, then the boathouse
+Sunset Park | 40.6487 | -74.0027 | The view from the top at sunset, as advertised
+Coney Island | 40.5755 | -73.9707 | A hot dog and the last train home

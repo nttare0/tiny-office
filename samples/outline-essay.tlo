@@ -1,0 +1,19 @@
+---
+app: outline
+title: An essay on small software
+---
+- Small software
+  - The claim
+    - A program can be finished
+    - Finished programs are rare because nobody is paid to stop
+  - Three examples
+    - The pocket calculator
+    - The text editor that has not changed since 1991
+    - A spreadsheet of one table
+  - The objection
+    - Needs change, so programs must
+    - Answer: needs change less than vendors say
+  - What it would take
+    - A format a person can read
+    - No account to keep alive
+    - A link that is the whole thing

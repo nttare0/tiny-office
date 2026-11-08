@@ -1,0 +1,9 @@
+---
+app: calc
+title: A curve and its slope
+mode: graph
+---
+x from -6 to 6
+sin(x)
+cos(x)
+x^2 / 10

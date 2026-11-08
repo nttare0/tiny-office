@@ -1,0 +1,15 @@
+---
+app: sheet
+title: Saving for the oven
+chart: line
+---
+Month | Saved:money
+--- | ---
+Jan | 1500
+Feb | 3100
+Mar | 4400
+Apr | 6200
+May | 7900
+Jun | 9800
+Jul | 11200
+Aug | 13500

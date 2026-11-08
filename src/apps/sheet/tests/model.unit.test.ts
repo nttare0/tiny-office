@@ -1,0 +1,396 @@
+// The sheet as a view of the document, and each command as the ops it produces: under node, no DOM.
+import { expect, test } from 'vitest';
+import { createHash } from 'node:crypto';
+import { pageSvg } from '../../../kit/draw/draw.ts';
+import { applyAll, parse, tableAt, write, type Doc } from '../../../doc/index.ts';
+import { chartData, suggestChart } from '../../../kit/draw/chart.ts';
+import { toExcelFormula } from '../../../kit/file/xlsx.ts';
+import { addColumn, deleteRows, insertRows, moveRows, putRect, reorderRefs, rowsMoved, readSheet, removable, removeColumn, rename, setCell, setChart, setLock, setType, sortBy } from '../model.ts';
+import { chartOf, chartOfSheet, gridPage, sheetPages, sheetToCsv, tablePage } from '../view.ts';
+import { templates } from '../templates.ts';
+import def from '../def.ts';
+import { fillCells, clearCells, sortRows } from '../../../doc/index.ts';
+
+const SHEET = 'Item | Cost:money\n--- | ---\nRent | 1200\nFood | 450\nTotal | =SUM(B1:B2)\n';
+const MODEL =
+  '---\nchart: sankey\nlock: C1:C2\n---\nFrom | To | Amount:number | Assumption:name | Value:number\n--- | --- | --- | --- | ---\nVisitors | Signups | =visitors*rate/100 | Visitors | 1000\nVisitors | Bounced | =visitors-C1 | Rate | 10\n{big=Visitors}\n';
+
+/** A document edited: the ops applied, the text written. */
+const after = (text: string, ops: (doc: Doc) => import('../../../doc/index.ts').Op[] | null) => {
+  const doc = parse(text);
+  return write(applyAll(doc, ops(doc) ?? []));
+};
+const colA = (text: string) => tableAt(parse(text), 0)!.rows.map((r) => r[0]);
+
+test('read: three columns at the least, values worked out, the headline by name', () => {
+  const v = readSheet(parse(SHEET));
+  expect(v.at).toBe(0);
+  expect(v.cols.map((c) => c.name)).toEqual(['Item', 'Cost', 'ColC']);
+  expect(v.table.cols).toHaveLength(2);
+  expect(v.values[2][1]).toBe(1650);
+  expect(v.used).toEqual({ rows: 3, cols: 2 });
+  expect(v.big).toBeNull();
+  const m = readSheet(parse(MODEL));
+  expect(m.values[0][2]).toBe(100);
+  expect(m.table.chart).toBe('sankey');
+  expect(m.big).toEqual({ label: 'Visitors', value: '1,000' });
+  // By reference, the headline is called by its column and the words its row starts with; by its letter where the column has no name.
+  expect(readSheet(parse('Week | Raised:money\n--- | ---\nOct 5 | 900\nOct 12 | 1400\n{big=B2}\n')).big).toEqual({ label: 'Raised, Oct 12', value: '$1,400.00' });
+  expect(readSheet(parse('ColA | ColB\n--- | ---\nx | 1\n{big=B1}\n')).big).toEqual({ label: 'B1', value: '1' });
+  expect(readSheet(parse('')).at).toBe(-1);
+  expect(readSheet(parse('')).cols).toHaveLength(3);
+});
+
+test('a cell typed into a blank document makes the table: three columns named for their letters, nothing more than is needed', () => {
+  expect(after('', (d) => setCell(d, 0, 2, 'four'))).toBe('ColA | ColB:number | ColC\n--- | --- | ---\n| |  | four\n');
+  // Past the third column, columns are added out to the one typed into.
+  expect(after('', (d) => setCell(d, 1, 3, 'x'))).toBe('ColA | ColB:number | ColC | ColD\n--- | --- | --- | ---\n| |  |  |\n| |  |  | x\n');
+  // Clearing the last cell takes the trailing rows with it; clearing a cell past the rows held writes nothing.
+  expect(after(SHEET, (d) => setCell(d, 2, 0, ''))).toBe('Item | Cost:money\n--- | ---\nRent | 1200\nFood | 450\n| | =SUM(B1:B2)\n');
+  expect(setCell(parse(SHEET), 9, 0, '')).toEqual([]);
+  expect(setCell(parse(SHEET), 0, 0, 'Rent')).toEqual([]);
+  // The op is one `cells` rectangle (after any rows it needs).
+  const ops = setCell(parse(SHEET), 3, 1, '=B3*2');
+  expect(ops.map((o) => o.op)).toEqual(['rows', 'cells']);
+});
+
+test('rows put in and taken out: formulas follow; the names over the columns are no row', () => {
+  const put = after(SHEET, (d) => insertRows(d, 1, 1));
+  expect(colA(put)).toEqual(['Rent', '', 'Food', 'Total']);
+  expect(tableAt(parse(put), 0)!.rows[3][1]).toBe('=SUM(B1:B3)');
+  expect(put.startsWith('Item | Cost:money\n')).toBe(true);
+  const gone = after(put, (d) => deleteRows(d, 0, 0));
+  expect(colA(gone)).toEqual(['', 'Food', 'Total']);
+  expect(tableAt(parse(gone), 0)!.rows[2][1]).toBe('=SUM(B1:B2)');
+  // Past the rows held there is nothing to move or take out.
+  expect(insertRows(parse(SHEET), 8, 2)).toEqual([]);
+  expect(deleteRows(parse(SHEET), 8, 9)).toEqual([]);
+  // Taking out the last row trims what is left blank above it too.
+  expect(after('a | b\n--- | ---\n1 | 2\n| |\n3 | 4\n', (d) => deleteRows(d, 2, 2))).toBe('a | b\n--- | ---\n1 | 2\n');
+});
+
+test('columns: added after any, removed whatever they hold while the table keeps one; letter names follow their place', () => {
+  const four = after('', (d) => setCell(d, 0, 3, 'four'));
+  const a1 = after(four, (d) => setCell(d, 0, 0, '=D1'));
+  const five = after(a1, (d) => addColumn(d, 2));
+  const t = tableAt(parse(five), 0)!;
+  expect(t.cols.map((c) => c.name)).toEqual(['ColA', 'ColB', 'ColC', 'ColD', 'ColE']);
+  expect(t.rows[0]).toEqual(['=E1', '', '', '', 'four']);
+  const v = readSheet(parse(five));
+  expect(removable(v, 0)).toBe(true);
+  expect(removable(v, 2)).toBe(true);
+  const back = after(five, (d) => removeColumn(d, readSheet(d), 2));
+  expect(tableAt(parse(back), 0)!.cols.map((c) => c.name)).toEqual(['ColA', 'ColB', 'ColC', 'ColD']);
+  expect(tableAt(parse(back), 0)!.rows[0]).toEqual(['=D1', '', '', 'four']);
+  // A column with something in it goes too, cells and all: references into it are #REF, the rest follow it left.
+  expect(tableAt(parse(after(five, (d) => removeColumn(d, readSheet(d), 4))), 0)!.rows).toEqual([['=#REF', '', '', '']]);
+  // The table keeps one column; a column drawn past its edge (the sheet is three wide at the least) is nothing to take out.
+  const one = readSheet(parse('Item\n---\nRent\n'));
+  expect(removable(one, 0)).toBe(false);
+  expect(removable(one, 2)).toBe(false);
+  expect(removable(readSheet(parse(SHEET)), 2)).toBe(false);
+  // A locked column moves with its neighbours.
+  const locked = '---\nlock: C1\n---\nItem | Gap | Cost:money | Note\n--- | --- | --- | ---\nRent |  | =1200 | paid\n';
+  const lv = readSheet(parse(locked));
+  expect(removable(lv, 1)).toBe(true);
+  expect(removable(lv, 0)).toBe(true);
+  const out = after(locked, (d) => removeColumn(d, lv, 1));
+  expect(out).toContain('lock: B1');
+  expect(tableAt(parse(out), 0)!.cols.map((c) => `${c.name}:${c.type}`)).toEqual(['Item:text', 'Cost:money', 'Note:text']);
+});
+
+test('a column goes by what it holds until renamed; renamed, it keeps its name whatever it holds', () => {
+  const dated = after(SHEET, (d) => setType(d, 2, 'date'));
+  expect(dated.startsWith('Item | Cost:money | Date:date\n')).toBe(true);
+  const named = after(dated, (d) => rename(d, 2, 'Paid on'));
+  expect(named.startsWith('Item | Cost:money | Paid on:date\n')).toBe(true);
+  const text = after(named, (d) => setType(d, 2, 'text'));
+  expect(text.startsWith('Item | Cost:money | Paid on\n')).toBe(true);
+  // Cleared, the name goes back to its default: the letter for text, the type's name otherwise.
+  expect(after(text, (d) => rename(d, 2, '')).startsWith('Item | Cost:money | ColC\n')).toBe(true);
+  expect(after(named, (d) => rename(d, 2, ' ')).startsWith('Item | Cost:money | Date:date\n')).toBe(true);
+  // A second date column is "Date D".
+  expect(after(dated, (d) => setType(d, 3, 'date')).startsWith('Item | Cost:money | Date:date | Date D:date\n')).toBe(true);
+});
+
+test('sort, fill, clear and paste write rectangles; a sort moves whole rows through the lock; the chart and the lock are head fields', () => {
+  const sorted = after(SHEET, (d) => sortBy(d, 1, true));
+  expect(colA(sorted)).toEqual(['Total', 'Rent', 'Food']);
+  const m = after(MODEL, (d) => sortBy(d, 4, false));
+  expect(tableAt(parse(m), 0)!.rows.map((r) => r[3])).toEqual(['Rate', 'Visitors']);
+  // A fill down of the first row of a block.
+  const doc = parse(SHEET);
+  const filled = write(applyAll(doc, putRect(doc, fillCells(tableAt(doc, 0)!, { r0: 2, c0: 1, r1: 2, c1: 1 }, { r0: 2, c0: 1, r1: 4, c1: 1 }))));
+  expect(tableAt(parse(filled), 0)!.rows.map((r) => r[1])).toEqual(['1200', '450', '=SUM(B1:B2)', '=SUM(B2:B3)', '=SUM(B3:B4)']);
+  // A clear of the last rows trims them away.
+  expect(write(applyAll(doc, putRect(doc, clearCells({ r0: 1, c0: 0, r1: 2, c1: 1 }))))).toBe('Item | Cost:money\n--- | ---\nRent | 1200\n');
+  // A locked cell is left as it is by an ordinary write, and sortRows' rectangle is forced through.
+  const model = parse(MODEL);
+  expect(write(applyAll(model, putRect(model, { r: 0, c: 2, values: [['5']] })))).toContain('=visitors*rate/100');
+  expect(write(applyAll(model, putRect(model, sortRows(tableAt(model, 0)!, 4), true)))).toContain('Rate | 10');
+  // A chart put in goes above the table; another kind keeps the place of the one it replaces; none takes the place away.
+  expect(after(SHEET, (d) => setChart(d, 'bar'))).toBe('---\nchart: bar\nchart-at: top\n---\n' + SHEET);
+  expect(setChart(parse(SHEET), 'bar')).toEqual([
+    { op: 'head', key: 'chart', value: 'bar' },
+    { op: 'head', key: 'chart-at', value: 'top' },
+  ]);
+  const above = after(SHEET, (d) => setChart(d, 'bar'));
+  expect(after(above, (d) => setChart(d, 'pie'))).toBe('---\nchart: pie\nchart-at: top\n---\n' + SHEET);
+  expect(after(above, (d) => setChart(d, ''))).toBe(SHEET);
+  expect(after('---\nchart: line\n---\n' + SHEET, (d) => setChart(d, 'bar'))).toBe('---\nchart: bar\n---\n' + SHEET);
+  expect(setLock(parse(SHEET), { r0: 2, c0: 1, r1: 2, c1: 1 }, true)).toEqual([{ op: 'head', key: 'lock', value: 'B3' }]);
+  // A table that carries its chart as an attribute keeps it there (the kernel's rule: tableAt reads it from where it is).
+  const attributed = parse('A | B:number\n--- | ---\nx | 1\n{chart=bar}\n');
+  expect(write(applyAll(attributed, setChart(attributed, 'pie')))).toBe('A | B:number\n--- | ---\nx | 1\n{chart=pie}\n');
+  const bare = parse('Words\n\nA | B:number\n--- | ---\nx | 1\n{big=B1}\n');
+  expect(write(applyAll(bare, setChart(bare, 'bar')))).toBe('---\nchart: bar\nchart-at: top\n---\nWords\n\nA | B:number\n--- | ---\nx | 1\n{big=B1}\n');
+  expect(after(MODEL, (d) => setChart(d, ''))).not.toContain('chart:');
+  expect(after(SHEET, (d) => setLock(d, { r0: 2, c0: 1, r1: 2, c1: 1 }, true))).toBe('---\nlock: B3\n---\n' + SHEET);
+  expect(after(MODEL, (d) => setLock(d, { r0: 0, c0: 2, r1: 0, c1: 2 }, false))).not.toContain('lock:');
+  // On a blank document a chart makes the table first.
+  expect(after('', (d) => setChart(d, 'pie'))).toBe('---\nchart: pie\nchart-at: top\n---\nColA | ColB:number | ColC\n--- | --- | ---\n');
+});
+
+test('every template is a real document that round-trips byte for byte, and the headline is drawn', () => {
+  const all = templates();
+  // The everyday ones first (Blank is the app's own page, before them all), then work and groups, the calculators, the models.
+  expect(all.map((x) => x.id)).toEqual([
+    'budget',
+    'household',
+    'expenses',
+    'savings',
+    'habits',
+    'reading',
+    'workout',
+    'training',
+    'timesheet',
+    'split',
+    'tracker',
+    'schedule',
+    'grades',
+    'members',
+    'seating',
+    'poll',
+    'fundraising',
+    'invoices',
+    'inventory',
+    'pettycash',
+    'rates',
+    'mortgage',
+    'loan',
+    'converter',
+    'bracket',
+    'months',
+    'subscription',
+    'cafe',
+    'freelancer',
+    'fund',
+  ]);
+  expect(new Set(all.map((x) => x.name)).size).toBe(all.length);
+  for (const tpl of all) {
+    expect(write(parse(tpl.doc)), tpl.id).toBe(tpl.doc);
+    expect(tpl.doc.endsWith('\n')).toBe(true);
+    // A real document: its own title, a blurb, no filler.
+    expect(def.title(tpl.doc), tpl.id).not.toBe('');
+    expect(tpl.blurb.length, tpl.id).toBeGreaterThan(20);
+    expect(tpl.doc, tpl.id).not.toMatch(/lorem|ipsum|TODO|TBD|xxx/i);
+    // Dates are this year's and next.
+    for (const [y] of tpl.doc.matchAll(/\b20\d\d(?=-\d\d-\d\d)/g)) expect(['2026', '2027'], tpl.id).toContain(y);
+    const v = readSheet(parse(tpl.doc));
+    expect(v.used.rows, tpl.id).toBeGreaterThan(2);
+    // Drawn small for the templates list: its chart, or the grid with the words in it.
+    const small = def.view(tpl.doc, { small: true });
+    expect(small, tpl.id).toHaveLength(1);
+    expect(small[0].svg.length, tpl.id).toBeGreaterThan(500);
+    // No cell of a template is an error.
+    expect(
+      v.values.flat().filter((x) => typeof x === 'string' && x.startsWith('#')),
+      tpl.id,
+    ).toEqual([]);
+  }
+  for (const id of ['subscription', 'cafe', 'freelancer', 'fund']) {
+    const v = readSheet(parse(all.find((x) => x.id === id)!.doc));
+    expect(v.big, id).not.toBeNull();
+    expect(v.big!.value, id).not.toBe('');
+    expect(v.table.chart).toBe('sankey');
+    expect(tablePage(v).svg).toContain(v.big!.value);
+    expect(sheetPages(all.find((x) => x.id === id)!.doc)).toHaveLength(2);
+  }
+  // The working of a few, as a reader would check them by hand.
+  const value = (id: string, r: number, c: number) => readSheet(parse(all.find((x) => x.id === id)!.doc)).values[r][c];
+  expect(value('household', 11, 7)).toBe(5861);
+  expect(value('split', 4, 5)).toBeCloseTo(517.65);
+  expect(value('split', 2, 6)).toBeCloseTo(-954.95);
+  expect(value('grades', 0, 7)).toBe('A');
+  expect(value('inventory', 1, 7)).toBe('Order now');
+  expect(value('bracket', 6, 6)).toBe('Old Town Athletic');
+  expect(value('converter', 4, 2)).toBe(176.7);
+  expect(value('pettycash', 8, 5)).toBeCloseTo(147.16);
+  expect(readSheet(parse(all.find((x) => x.id === 'fundraising')!.doc)).big).toEqual({ label: 'Raised so far, Oct 26', value: '$21,730.00' });
+  expect(readSheet(parse(all.find((x) => x.id === 'savings')!.doc)).big).toEqual({ label: 'Still to go', value: '$2,300.00' });
+  for (const id of ['poll', 'fundraising']) expect(sheetPages(all.find((x) => x.id === id)!.doc)[0].svg, id).toBe(chartOf(readSheet(parse(all.find((x) => x.id === id)!.doc)))!.svg);
+  // On a card the chart comes first whether it is drawn above or below the table (Paul, 2026-10-13: "Put charts on the card"); a sheet with none shows its table.
+  const below = '---\nchart: bar\n---\nMonth | Sales:number\n--- | ---\nJan | 10\nFeb | 20\n';
+  expect(sheetPages(below)[0].svg).toBe(tablePage(readSheet(parse(below))).svg);
+  expect(sheetPages(below, false, false, true)).toHaveLength(1);
+  expect(sheetPages(below, false, false, true)[0].svg).toBe(chartOf(readSheet(parse(below)))!.svg);
+  expect(def.view(below, { still: true, card: true })[0].svg).toBe(chartOf(readSheet(parse(below)))!.svg);
+  expect(def.view(SHEET, { still: true, card: true })[0].svg).toBe(tablePage(readSheet(parse(SHEET))).svg);
+  expect(def.blank()).toBe('');
+  expect(def.title('---\ntitle: Rent\n---\n' + SHEET)).toBe('Rent');
+  expect(def.retitle(SHEET, 'Rent')).toBe('---\ntitle: Rent\n---\n' + SHEET);
+  expect(def.retitle('---\ntitle: Rent\n---\n' + SHEET, '')).toBe(SHEET);
+});
+
+test('the pages: the table with the names shaded and numbers right; small, the grid; a chart when asked', () => {
+  const v = readSheet(parse(SHEET));
+  const page = tablePage(v);
+  expect(page.svg).toContain('Total');
+  expect(page.svg).toContain('$1,650.00');
+  expect(page.alt).toContain('Rent, $1,200.00');
+  const grid = gridPage(v);
+  expect(grid.svg).toContain('>A<');
+  expect(grid.svg).toContain('>5<');
+  expect(sheetPages('', true)[0].alt).toBe('Empty sheet');
+  expect(def.view(SHEET)).toHaveLength(1);
+  expect(def.view('---\nchart: bar\n---\n' + SHEET)).toHaveLength(2);
+  expect(chartOf(readSheet(parse('---\nchart: bar\n---\n' + SHEET)))!.svg).toContain('<rect');
+  // Drawn small inside something else, a charted sheet is its chart.
+  expect(def.view('---\nchart: pie\n---\n' + SHEET, { small: true })[0].svg).toContain('<path');
+});
+
+test('CSV and Excel: the names over the columns, then the values; formulas in Excel words with names as references', () => {
+  expect(sheetToCsv(parse(SHEET), ',')).toBe('Item,Cost\r\nRent,"$1,200.00"\r\nFood,$450.00\r\nTotal,"$1,650.00"\r\n');
+  expect(sheetToCsv(parse('a | b:number\n--- | ---\n1.5 | 2\n'), ';')).toBe('a;b\r\n1,5;2\r\n');
+  expect(toExcelFormula('=AVG(A1:A3)')).toBe('AVERAGE(A1:A3)');
+  const named = new Map([['VISITORS', [0, 4] as [number, number]]]);
+  expect(toExcelFormula('=visitors*2', named, 1)).toBe('E2*2');
+  const xlsx = def.exports!.find((x) => x.ext === 'xlsx')!.build(MODEL, { def, title: '', link: '' }) as Uint8Array;
+  expect(xlsx.length).toBeGreaterThan(500);
+  expect([xlsx[0], xlsx[1]]).toEqual([0x50, 0x4b]);
+  const csv = def.exports!.find((x) => x.ext === 'csv')!.build(SHEET, { def, title: '', link: '' }) as Uint8Array;
+  expect(new TextDecoder('utf-8', { ignoreBOM: true }).decode(csv).startsWith('\ufeffItem')).toBe(true);
+  const svg = new TextDecoder().decode(def.exports!.find((x) => x.ext === 'chart.svg')!.build(MODEL, { def, title: '', link: '' }) as Uint8Array);
+  expect(svg).toContain('<svg');
+  expect(svg).toContain('<path');
+});
+
+test('charts: labels from the first column, a series a column of numbers, flows from From | To | Amount; the suggestion', () => {
+  const v = readSheet(parse('Month | Sales:number | Costs:number\n--- | --- | ---\nJan | 10 | 4\nFeb | 12 | 5\nMar | 15 | 6\nApr | 11 | 4\n'));
+  const d = chartOfSheet(v);
+  expect(d.labels).toEqual(['Jan', 'Feb', 'Mar', 'Apr']);
+  expect(d.series.map((s) => s.name)).toEqual(['Sales', 'Costs']);
+  expect(suggestChart(d)).toBe('line');
+  expect(
+    suggestChart(
+      chartData([
+        ['a', 1],
+        ['b', 2],
+        ['c', 3],
+      ]),
+    ),
+  ).toBe('pie');
+  const m = chartOfSheet(readSheet(parse(MODEL)));
+  expect(m.flows).toHaveLength(2);
+  expect(
+    suggestChart(
+      chartData(
+        [
+          ['A', 'B', 5],
+          ['B', 'C', 3],
+        ],
+        ['From', 'To', 'Amount'],
+      ),
+    ),
+  ).toBe('sankey');
+  expect(chartOf(readSheet(parse(MODEL)))!.svg.match(/<path/g)).toHaveLength(2);
+});
+
+test('rows moved past their neighbours: formulas follow the cells they name, a range keeps its corners in order, the lock moves with its rows', () => {
+  // Food up past Rent: the total still sums both, and a reference to Food follows it.
+  const text = 'Item | Cost:money | Note\n--- | --- | ---\nRent | 1200 | =B2\nFood | 450 |\nTotal | =SUM(B1:B2) |\n';
+  expect(after(text, (d) => moveRows(d, 1, 1, -1))).toBe('Item | Cost:money | Note\n--- | --- | ---\nFood | 450 |\nRent | 1200 | =B1\nTotal | =SUM(B1:B2) |\n');
+  // Two rows down past the third.
+  expect(colA(after(text, (d) => moveRows(d, 0, 1, 1)))).toEqual(['Total', 'Rent', 'Food']);
+  expect(after(text, (d) => moveRows(d, 0, 1, 1))).toContain('Total | =SUM(B2:B3)');
+  // Past the last row held, into the blank row under it; never off the top.
+  expect(colA(after(text, (d) => moveRows(d, 2, 2, 1)))).toEqual(['Rent', 'Food', '', 'Total']);
+  expect(moveRows(parse(text), 0, 0, -1)).toEqual([]);
+  expect(rowsMoved(1, 2, -1)(0)).toBe(2);
+  expect(reorderRefs('="B1"&B1', rowsMoved(0, 0, 1))).toBe('="B1"&B2');
+  // The lock goes with the rows it covers.
+  expect(after(MODEL, (d) => moveRows(d, 0, 0, 1))).toContain('lock: C1:C2');
+  expect(after(MODEL, (d) => moveRows(d, 1, 1, 1))).toContain('lock: C1, C3');
+});
+
+test('an option column: typed in the header as the kernel writes types, read back the same, its cells words; byte-stable', () => {
+  const text = 'Task | Status:option\n--- | ---\nBrief | GOOD\nDesign | GREAT\nBuild | 3\n';
+  const doc = parse(text);
+  expect(tableAt(doc, 0)!.cols[1]).toEqual({ name: 'Status', type: 'option' });
+  expect(write(doc)).toBe(text);
+  const v = readSheet(doc);
+  expect(v.values.map((r) => r[1])).toEqual(['GOOD', 'GREAT', 3]);
+  // Chosen from a column's menu, it takes the type's name.
+  expect(after('A | ColB\n--- | ---\nx | y\n', (d) => setType(d, 1, 'option'))).toBe('A | Option:option\n--- | ---\nx | y\n');
+  // The page draws the words, the CSV holds them.
+  expect(sheetToCsv(doc, ',')).toBe('Task,Status\r\nBrief,GOOD\r\nDesign,GREAT\r\nBuild,3\r\n');
+  expect(tablePage(v).svg).toContain('GREAT');
+});
+
+test(`the chart's place: "chart-at: top" draws the chart above the table, in the pages and the exports; a chart without it stays below`, () => {
+  const below = '---\nchart: bar\n---\nMonth | Sales:number\n--- | ---\nJan | 10\nFeb | 20\n';
+  const above = '---\nchart: bar\nchart-at: top\n---\nMonth | Sales:number\n--- | ---\nJan | 10\nFeb | 20\n';
+  expect(write(parse(above))).toBe(above);
+  expect(tableAt(parse(above), 0)!.above).toBe(true);
+  expect(tableAt(parse(below), 0)!.above).toBeUndefined();
+  const [first, second] = sheetPages(above);
+  expect(first.svg).toBe(chartOf(readSheet(parse(above)))!.svg);
+  expect(second.svg).toContain('Jan');
+  const [one, two] = sheetPages(below);
+  expect(one.svg).toContain('Jan');
+  expect(two.svg).toBe(chartOf(readSheet(parse(below)))!.svg);
+  // On a table inside another document the place rides with the chart, as an attribute.
+  const inText = parse('Words\n\nA | B:number\n--- | ---\nx | 1\n{chart=bar chart-at=top}\n');
+  expect(tableAt(inText, 1)!.above).toBe(true);
+  expect(write(inText)).toBe('Words\n\nA | B:number\n--- | ---\nx | 1\n{chart=bar chart-at=top}\n');
+});
+
+test("a rich column's words are drawn with their marks and written to CSV and the page without Markdown", () => {
+  const text = 'Note:rich | B:number\n--- | ---\n**big** *news* | 1\n';
+  const v = readSheet(parse(text));
+  expect(sheetToCsv(parse(text), ',')).toBe('Note,B\r\nbig news,1\r\n');
+  const svg = tablePage(v).svg;
+  expect(svg).toContain('<tspan font-weight="600">big</tspan>');
+  expect(svg).toContain('<tspan font-style="italic">news</tspan>');
+  expect(svg).not.toContain('**');
+  expect(gridPage(v).svg).toContain('big news');
+});
+
+// The drawings as they were before thumbnails (sha1 of every page's SVG): a page, and drawn small on a slide, are
+// unchanged by `thumb`.
+const sha1 = (pages: { w: number; h: number; svg: string }[]) =>
+  createHash('sha1')
+    .update(pages.map((p) => pageSvg(p)).join('\n'))
+    .digest('hex');
+const SHEET10 =
+  'Month | Rent:money | Food:money | Power:money | Water:money | Phone:money | Travel:money | Fun:money | Gifts:money | Total:money\n--- | --- | --- | --- | --- | --- | --- | --- | --- | ---\nJan | 1200 | 450 | 80 | 30 | 40 | 120 | 90 | 20 | =SUM(B1:I1)\nFeb | 1200 | 430 | 85 | 30 | 40 | 110 | 60 | 0 | =SUM(B2:I2)\n';
+
+test('a thumbnail of a ten-column sheet is landscape: the first six columns at a size to read, the rows that fit; a page and a slide are as before', () => {
+  const thumb = def.view(SHEET10, { small: true, thumb: true });
+  expect(thumb).toHaveLength(1);
+  const [p] = thumb;
+  expect(p.w).toBeGreaterThan(p.h);
+  expect(p.w / p.h).toBeCloseTo(4 / 3, 1);
+  expect(p.svg).toContain('>F<');
+  expect(p.svg).not.toContain('>G<');
+  expect(p.svg).toContain('Phone');
+  expect(p.svg).not.toContain('Travel');
+  // Every row number drawn sits inside the page.
+  const ys = [...p.svg.matchAll(/<text[^>]*y="([\d.]+)"/g)].map((m) => +m[1]);
+  expect(Math.max(...ys)).toBeLessThan(p.h);
+  expect(sha1(def.view(SHEET10))).toBe('78dc69955792d8020b4d4ed63d7fdac2d318a981');
+  expect(sha1(def.view(SHEET10, { small: true }))).toBe('06cfaaab79287d051cc9c208ddef8fd30d3815b6');
+  // A charted sheet's thumbnail is its chart, landscape already.
+  const chart = def.view('---\nchart: bar\n---\n' + SHEET10, { small: true, thumb: true })[0];
+  expect(chart.w).toBeGreaterThan(chart.h);
+});

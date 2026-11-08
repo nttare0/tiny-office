@@ -1,0 +1,28 @@
+# Outliner (`outline`), Tiny Little Office
+
+An outliner: ideas under ideas, folded and unfolded, moved around and joined; the same tree a deck or a mind map reads. A document is a link: https://tinylittleoffice.com/outline/#doc=<percent-encoded TLO>
+
+A nested list, two spaces a level. An item's tie to its parent can be an arrow, `{.to}` (towards the parent) or `{.from}`, named with `label="…"`; any two items join with `~ Pricing -> Press: informs`. An item may be a task (`- [ ]`, `- [x]`), carry a status from the document's own set (`statuses: TODO=red, DOING=yellow, DONE=green` in the head, a name and a color each: `red`, `orange`, `yellow`, `green`, `blue`, `purple`, `indigo`, `gray`; the last is the done one, and a task's box follows it), `{status=DOING}`, and a due day, `{due=2026-10-20}`; `{.shut}` folds its family away (an item is open otherwise). A fence named by any app's id (```` ```anim ````, `cal`, `diagram`, `sheet`, the lot) puts that document under an item, `{depth=2}` after its name saying how deep. The same tree opens as slides, a mind map, an org chart or a network.
+
+Templates: Packing list, A decision, Launch plan, A talk, A speech, An essay plan, A research plan, A syllabus, A novel, A book, A company, A family, A decision tree, Troubleshooting. Its own files: `.opml`, `.md`, `.pdf`, `.txt`. (the `.pdf` is the outline's words as sections and bullets, selectable and bookmarked)
+
+## Shapes
+
+- `nested` a nested list, notes in a tree: - items, two spaces a level
+- `numbered` numbered steps, an order to follow: 1. items
+- `tie` an arrow to the parent, how an item feeds its parent: {.to label="…"}
+- `connection` a connection, two items joined across the tree: ~ A -> B: label
+- `footnote` a footnote, a note on an item: ^[the note]
+- `doc` a document under an item, a fence named by its app, {depth=n} for its place
+
+## Example: a nested list
+
+```
+- The Lighthouse Keeper
+  - Act three: Spring
+    - The first ferry
+```
+
+As a link: <https://tinylittleoffice.com/outline/#doc=-+The+Lighthouse+Keeper%0A++-+Act+three%3A+Spring%0A++++-+The+first+ferry>
+
+Every shape as a document, a link and JSON: https://tinylittleoffice.com/examples/outline.json. The whole description: https://tinylittleoffice.com/llms-full.txt

@@ -1,0 +1,395 @@
+/* The editor (<to-text>, src/kit/text/text.ts): the box, its blocks, the two chips, the cards that stand for what
+   is not words, and the two bubbles. Type never under 16px (an iPhone zooms on less); the caret in the
+   accent. An app's own look (Write's paper) goes over this in its own sheet. */
+@layer kit {
+  to-text {
+    display: block;
+    position: relative;
+    min-width: 0;
+  }
+  to-text .tx {
+    position: relative;
+    min-height: calc(var(--to-line) * 1em);
+    font-size: max(1rem, 1em);
+    line-height: var(--to-line);
+    /* The box collapses the whitespace between its blocks (the template's own newlines); each block keeps its spaces and line breaks. */
+    white-space: normal;
+    /* A word too long for its line breaks; one that would fit goes to the next line whole (never "anywhere", which
+       lets a squeezed box split every word). */
+    overflow-wrap: break-word;
+    outline: none;
+    caret-color: var(--to-accent);
+    -webkit-tap-highlight-color: transparent;
+    /* A double tap selects a word; it never zooms the page. */
+    touch-action: manipulation;
+  }
+  to-text .tx.blank::before {
+    /* Drawn, not read: a screen reader has it as the box's aria-placeholder (text.ts). */
+    content: attr(data-placeholder);
+    content: attr(data-placeholder) / '';
+    /* It fills the box and pads as the box does, so its first letter is where the caret's first letter will be. */
+    position: absolute;
+    inset: 0;
+    padding: inherit;
+    color: var(--to-placeholder);
+    pointer-events: none;
+  }
+  to-text .tx > * {
+    margin: 0 0 0.6em;
+    white-space: pre-wrap;
+  }
+  /* A run of items is one element, a list (text.ts): its items are spaced as the box's blocks are, and take its white space. */
+  to-text .tx-list > * {
+    margin: 0 0 0.6em;
+  }
+  to-text .tx > :last-child,
+  to-text .tx-list > :last-child {
+    margin-bottom: 0;
+  }
+  to-text[shape='line'] .tx > *,
+  to-text[shape='line'] .tx-list > * {
+    margin: 0;
+  }
+  to-text .tx h1,
+  to-text .tx h2,
+  to-text .tx h3,
+  to-text .tx h4 {
+    line-height: var(--to-line-label);
+    font-weight: 600;
+  }
+  to-text .tx h1 {
+    font-size: 1.6em;
+  }
+  to-text .tx h1.title {
+    font-size: 2em;
+    letter-spacing: -0.01em;
+  }
+  to-text .tx h2 {
+    font-size: 1.3em;
+  }
+  to-text .tx h3,
+  to-text .tx h4 {
+    font-size: 1.1em;
+  }
+  to-text .tx li {
+    list-style: none;
+    position: relative;
+    padding-left: calc(1.5em + var(--d, 0) * 1.5em);
+  }
+  /* The marks are drawn, not read (the empty alt after the slash): an item's role, level and place say it is in a list,
+     and a task's state is words of its own (text.ts). The plain value first is for a browser without the alt. */
+  to-text .tx li::before {
+    content: '•';
+    content: '•' / '';
+    position: absolute;
+    left: calc(var(--d, 0) * 1.5em + 0.25em);
+    color: var(--to-ink-3);
+  }
+  to-text .tx li[data-n]::before {
+    content: attr(data-n) '.';
+    content: attr(data-n) '.' / '';
+    font-variant-numeric: tabular-nums;
+  }
+  to-text .tx li[data-done]::before {
+    content: '☐';
+    content: '☐' / '';
+  }
+  to-text .tx li[data-done='true']::before {
+    content: '☑';
+    content: '☑' / '';
+    color: var(--to-success);
+  }
+  to-text .tx li[data-done='true'] {
+    color: var(--to-ink-3);
+  }
+  /* Under a finger a task's box is a 44px target: the padding it is tapped in (text.ts onClick) is that wide and tall. */
+  @media (pointer: coarse) {
+    to-text .tx li[data-done] {
+      padding-left: calc(var(--to-touch) + var(--d, 0) * 1.5em);
+      min-height: var(--to-touch);
+    }
+    to-text .tx li[data-done]::before {
+      left: calc(var(--d, 0) * 1.5em + 0.75rem);
+    }
+  }
+  to-text .tx blockquote {
+    margin-left: 0;
+    padding-left: 0.75rem;
+    border-left: 0.1875rem solid var(--to-border);
+    color: var(--to-ink-2);
+  }
+  to-text .tx .center {
+    text-align: center;
+  }
+  to-text .tx .right {
+    text-align: right;
+  }
+  to-text .tx .justify {
+    text-align: justify;
+  }
+  to-text .tx mark {
+    background: color-mix(in srgb, var(--to-warning) 35%, transparent);
+    color: inherit;
+  }
+  to-text .tx a {
+    color: var(--to-accent);
+    text-decoration: underline;
+    text-underline-offset: 0.125rem;
+  }
+
+  /* The icon chip: one thing the caret steps over, drawn as the icon in the line's colour; a name nothing has is its name, small. */
+  to-text .tx .ic {
+    display: inline-block;
+    margin: 0 0.05em;
+    line-height: 1;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  to-text .tx .ic svg {
+    display: block;
+    width: 1em;
+    height: 1em;
+    transform: translateY(0.1em);
+  }
+  to-text .tx .ic.ic-name {
+    padding: 0 0.3em;
+    border-radius: 0.25rem;
+    font-size: 0.75em;
+    line-height: 1.4;
+    color: var(--to-ink-2);
+    background: color-mix(in srgb, var(--to-accent) 10%, transparent);
+  }
+  /* The footnote mark: a small raised number. */
+  to-text .tx .fn {
+    display: inline-block;
+    min-width: 1.2em;
+    padding: 0 0.25em;
+    margin: 0 0.05em;
+    border-radius: 0.25rem;
+    font-size: 0.7em;
+    line-height: 1.4;
+    vertical-align: super;
+    text-align: center;
+    color: var(--to-accent);
+    background: color-mix(in srgb, var(--to-accent) 10%, transparent);
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  to-text .tx .fn:hover,
+  to-text .tx .fn:focus-visible {
+    background: color-mix(in srgb, var(--to-accent) 22%, transparent);
+    outline: none;
+  }
+
+  /* A card for what is not words: another document, a picture, a table, a rule. The caret skips it. */
+  to-text .tx .tx-card {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--to-border);
+    border-radius: var(--to-radius);
+    background: var(--to-surface-2);
+    color: var(--to-ink-2);
+    font-size: 0.875rem;
+    white-space: normal;
+    user-select: none;
+    -webkit-user-select: none;
+    cursor: default;
+  }
+  /* A card the host draws the inside of (a grid, a thing from the web): the host's look, not the editor's. */
+  to-text .tx .tx-card-own {
+    display: block;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font-size: inherit;
+    user-select: text;
+    -webkit-user-select: text;
+  }
+  to-text .tx .tx-card:focus-visible {
+    outline: 0.125rem solid var(--to-accent);
+    outline-offset: 1px;
+  }
+  to-text .tx .tx-card-kind {
+    flex: none;
+    font-weight: 600;
+    color: var(--to-ink);
+  }
+  to-text .tx .tx-card-gist {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  to-text .tx figure.tx-card {
+    padding: 0;
+    overflow: hidden;
+  }
+  to-text .tx .tx-card img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+  }
+  to-text .tx .tx-card[data-k='hr'] {
+    display: block;
+    padding: 0.5rem 0;
+    border: 0;
+    background: none;
+  }
+  to-text .tx .tx-card hr {
+    margin: 0;
+    border: 0;
+    border-top: 1px solid var(--to-border-strong);
+  }
+
+  /* ---- the link bubble ---- */
+  .to-link-pop {
+    position: fixed;
+    inset: auto;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.4286em;
+    width: min(30em, calc(100vw - 1.1429em));
+    padding: 0.4286em 0.4286em 0.4286em 0.7143em;
+    border: 1px solid var(--to-border);
+    border-radius: 0.7143em;
+    background: var(--to-surface);
+    color: var(--to-ink);
+    box-shadow: var(--to-shadow-pop);
+    font-size: calc(0.875 * var(--to-scale));
+  }
+  .to-link-pop:not(:popover-open):not([popover]) {
+    display: flex;
+  }
+  /* A manual popover is hidden by the browser's own sheet, which the display above would otherwise beat. */
+  .to-link-pop[popover]:not(:popover-open),
+  .to-link-pop[hidden] {
+    display: none;
+  }
+
+  /* ---- the completion under ":word" (kit/ui/complete.ts): a manual popover like the link bubble ---- */
+  .to-complete {
+    position: fixed;
+    inset: auto;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    width: min(20em, calc(100vw - 1.1429em));
+    max-width: 27.8571em;
+    max-height: min(22.8571em, 50dvh);
+    overflow-y: auto;
+    padding: 0.2857em;
+    border: 1px solid var(--to-border);
+    border-radius: 0.7143em;
+    background: var(--to-surface);
+    color: var(--to-ink);
+    box-shadow: var(--to-shadow-pop);
+    font-size: calc(0.875 * var(--to-scale));
+  }
+  .to-complete[popover]:not(:popover-open),
+  .to-complete[hidden] {
+    display: none;
+  }
+  .to-complete-row {
+    display: flex;
+    align-items: center;
+    gap: 0.625em;
+    min-height: 2.25em;
+    padding: 0.25em 0.5em;
+    border-radius: 0.375em;
+    cursor: pointer;
+  }
+  .to-complete-row[aria-selected='true'] {
+    background: var(--to-accent-soft);
+  }
+  .to-complete-glyph {
+    display: inline-flex;
+    justify-content: center;
+    width: 1.2222em;
+    font-size: calc(1.125 * var(--to-scale));
+    line-height: 1;
+    /* An emoji is the system's own, never a web font's. */
+    font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
+  }
+  .to-complete-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  @media print {
+    .to-complete {
+      display: none !important;
+    }
+  }
+
+  /* ---- the notes where they are drawn (<to-notes>, kit/draw/notes.ts): each one a line of words typed in place ---- */
+  to-notes {
+    display: block;
+  }
+  .to-notes {
+    margin: 0;
+    padding-left: 1.6em;
+  }
+  /* The words beside the way back; where that leaves them less than 8em (a large size on a phone), the whole line, and
+     the way back under them. */
+  .to-note > to-text.to-note-words {
+    display: inline-block;
+    vertical-align: top;
+    width: max(100% - 2.5em, min(8em, 100%));
+  }
+  .to-note-words .tx {
+    min-height: calc(var(--to-line) * 1em);
+    line-height: var(--to-line);
+    border-radius: 0.25rem;
+  }
+  .to-note-words .tx:focus {
+    background: var(--to-accent-soft);
+    box-shadow: 0 0 0 0.1875rem var(--to-accent-soft);
+    color: var(--to-ink);
+  }
+  .to-note-back {
+    min-width: 2em;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+  }
+  .to-link-pop {
+    width: auto;
+    max-width: calc(100vw - 1em);
+  }
+  .to-link-href {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: 15em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--to-accent);
+  }
+  .to-link-input {
+    flex: 1 1 auto;
+    min-width: 12.5em;
+    padding: 0.5em 0.625em;
+    font: inherit;
+    font-size: var(--to-scale);
+    color: var(--to-ink);
+    background: var(--to-input-bg);
+    border: 1px solid var(--to-input-border);
+    border-radius: var(--to-radius-sm);
+  }
+  .to-link-input:focus {
+    outline: 0.125em solid var(--to-accent);
+    outline-offset: -1px;
+  }
+  @media print {
+    .to-link-pop,
+    .to-note-back {
+      display: none !important;
+    }
+  }
+}

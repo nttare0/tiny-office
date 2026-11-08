@@ -1,0 +1,36 @@
+# Word Processor (`write`), Tiny Little Office
+
+Words on a page: headings, lists, links and notes, a table that adds up, printed on letter or A4. A document is a link: https://tinylittleoffice.com/write/#doc=<percent-encoded TLO>
+
+Markdown as it stands. `# Words {.title}` is the title, set large; `#` and `##` are headings; `{.center}`, `{.right}` or `{.justify}` at the end of a paragraph aligns it. A table works out its formulas. A fence named by any app's id (```` ```anim ````, `draw`, `diagram`, `sheet`, `trip`, `cal`, the lot) puts that document in the page as a figure, drawn by its app. `paper: a4` or `letter` in the head sets the paper (a reader in North America gets letter otherwise). Notes are listed at the end, in the editor, on paper, in the web page and in Word. an invoice is a text with its lines as a table.
+
+Templates: A letter, Cover letter, Memo, Meeting notes, Minutes, Résumé, One-page CV, Invoice, Contract, Newsletter, Recipe, Questions and answers, Press release, News article, Interview, Book review, Music review, Thesis, Grant proposal, Syllabus, Formal complaint, Letter to a politician, Love letter, Wedding speech, Eulogy, Zine essay, Petition, Terms of service. Its own files: `.docx`, `.md`, `.rtf`, `.html`.
+
+## Shapes
+
+- `heading` headings, a text in sections: # and ## lines
+- `title` a title, the first line set large: # Words {.title}
+- `tasks` a task list, things to do and done: - [ ] and - [x]
+- `numbered` a numbered list, steps in order: 1. 2. 3.
+- `bullets` a bulleted list, points in no order: - lines
+- `align` an aligned paragraph, a line set right or centered: {.right} {.center}
+- `quote` a quotation, words set apart: > lines
+- `footnote` a footnote, a note where its sentence is: ^[the note]
+- `marks` bold and highlights, words marked: **bold**, ==highlight==
+- `icon` an icon in a line, a picture among words: :icon-name:
+- `table` a table that adds up, an invoice’s lines, a price list: a money column and a total
+- `look` a look, the page’s type and colors: look: in the head
+- `chart` a chart in a text, another document inside this one: a ```sheet fence
+- `figure` a figure in the text, a drawing, a diagram, a chart or a map in a fence named by its app
+
+## Example: headings
+
+```
+## Policies
+
+*Late work.*
+```
+
+As a link: <https://tinylittleoffice.com/write/#doc=%23%23+Policies%0A%0A%2ALate+work.%2A>
+
+Every shape as a document, a link and JSON: https://tinylittleoffice.com/examples/write.json. The whole description: https://tinylittleoffice.com/llms-full.txt

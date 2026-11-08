@@ -1,0 +1,2772 @@
+/* The kit: base, the shell (header, home, drawer), and the pieces every app reaches for (bar, buttons,
+   menus, dialogs, fields, the toast). Plain class names, prefixed to-; light DOM throughout.
+
+   Lengths, one rule for every stylesheet: rem for the document, em inside a nav element, px only for hairlines and
+   media queries (test/stylesheets.test.ts holds every sheet to it). The size of everything (kit/ui/zoom.ts) is two plain
+   numbers on the root: --to-doc, the root's font size (the browser's default × it), which every rem follows; and --to-nav, the font
+   size of each nav element (the list below), which every em inside it follows and which stops at the nav's limit. A
+   font size inside the nav is a part of --to-scale (the 16px of the scale it is under: the document's rem, the nav's
+   font size), never of its parent's, so a small label in a small box is not smaller again. A length measured on the
+   screen is a length set here: nothing is zoomed, so nothing placed from the page's coordinates is divided by
+   anything. */
+@layer kit {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+    /* A pinch on a touch screen never zooms the browser: it is the size of everything (kit/ui/pinch.ts), or a spatial
+       canvas's own zoom. One finger pans as ever. */
+    touch-action: pan-x pan-y;
+    /* The document's scale: what a rem is. The person's own size is the 100%: the browser's default (16px unless they
+       chose larger type), never a fixed 16px. */
+    font-size: calc(100% * var(--to-doc, 1));
+    /* The nav's: the font size of every nav element, which its ems follow; the same default (a rem without the
+       document's scale) times the nav's. Written here, worked out where it is used: a rem is the root's anywhere. */
+    --to-nav-font: calc(1rem / var(--to-doc, 1) * var(--to-nav, 1));
+    --to-scale: 1rem;
+  }
+  /* Paper is not the screen: a page printed from here (a Display Link's pages) is drawn at its own size, whatever the
+     size of everything (kit/ui/zoom.ts sets these on the root's style, which an !important rule outranks). */
+  @media print {
+    html {
+      --to-doc: 1 !important;
+      --to-nav: 1 !important;
+    }
+  }
+  /* The nav: everything that is nav, not document, grows with the size of everything up to 120% and no further
+     (zoom.ts NAV_MAX), while the words, the cards and the pictures go on to 200%. Each of these is drawn at the nav's
+     font size and its lengths inside are em; a finger's target and the gutter are the nav's too. One list: an app's
+     own bar (anything nav, not document) joins it rather than inventing its own. */
+  :is(
+    to-bar,
+    .to-header,
+    .to-burger,
+    .to-share-btn,
+    .to-drawer,
+    .to-dialog,
+    .to-doc-dialog,
+    to-context,
+    .to-menu,
+    to-link-pop,
+    to-complete,
+    to-find,
+    .to-toast,
+    .to-pinch-pill,
+    .anim-props,
+    .anim-time,
+    .anim-row,
+    .deck-show .ctl,
+    .trip-present-ctl,
+    :where(#to-first) > h1
+  ) {
+    font-size: var(--to-nav-font);
+    --to-scale: var(--to-nav-font);
+    --to-touch: calc(2.75 * var(--to-nav-font));
+    --to-gutter: calc(var(--to-gutter-k) * var(--to-nav-font));
+    /* Where the menu button sits, at the top inline end, and the room it takes in the header. */
+    --to-edge-e: max(var(--to-gutter), env(safe-area-inset-right));
+    --to-burger-w: calc(var(--to-edge-e) + var(--to-touch));
+  }
+  /* A control's words are the browser's own size (13.33px) unless a rule says otherwise: here a part of the scale it
+     is under, so they grow with the size of everything as the rest do. */
+  button,
+  input,
+  select,
+  textarea {
+    font-size: calc(0.8333 * var(--to-scale));
+  }
+  body {
+    margin: 0;
+    font: 1rem/var(--to-line) var(--to-font);
+    color: var(--to-ink);
+    background: var(--to-bg);
+  }
+  /* Code and keys in Plex Mono, the type's own monospace (tokens.css), not the browser's. */
+  code,
+  kbd,
+  pre,
+  samp {
+    font-family: var(--to-font-mono);
+  }
+  /* The page is the visible window and never scrolls: the document's column does (<to-chrome>, kit/ui/chrome.ts). Paper
+     is not the screen, so a page printed from here flows on as long as it is. */
+  @media screen {
+    html,
+    body {
+      height: 100%;
+      overflow: hidden;
+      overscroll-behavior: none;
+    }
+  }
+  a {
+    color: var(--to-accent);
+  }
+  [hidden] {
+    display: none !important;
+  }
+  :focus-visible {
+    outline: 0.125em solid var(--to-accent);
+    outline-offset: 0.125em;
+  }
+  .to-hint {
+    color: var(--to-ink-3);
+    font-size: 0.9em;
+  }
+  .to-row {
+    display: flex;
+    gap: 0.5em;
+    flex-wrap: wrap;
+  }
+
+  /* ---- buttons ---- */
+  .to-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4em;
+    min-height: var(--to-touch);
+    min-width: var(--to-touch);
+    padding: 0 0.8em;
+    font: inherit;
+    font-size: calc(0.9375 * var(--to-scale));
+    font-weight: 400;
+    color: var(--to-ink);
+    background: var(--to-surface);
+    border: 1px solid var(--to-border);
+    border-radius: var(--to-radius);
+    cursor: pointer;
+    text-decoration: none;
+    white-space: nowrap;
+    flex: none;
+  }
+  .to-btn:hover {
+    background: var(--to-surface-2);
+  }
+  .to-btn:disabled,
+  .to-btn[aria-busy='true'] {
+    opacity: 0.5;
+    cursor: default;
+  }
+  .to-btn[aria-pressed='true'] {
+    background: var(--to-accent-soft);
+    border-color: var(--to-accent);
+    color: var(--to-ink);
+  }
+  .to-btn.primary {
+    background: var(--to-accent);
+    border-color: var(--to-accent);
+    color: var(--to-on-accent);
+  }
+  .to-tool {
+    padding: 0;
+    width: var(--to-touch);
+  }
+  /* An icon is `--i` of the 16px of the scale it is under (icons.ts, mark.ts): the nav's in the nav, the document's in
+     the document, whatever the size of the words beside it. */
+  .to-icon,
+  .to-mark,
+  #to-first li > a::before {
+    width: calc(var(--i, 1.25) * var(--to-scale));
+    height: calc(var(--i, 1.25) * var(--to-scale));
+  }
+  .to-icon {
+    flex: none;
+  }
+  .to-caret {
+    margin-left: -0.125em;
+  }
+
+  /* ---- the bar ---- */
+  to-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.375em;
+    padding: 0.375em var(--to-gutter);
+    margin: 0 calc(-1 * var(--to-gutter));
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    background: var(--to-bg);
+  }
+  /* A bar in the document's own gutter: the gutter it reaches over is the document's (in rem), its own padding the nav's. */
+  to-bar:not(:is(.to-dialog, .to-doc-dialog, .to-drawer) *) {
+    margin: 0 calc(-1 * var(--to-gutter-k) * 1rem);
+  }
+  to-bar::-webkit-scrollbar {
+    display: none;
+  }
+  to-bar[data-fade-end] {
+    mask-image: linear-gradient(90deg, #000 calc(100% - 2.5em), transparent);
+  }
+  to-bar[data-fade-start] {
+    mask-image: linear-gradient(90deg, transparent, #000 2.5em);
+  }
+  to-bar[data-fade-start][data-fade-end] {
+    mask-image: linear-gradient(90deg, transparent, #000 2.5em, #000 calc(100% - 2.5em), transparent);
+  }
+  to-bar > * {
+    flex: none;
+  }
+  /* A label in the bar is one line, always (Paul, 2026-10-09: "The menu bars often wrap individual lines"). */
+  to-bar .to-btn,
+  to-bar .to-btn > span {
+    white-space: nowrap;
+  }
+  /* dateNav(): back, what is on view, on, Today. */
+  .to-datenav {
+    display: flex;
+    align-items: center;
+    gap: 0.125em;
+  }
+  .to-datenav-label {
+    min-width: 8.5em;
+    padding: 0 0.25em;
+    text-align: center;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  /* ---- a chip: a few words in a pill beside a thing's words (an outline's line name, its status, its due day). A button
+     where a tap does something. accent: the site's; quiet: the surface's; tint: its own colour (--chip) as a wash, the
+     words in a dark mix of it, so a light colour (a yellow) reads as itself and stays legible. ---- */
+  .to-chip {
+    flex-shrink: 0;
+    align-self: center;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25em;
+    max-width: 12em;
+    padding: 1px 0.5em;
+    font: inherit;
+    font-size: 0.75rem;
+    border: 0;
+    border-radius: var(--to-radius-pill);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .to-chip.accent {
+    background: var(--to-accent-soft);
+    color: var(--to-accent);
+  }
+  .to-chip.quiet {
+    background: var(--to-surface-2);
+    color: var(--to-ink-2);
+  }
+  .to-chip.tint {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    background: color-mix(in oklab, var(--chip, var(--to-accent)) 20%, var(--to-surface));
+    color: color-mix(in oklab, var(--chip, var(--to-accent)) 70%, var(--to-ink));
+  }
+  button.to-chip {
+    cursor: pointer;
+  }
+  .to-chip:focus-visible {
+    outline: 0.125rem solid var(--to-accent);
+    outline-offset: 1px;
+  }
+
+  /* ---- a table of the chrome's (the shortcuts, where a link fits, an outline's agenda): words at the start, a line between rows, quiet headings ---- */
+  .to-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .to-table caption {
+    padding: 0.25em 0;
+    text-align: start;
+    font-weight: 600;
+  }
+  .to-table th,
+  .to-table td {
+    padding: 0.3125em 0.5em;
+    text-align: start;
+    vertical-align: top;
+    border-top: 1px solid var(--to-border);
+  }
+  .to-table thead th,
+  .to-table tr:first-child th,
+  .to-table tr:first-child td {
+    border-top: 0;
+  }
+  .to-table thead th {
+    color: var(--to-ink-3);
+    font-weight: 400;
+  }
+
+  /* A colour as a dot, in a menu item or a bar button (--swatch is the colour). */
+  .to-swatch {
+    display: inline-block;
+    width: 1.125em;
+    height: 1.125em;
+    border-radius: 50%;
+    background: var(--swatch);
+    box-shadow: inset 0 0 0 1px rgb(0 0 0 / 15%);
+    flex: none;
+  }
+
+  /* ---- the contextual bar (<to-context>): beside the thing in hand ---- */
+  to-context {
+    display: contents;
+  }
+  .to-context {
+    position: fixed;
+    inset: auto;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.125em;
+    padding: 0.25em;
+    max-width: calc(100vw - 0.75em);
+    overflow-x: auto;
+    scrollbar-width: none;
+    background: var(--to-surface);
+    color: var(--to-ink);
+    border: 1px solid var(--to-border);
+    border-radius: var(--to-radius);
+    box-shadow: var(--to-shadow-pop);
+  }
+  /* Its own display would otherwise outweigh the browser's hiding of a closed popover. */
+  .to-context:not(:popover-open) {
+    display: none;
+  }
+  .to-context::-webkit-scrollbar {
+    display: none;
+  }
+  .to-context .to-btn {
+    border-color: transparent;
+    min-height: 2.4em;
+    min-width: 2.4em;
+  }
+  .to-context .to-tool {
+    width: 2.25em;
+  }
+  /* Under a finger the bubble's and the contextual bar's buttons are full size. */
+  @media (pointer: coarse) {
+    .to-context .to-btn {
+      min-height: var(--to-touch);
+      min-width: var(--to-touch);
+    }
+    .to-context .to-tool {
+      width: var(--to-touch);
+    }
+  }
+  /* A line under the context bar's buttons (Paste refused: use the keyboard's). */
+  .to-context-hint {
+    flex: 1 0 100%;
+    margin: 0;
+    padding: 0.125em 0.5em 0.25em;
+    font-size: 0.8125em;
+    color: var(--to-muted);
+  }
+  .to-context:has(.to-context-hint) {
+    flex-wrap: wrap;
+  }
+  .to-context .to-btn[aria-pressed='true'] {
+    border-color: var(--to-accent);
+  }
+  .to-context-text {
+    font-size: calc(0.8125 * var(--to-scale));
+    font-weight: 600;
+    padding: 0 0.4615em;
+  }
+  .to-context-sep {
+    width: 1px;
+    height: 1.375em;
+    margin: 0 0.1875em;
+    background: var(--to-border);
+    flex: none;
+  }
+
+  /* ---- rows (kit/text/rows.ts): a row's handle, and where a dragged row would land ---- */
+  /* The handle alone takes a finger's drag from the page (the rest of the row scrolls as ever). */
+  .to-rows-handle {
+    position: relative;
+    touch-action: none;
+    -webkit-touch-callout: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .to-rows-target {
+    position: fixed;
+    z-index: 30;
+    height: 0.125rem;
+    border-radius: 1px;
+    background: var(--to-accent);
+    pointer-events: none;
+  }
+  .to-rows-target::before {
+    content: '';
+    position: absolute;
+    left: -0.25rem;
+    top: -0.1875rem;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background: var(--to-accent);
+  }
+  .to-rows-target[hidden] {
+    display: none;
+  }
+  @media (pointer: coarse) {
+    /* Under a finger the handle is 44px to hit, whatever it draws. */
+    .to-rows-handle::before {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: var(--to-touch);
+      height: var(--to-touch);
+      transform: translate(-50%, -50%);
+    }
+  }
+
+  /* ---- menus (popovers) ---- */
+  to-menu,
+  to-insert,
+  to-templates {
+    display: inline-block;
+  }
+  .to-menu {
+    position: fixed;
+    inset: auto;
+    margin: 0;
+    padding: 0.375em;
+    min-width: 12.5em;
+    max-width: min(22.5em, calc(100vw - 1em));
+    overflow: auto;
+    background: var(--to-surface);
+    color: var(--to-ink);
+    border: 1px solid var(--to-border);
+    border-radius: var(--to-radius);
+    box-shadow: var(--to-shadow-pop);
+  }
+  .to-menu-item,
+  .to-option {
+    display: flex;
+    align-items: center;
+    gap: 0.625em;
+    width: 100%;
+    min-height: var(--to-touch);
+    padding: 0.375em 0.625em;
+    font: inherit;
+    text-align: left;
+    color: inherit;
+    background: none;
+    border: 0;
+    border-radius: var(--to-radius-sm);
+    cursor: pointer;
+  }
+  /* One highlight: the item with the focus (a mouse over an item takes the focus to it), or the one under the mouse while the focus is not in the menu. */
+  .to-menu:not(:focus-within) .to-menu-item:hover,
+  .to-menu-item:focus,
+  .to-menu:not(:focus-within) .to-option:hover,
+  .to-option:focus {
+    background: var(--to-surface-2);
+    outline-offset: -0.125em;
+  }
+  .to-menu-item:focus:not(:focus-visible),
+  .to-option:focus:not(:focus-visible),
+  .to-menu:focus {
+    outline: none;
+  }
+  .to-menu-item:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+  .to-menu-words,
+  .to-option-words {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+  }
+  /* Beside a wide thumbnail the words have less room: a name ellipsises, a blurb wraps. */
+  .to-option-words > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .to-menu-words small,
+  .to-option-words small {
+    color: var(--to-ink-3);
+  }
+  .to-menu-check {
+    color: var(--to-accent);
+  }
+  .to-menu-keys {
+    font: inherit;
+    font-size: calc(0.75 * var(--to-scale));
+    color: var(--to-ink-3);
+    white-space: nowrap;
+  }
+  .to-menu-head {
+    padding: 0.6667em 0.8333em 0.1667em;
+    font-size: calc(0.75 * var(--to-scale));
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--to-ink-3);
+  }
+  /* A menu of rows (the Download menu's formats): wider than a menu, the format's words at the left and its actions,
+     each a 44px target, at the right. */
+  .to-menu:has(.to-menu-row) {
+    width: min(22.5em, calc(100vw - 2 * var(--to-gutter)));
+  }
+  .to-menu-row {
+    display: flex;
+    align-items: center;
+    gap: 0.125em;
+    min-height: var(--to-touch);
+    padding-left: 0.625em;
+  }
+  .to-menu-row + .to-menu-row {
+    border-top: 1px solid var(--to-border);
+  }
+  .to-menu-act {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: var(--to-touch);
+    height: var(--to-touch);
+    padding: 0;
+    color: inherit;
+    background: none;
+    border: 0;
+    border-radius: var(--to-radius-sm);
+    cursor: pointer;
+  }
+  .to-menu:not(:focus-within) .to-menu-act:hover,
+  .to-menu-act:focus {
+    background: var(--to-surface-2);
+    outline-offset: -0.125em;
+  }
+  .to-menu-act:focus:not(:focus-visible) {
+    outline: none;
+  }
+  .to-option[aria-selected='true'] {
+    background: var(--to-accent-soft);
+  }
+  /* The templates list: wide enough for a name and its blurb beside the preview, and it scrolls (place() caps its height to the screen). */
+  /* The templates, in a dialog over the screen (home.ts): wide, the options a grid of rows that scrolls under the head. */
+  .to-dialog.to-templates-dialog {
+    width: min(60em, calc(100vw - 2em));
+  }
+  .to-listbox {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(18.75em, 1fr));
+    grid-auto-rows: max-content; /* a row is as tall as its words and preview, never the touch minimum alone */
+    align-items: start;
+    gap: 0.25em;
+    padding: 0.5em 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  /* A row never widens its column: a long name is cut with an ellipsis (a grid item's least width is its content unless
+     told otherwise). The row's padding is the gutter, the head's (0.5em), so each preview is flush with the heading's
+     edge and its highlight reaches the dialog's; the preview and the words at the row's top, so the preview sits
+     beside the template's name however long the blurb under it (Paul, 2026-10-11: "Align the previews to the far left"). */
+  .to-listbox > .to-option {
+    min-width: 0;
+    align-items: start;
+    padding-inline: 0.5em;
+  }
+  /* The list takes what the head leaves and scrolls inside it (a phone's whole screen: responsive.css). */
+  /* The heading leads with the app's name, at the logotype's size but in the sans and not bold, and on one line: on a
+     phone it shrinks to fit beside the Close button rather than wrap (Paul, 2026-10-10). */
+  /* Its head keeps the half em: the previews under it sit at the far left of the list (Paul, 2026-10-11), and the
+     heading stays over them. */
+  .to-templates-dialog .to-dialog-head {
+    padding-inline-start: 0.5em;
+  }
+  .to-templates-dialog .to-dialog-head h2 {
+    font: 400 min(calc(1.875 * var(--to-scale)), 4.5vw) / 1.1 var(--to-font);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+  }
+  .to-templates-dialog .to-listbox {
+    flex: 1;
+    min-height: 0;
+  }
+  .to-listbox-close {
+    border: 0;
+    background: transparent;
+  }
+  /* Every preview the one box, 4:3, the page cropped to it (CROPPED, kit/draw/draw.ts): 96 by 72 in a list of templates. */
+  .to-thumb {
+    flex: none;
+    width: 6em;
+    height: 4.5em;
+    overflow: hidden;
+    background: var(--to-paper);
+    border: 1px solid var(--to-border);
+    border-radius: 0.1875em;
+  }
+  .to-thumb svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* ---- dialogs ---- */
+  .to-dialog,
+  .to-drawer {
+    padding: 0;
+    border: 0;
+    color: var(--to-ink);
+    background: transparent;
+    max-width: none;
+    max-height: none;
+  }
+  .to-dialog::backdrop,
+  .to-drawer::backdrop {
+    background: rgb(0 0 0 / 40%);
+  }
+  /* Every dialog hangs from the top: what grows inside it (a preview arriving) grows downwards, and nothing above it moves. */
+  .to-dialog {
+    margin: max(1em, 8dvh) auto auto;
+    width: min(32.5em, calc(100vw - 2em));
+  }
+  .to-dialog-inner {
+    background: var(--to-surface);
+    border: 1px solid var(--to-border);
+    border-radius: var(--to-radius);
+    box-shadow: var(--to-shadow-pop);
+    max-height: calc(100dvh - 2em);
+    display: flex;
+    flex-direction: column;
+  }
+  .to-dialog-head,
+  .to-drawer-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5em;
+    padding: 0.5em;
+    border-bottom: 1px solid var(--to-border);
+  }
+  /* The drawer's head is the language picker at the start, a little narrower than the row (Paul, 2026-10-12: "Shrink the
+     language menu a little"), then the mark as the way home beside Close at the end, away from the home page (drawer.ts);
+     the search sits under it. */
+  .to-drawer-head .to-drawer-lang {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    flex: 0 1 auto;
+    min-width: 0;
+    margin: 0;
+  }
+  .to-drawer-head .to-drawer-lang select {
+    flex: 0 1 auto;
+    width: auto;
+    min-width: 0;
+    max-width: 10em; /* a field's select stops at 60%; the head's at ten ems */
+  }
+  .to-drawer-head .to-drawer-home {
+    margin-inline-start: auto;
+  }
+  /* The heading starts where the body's words do, a dialog's padding in (Paul, 2026-10-16: "align the title in those menu
+     bars with the text below"); the close button keeps the head's own half em at the end. */
+  .to-dialog-head {
+    padding-inline-start: 1em;
+  }
+  .to-dialog-head h2 {
+    margin: 0;
+    font-size: calc(1.125 * var(--to-scale));
+  }
+  .to-dialog-body {
+    padding: 1em;
+    overflow: auto;
+  }
+  .to-dialog-body > :first-child {
+    margin-top: 0;
+  }
+  /* About's quotation (drawer.ts): Ionesco on the ephemeral, set as a quotation above the running commit's line. */
+  .to-about-quote {
+    margin: 1em 0;
+    padding-inline-start: 1em;
+    border-inline-start: 0.1875em solid var(--to-border);
+    color: var(--to-ink-2);
+  }
+  .to-about-quote p {
+    margin: 0 0 0.25em;
+  }
+  .to-about-quote footer {
+    font-size: 0.9em;
+    color: var(--to-ink-3);
+  }
+  /* ---- Leaving a document that lives only in its link (shell.ts): one line, three answers stacked, narrow ---- */
+  .to-leave-dialog .to-dialog {
+    width: min(26.25em, calc(100vw - 2em));
+  }
+  .to-leave-acts {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5em;
+  }
+  .to-leave-acts .to-btn {
+    justify-content: center;
+  }
+  /* ---- A zip's documents under Private (open.ts): by app, a row each, three answers stacked, narrow ---- */
+  .to-zip-dialog .to-dialog {
+    width: min(26.25em, calc(100vw - 2em));
+  }
+  .to-zip-app {
+    margin: 0.75em 0 0.25em;
+    font-size: calc(0.875 * var(--to-scale));
+    color: var(--to-ink-2);
+  }
+  .to-zip-docs {
+    list-style: none;
+    margin: 0 0 0.75em;
+    padding: 0;
+  }
+  .to-zip-docs a {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    min-height: 2.75em;
+    border-bottom: 1px solid var(--to-border);
+    color: inherit;
+    text-decoration: none;
+  }
+  .to-zip-docs a:hover {
+    background: var(--to-surface-2);
+  }
+  .to-zip-acts {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5em;
+  }
+  .to-zip-acts .to-btn {
+    justify-content: center;
+  }
+  /* ---- A money column's currency (columns.ts): one field and OK, narrow ---- */
+  .to-currency-dialog .to-dialog {
+    width: min(26.25em, calc(100vw - 2em));
+  }
+  .to-currency-label {
+    font-size: calc(0.875 * var(--to-scale));
+    color: var(--to-ink-2);
+  }
+  .to-currency .to-hint {
+    margin: 0;
+  }
+  .to-currency [aria-invalid='true'] {
+    border-color: var(--to-danger);
+  }
+  /* ---- Insert's address dialogs (insert-dialogs.ts): the address and OK in one row, what it will be under them ---- */
+  .to-ask-dialog .to-dialog {
+    width: min(40em, calc(100vw - 2em));
+  }
+  .to-ask {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75em;
+  }
+  .to-ask-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+  }
+  .to-ask-url {
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 3em;
+    font-size: var(--to-scale);
+  }
+  .to-ask-ok {
+    flex: none;
+    height: 3em;
+    min-width: 4.5em;
+  }
+  /* A phone is 300 of these pixels wide at the normal size: the address keeps three times OK's width. */
+  @media (max-width: 640px) {
+    .to-ask-ok {
+      min-width: 3.5em;
+    }
+  }
+  .to-ask-preview:empty {
+    display: none;
+  }
+  .to-ask-preview > p {
+    margin: 0;
+  }
+  .to-ask-broken {
+    color: var(--to-danger);
+  }
+  .to-ask-page {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75em;
+    margin: 0;
+  }
+  .to-ask-page svg {
+    width: min(16.25em, 60%);
+    height: auto;
+    border: 1px solid var(--to-border);
+    border-radius: var(--to-radius-sm);
+    background: #fff;
+  }
+  .to-ask-page figcaption {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125em;
+    min-width: 0;
+  }
+  .to-ask-page small {
+    color: var(--to-ink-3);
+  }
+
+  /* ---- another document edited in place (doc-dialog.ts): large, its own editor filling it ---- */
+  .to-doc-dialog {
+    padding: 0;
+    border: 0;
+    margin: 1em auto auto;
+    width: min(75em, calc(100vw - 2em));
+    height: calc(100dvh - 2em);
+    max-width: none;
+    max-height: none;
+    color: var(--to-ink);
+    background: var(--to-bg);
+    border-radius: var(--to-radius);
+    box-shadow: var(--to-shadow-pop);
+  }
+  .to-doc-dialog[open] {
+    display: flex;
+    flex-direction: column;
+  }
+  .to-doc-dialog::backdrop {
+    background: rgb(0 0 0 / 40%);
+  }
+  .to-doc-dialog-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5em;
+    padding: 0.5em 0.5em 0.5em 1em;
+    background: var(--to-surface);
+    border-bottom: 1px solid var(--to-border);
+  }
+  .to-doc-dialog-head h2 {
+    margin: 0;
+    min-width: 0;
+    font-size: calc(1.125 * var(--to-scale));
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .to-doc-dialog-gap {
+    flex: 1 1 0;
+  }
+  .to-doc-dialog-sizes,
+  .to-doc-dialog-size {
+    display: flex;
+    align-items: center;
+    gap: 0.375em;
+  }
+  .to-doc-dialog-sizes {
+    margin-left: 0.5em;
+  }
+  .to-doc-dialog-size span {
+    font-size: calc(0.875 * var(--to-scale));
+    color: var(--to-ink-2);
+  }
+  .to-doc-dialog-size input {
+    width: 4.5em;
+    height: 2.5em;
+    font-size: var(--to-scale);
+  }
+  .to-doc-dialog-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+    padding: 0 var(--to-gutter) var(--to-gutter);
+    /* The editor inside measures itself against the screen less the header; here the dialog's head and margins stand for it. */
+    --to-header-h: calc(7 * var(--to-nav-font));
+    /* The other document is document: the words, a finger's target and the gutter at the document's scale. */
+    font-size: 1rem;
+    --to-scale: 1rem;
+    --to-touch: min(2.75rem, calc(2.75 * var(--to-nav-font)));
+    --to-gutter: calc(var(--to-gutter-k) * 1rem);
+  }
+  .to-doc-dialog-body:focus {
+    outline: none;
+  }
+
+  /* The icon picker: a search box, then the library in named sections. */
+  .to-icons .to-dialog {
+    width: min(45em, calc(100vw - 2em));
+  }
+  .to-icons-search {
+    width: 100%;
+    height: 2.5em;
+    padding: 0 0.75em;
+    border: 1px solid var(--to-input-border);
+    border-radius: var(--to-radius-sm);
+    background: var(--to-input-bg);
+    color: var(--to-ink);
+    font: var(--to-scale) var(--to-font);
+    margin-bottom: 0.75em;
+  }
+  .to-icons-section h3 {
+    margin: 0.9231em 0 0.4615em;
+    font-size: calc(0.8125 * var(--to-scale));
+    color: var(--to-ink-3);
+    font-weight: 600;
+  }
+  .to-icons-section h3 span {
+    font-weight: 400;
+  }
+  .to-icons-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(2.75em, 1fr));
+    gap: 0.125em;
+  }
+  .to-icon-btn {
+    display: grid;
+    place-items: center;
+    width: 100%;
+    min-height: 2.75em;
+    border: 1px solid transparent;
+    border-radius: var(--to-radius-sm);
+    background: transparent;
+    color: var(--to-ink);
+    cursor: pointer;
+  }
+  .to-icon-btn:hover {
+    background: var(--to-surface-2);
+  }
+  /* An emoji is drawn by the system's own emoji font, never a web font. */
+  .to-emoji-btn {
+    font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
+    font-size: calc(1.5 * var(--to-scale));
+    line-height: 1;
+  }
+  .to-icons-sets {
+    margin-bottom: 0.25em;
+  }
+  .to-icon-btn[aria-pressed='true'] {
+    border-color: var(--to-accent);
+    background: var(--to-accent-soft);
+  }
+
+  /* ---- the Share dialog: one column of sections, hung from the top; a full-screen sheet on a phone ---- */
+  .to-share-fit {
+    display: flex;
+    align-items: center;
+    gap: 0.2857em;
+    margin: 0 0 0.8571em;
+    color: var(--to-ink-3);
+    font-size: calc(0.875 * var(--to-scale));
+  }
+  /* The words open the rooms the link fits in: a button that reads as a line. */
+  .to-share-fit .to-fit-words {
+    flex: 1;
+    min-width: 0;
+    justify-content: flex-start;
+    text-align: start;
+    border-color: transparent;
+    background: transparent;
+    color: inherit;
+    font-size: calc(0.875 * var(--to-scale));
+    font-weight: 400;
+    white-space: normal;
+  }
+  .to-share-fit.over .to-fit-words {
+    color: var(--to-danger);
+    font-weight: 600;
+  }
+  /* Each limit beside whether the link fits it (Paul, 2026-10-15, issue #8): wider than a menu where the page has the
+     room; on a phone the words wrap, a number never breaks. */
+  .to-rooms-dialog .to-dialog {
+    max-width: min(44em, calc(100vw - 1em));
+  }
+  .to-rooms {
+    font-size: calc(0.8125 * var(--to-scale));
+  }
+  /* (A .to-table, compact, its numbers lined up.) */
+  .to-rooms th,
+  .to-rooms td {
+    padding: 0.1875em 0.5em;
+    border-top: 0;
+  }
+  .to-rooms td {
+    font-variant-numeric: tabular-nums;
+  }
+  .to-rooms tr.over td,
+  .to-rooms tr.over th {
+    color: var(--to-danger);
+  }
+  /* On a phone the three columns do not fit: each place is a line of its own, its limit and the answer on the line
+     under it, the heads kept for a screen reader. */
+  @media (max-width: 640px) {
+    .to-rooms thead {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+    }
+    .to-rooms tbody tr {
+      display: grid;
+      grid-template-columns: auto auto;
+      justify-content: space-between;
+      column-gap: 1em;
+      padding: 0.25em 0;
+      border-top: 1px solid var(--to-border);
+    }
+    .to-rooms tbody tr:first-child {
+      border-top: 0;
+    }
+    .to-rooms tbody th {
+      grid-column: 1 / -1;
+      font-weight: 600;
+    }
+    .to-rooms tbody th,
+    .to-rooms tbody td {
+      padding: 0;
+    }
+    .to-rooms tbody td:last-child {
+      text-align: end;
+    }
+  }
+  /* Edit link and Present link side by side where a column holds a name on one line, and one under the other where it
+     cannot (a phone, a large size): the pair was uneven when one name wrapped and the other sat centred against it
+     (Paul, 2026-10-12). Each copy's words start at its top, the icon beside the first line as an app's row has it. */
+  .to-share-links {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 10em), 1fr));
+    gap: 0.5em;
+  }
+  .to-share-copy {
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: 0.125em;
+    padding: 0.625em 0.75em;
+    white-space: normal;
+    text-align: left;
+  }
+  .to-share-copy > span {
+    display: inline-flex;
+    align-items: flex-start;
+    gap: 0.375em;
+    font-weight: 600;
+  }
+  .to-share-copy small {
+    color: var(--to-ink-3);
+    font-size: calc(0.8125 * var(--to-scale));
+    font-weight: 400;
+  }
+  .to-share-native {
+    grid-column: 1 / -1;
+  }
+  .to-share-section {
+    margin-top: 1.25em;
+    padding-top: 1em;
+    border-top: 1px solid var(--to-border);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.625em;
+  }
+  .to-share-section h3 {
+    margin: 0;
+    font-size: var(--to-scale);
+  }
+  .to-share-section .to-hint {
+    margin: 0;
+  }
+  .to-share-field {
+    display: flex;
+    gap: 0.5em;
+    width: 100%;
+  }
+  .to-share-field input {
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 3.6em;
+    font-family: var(--to-font-mono);
+  }
+  .to-short-field {
+    font-size: calc(1.125 * var(--to-scale)) !important;
+    font-weight: 600;
+  }
+  .to-share-field .to-btn {
+    height: 3.2em;
+  }
+  /* A row of segments: a radio group (the lifetimes) or two pressed buttons (Link, Display Link). */
+  .to-seg {
+    display: flex;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    min-width: 0;
+    max-width: 100%;
+  }
+  .to-seg > label,
+  .to-seg > .to-btn {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .to-seg > label > span,
+  .to-seg > .to-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4286em;
+    min-height: var(--to-touch);
+    padding: 0 0.5714em;
+    font-size: calc(0.875 * var(--to-scale));
+    font-weight: 400;
+    white-space: nowrap;
+    color: var(--to-ink);
+    background: var(--to-surface);
+    border: 1px solid var(--to-border);
+    border-radius: 0;
+    margin-left: -1px;
+    cursor: pointer;
+  }
+  .to-seg > :first-child > span,
+  .to-seg > .to-btn:first-child {
+    border-radius: var(--to-radius) 0 0 var(--to-radius);
+    margin-left: 0;
+  }
+  .to-seg > :last-child > span,
+  .to-seg > .to-btn:last-child {
+    border-radius: 0 var(--to-radius) var(--to-radius) 0;
+  }
+  .to-ttl {
+    width: 100%;
+  }
+  .to-seg input {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+  }
+  .to-seg input:checked + span {
+    background: var(--to-accent-soft);
+    border-color: var(--to-accent);
+    position: relative;
+    font-weight: 600;
+  }
+  .to-seg input:focus-visible + span {
+    outline: 0.125em solid var(--to-accent);
+    outline-offset: 0.125em;
+    position: relative;
+  }
+  .to-kept-list {
+    width: 100%;
+  }
+  .to-kept-list summary {
+    min-height: var(--to-touch);
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    list-style-position: inside;
+  }
+  .to-kept-list summary::before {
+    content: '▸';
+    margin-right: 0.5em;
+    color: var(--to-ink-3);
+  }
+  .to-kept-list[open] summary::before {
+    content: '▾';
+  }
+  .to-kept-list summary::-webkit-details-marker {
+    display: none;
+  }
+  .to-kept-list summary {
+    list-style: none;
+  }
+  .to-qr-code {
+    align-self: stretch;
+  }
+  .to-qr-code svg {
+    display: block;
+    width: min(100%, 17.5em);
+    height: auto;
+  }
+  .to-short-link {
+    overflow-wrap: anywhere;
+  }
+  .to-kept {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font-size: calc(0.875 * var(--to-scale));
+  }
+  .to-kept li {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 0 0.5em;
+    padding: 0.375em 0;
+    border-top: 1px solid var(--to-border);
+  }
+  .to-kept li small {
+    color: var(--to-ink-3);
+  }
+  .to-kept li button {
+    grid-row: 1 / 3;
+    grid-column: 2;
+  }
+
+  /* ---- arriving by a short link: how long it has left, big and coloured, under the header; small while a box has the focus on a phone ---- */
+  .to-arrival {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+    padding: 0.875rem var(--to-gutter);
+    padding-left: max(var(--to-gutter), env(safe-area-inset-left));
+    padding-right: max(var(--to-gutter), env(safe-area-inset-right));
+    background: var(--to-ok-bg);
+    color: var(--to-ok-ink);
+  }
+  .to-arrival.soon {
+    background: var(--to-soon-bg);
+    color: var(--to-soon-ink);
+  }
+  .to-arrival.last {
+    background: var(--to-last-bg);
+    color: var(--to-last-ink);
+  }
+  .to-arrival-words {
+    margin: 0;
+    font-size: 1.375rem;
+    font-weight: 600;
+    line-height: var(--to-line-label);
+  }
+  .to-arrival-acts {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .to-arrival .to-btn {
+    color: inherit;
+    background: transparent;
+    border-color: currentColor;
+  }
+  .to-arrival .to-btn:hover {
+    background: rgb(0 0 0 / 10%);
+  }
+  .to-arrival .to-arrival-close {
+    border-color: transparent;
+  }
+
+  /* ---- the drawer ---- */
+  /* From the inline end, where the menu button is (the right in a left-to-right language). */
+  /* Wider and quieter than it was (2026-11-08): a drawer of its own, its edge rounded away from the page, a muted
+     ground, and its rows grouped into panels on the surface (below). A phone keeps a margin of the page beside it. */
+  .to-drawer {
+    margin: 0;
+    margin-inline-start: auto;
+    height: 100dvh;
+    width: min(24em, 92vw);
+  }
+  .to-drawer-inner {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75em;
+    padding: 0 0.5em 0.5em;
+    background: var(--to-surface-2);
+    border-inline-start: 1px solid var(--to-border);
+    border-start-start-radius: var(--to-radius);
+    overflow: auto;
+  }
+  /* The drawer's own name, where the page's headings sit: its share of the drawer, over the panels. */
+  .to-drawer-title {
+    margin: 0.75em 0.5em 0;
+    font-size: calc(1.25 * var(--to-scale));
+    font-weight: 600;
+    color: var(--to-ink);
+  }
+  /* The dialog holds the focus on a touch screen (drawer.ts) and is not a control: no ring, which drawn outside the
+     panel stood apart from its edge as a stray line (Paul, 2026-10-10: "a gap between border and the main menu area").
+     A row in it still shows the ring when the keys move there. */
+  .to-drawer:focus,
+  .to-drawer:focus-visible {
+    outline: none;
+  }
+  /* This document: a small heading over full-width rows like the apps' (Paul: "The hamburger design is janky"),
+     each its icon, its words and its key (if any) at the far end: New, Share…, Download. */
+  .to-drawer-section.to-drawer-doc {
+    gap: 0.125em;
+    padding: 0.75em;
+  }
+  .to-drawer-doc .to-drawer-head3 {
+    margin: 0 0.8333em 0.3333em;
+  }
+  .to-drawer-doc to-menu {
+    display: block;
+  }
+  /* The app's own rows under its name (a phone's: the bar is away while reading). */
+  .to-drawer-doc .to-drawer-app {
+    margin-top: 0.75em;
+  }
+  .to-drawer-doc :is(.to-drawer-new, .to-drawer-share, .to-drawer-download > .to-btn, button.to-drawer-cmd, to-menu.to-drawer-cmd > .to-btn) {
+    width: 100%;
+    justify-content: flex-start;
+    gap: 0.625em;
+    padding: 0 0.625em;
+    font-size: var(--to-scale);
+    font-weight: 400;
+    border-color: transparent;
+    background: transparent;
+    border-radius: var(--to-radius-sm);
+  }
+  .to-drawer-doc :is(.to-drawer-new, .to-drawer-share, .to-drawer-download > .to-btn, button.to-drawer-cmd, to-menu.to-drawer-cmd > .to-btn):hover {
+    background: var(--to-surface-2);
+  }
+  .to-drawer-doc .to-menu-keys {
+    margin-inline-start: auto;
+  }
+  .to-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5em;
+    font-weight: 600;
+    color: var(--to-ink);
+    text-decoration: none;
+  }
+  /* On the home page the name is Plex Serif on the header's bottom line, beside the mark (Paul, 2026-10-10: a lighter
+     serif, "don't make it so big", "Vertically center the logotype"). The drawer's brand keeps the small bold form above. */
+  .to-header .to-brand,
+  #to-first > h1 {
+    font: 400 min(calc(1.875 * var(--to-scale)), 7vw) / 1 var(--to-font-serif);
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+  }
+  .to-header .to-brand {
+    /* The words take the menu button's height and sit on its bottom edge. */
+    height: var(--to-touch);
+    align-items: center;
+    /* In by a row's inset from the column's edge, where the header starts: on the apps' icons below (tokens.css). */
+    margin-inline-start: var(--to-row-inset);
+  }
+  .to-brand .to-mark {
+    flex: none;
+  }
+  .to-drawer-apps {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125em;
+  }
+  .to-drawer-apps :where(a, button.to-found) {
+    display: flex;
+    align-items: center;
+    gap: 0.625em;
+    min-height: var(--to-touch);
+    padding: 0 0.625em;
+    color: var(--to-ink);
+    text-decoration: none;
+    border-radius: var(--to-radius-sm);
+  }
+  /* A command found (drawer.ts): a row like an app's, its keys at the far end. */
+  .to-drawer-apps button.to-found {
+    width: 100%;
+    font: inherit;
+    text-align: start;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+  }
+  .to-drawer-apps button.to-found:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+  .to-drawer-apps button.to-found .to-menu-keys {
+    margin-inline-start: auto;
+  }
+  .to-found-noicon {
+    width: 1.25em;
+    flex: none;
+  }
+  .to-drawer-apps :where(a, button.to-found):hover {
+    background: var(--to-surface-2);
+  }
+  .to-find {
+    margin-bottom: 0.5em;
+  }
+  /* The drawer's app rows are nav: their inset in its ems, not the home page's (tokens.css --to-row-inset). */
+  .to-drawer-apps .to-app-open {
+    padding: 0 0.5em;
+    flex: 1;
+    align-items: flex-start;
+  }
+  .to-found-words {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .to-found-words > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .to-found-words small {
+    color: var(--to-ink-3);
+    font-size: calc(0.8125 * var(--to-scale));
+  }
+  .to-drawer-head3 {
+    margin: 0.6667em 0.8333em 0.1667em;
+    font-size: calc(0.75 * var(--to-scale));
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--to-ink-3);
+  }
+  /* A panel: its rows on the surface, rounded, a hairline and a quiet shadow, a panel's own room inside (2026-11-08).
+     The head and the name over them are the drawer's, not a panel's. */
+  .to-drawer-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25em;
+    padding: 0.5em;
+    background: var(--to-surface);
+    border: 1px solid var(--to-border);
+    border-radius: var(--to-radius);
+    box-shadow: var(--to-shadow);
+  }
+  .to-drawer-prefs {
+    margin-top: auto;
+  }
+  /* Room at the drawer's foot while Download's table is open, so its row can go to the top and the table open under it (drawer.ts onToggle). */
+  .to-drawer-room::after {
+    content: '';
+    flex: none;
+    height: 100%;
+  }
+  /* What is this?, the manual's row, straight under the head's own line, and Save in browser under it (Paul, 2026-10-14). */
+  .to-drawer-section.to-drawer-manual {
+    padding: 0.25em;
+  }
+  .to-drawer-whatis {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  .to-drawer-section.to-drawer-save {
+    padding: 0.75em;
+  }
+  /* A select goes under its label when the two do not fit on one line (the nav at its largest, a long language). */
+  .to-drawer-prefs .to-field {
+    flex-wrap: wrap;
+  }
+  .to-drawer-prefs .to-field select {
+    flex: 0 1 auto;
+    max-width: 100%;
+    margin-inline-start: auto;
+  }
+  .to-drawer-about {
+    justify-content: flex-start;
+  }
+  /* The drawer's dropdowns are its buttons' height, padding, corners and words (Paul, 2026-10-11: "Make dropdowns the
+     same height as buttons. They look odd"): the native <select>, measured against a .to-btn (drawer.test.ts). */
+  .to-drawer .to-field select {
+    box-sizing: border-box;
+    height: var(--to-touch);
+    min-height: var(--to-touch);
+    padding: 0 0.8em;
+    font-size: calc(0.9375 * var(--to-scale));
+    border-radius: var(--to-radius);
+  }
+
+  /* ---- fields ---- */
+  input[type='text'],
+  input[type='search'],
+  input[type='password'],
+  select,
+  textarea {
+    font: inherit;
+    font-size: var(--to-scale);
+    color: var(--to-ink);
+    background: var(--to-input-bg);
+    border: 1px solid var(--to-input-border);
+    border-radius: var(--to-radius-sm);
+    min-height: var(--to-touch);
+    padding: 0 var(--to-field-pad);
+  }
+  textarea {
+    padding: 0.75em;
+  }
+  ::placeholder {
+    color: var(--to-placeholder);
+    opacity: 1;
+  }
+  .to-field {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+  }
+  .to-field > span {
+    flex: 1;
+  }
+  .to-field-words {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5em;
+  }
+  .to-field select {
+    max-width: 60%;
+  }
+  .to-switch {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75em;
+    cursor: pointer;
+  }
+  .to-switch input {
+    appearance: none;
+    flex: none;
+    width: 3.3em;
+    height: 1.95em;
+    margin: 0.15em 0 0;
+    border-radius: var(--to-radius-pill);
+    background: var(--to-border-strong);
+    position: relative;
+    cursor: pointer;
+  }
+  .to-switch input::after {
+    content: '';
+    position: absolute;
+    top: 0.225em;
+    left: 0.225em;
+    width: 1.5em;
+    height: 1.5em;
+    border-radius: 50%;
+    background: var(--to-surface);
+    transition: left 0.15s;
+  }
+  .to-switch input:checked {
+    background: var(--to-accent);
+  }
+  .to-switch input:checked::after {
+    left: 1.575em;
+  }
+  .to-switch-words {
+    display: flex;
+    flex-direction: column;
+  }
+  .to-switch-words small {
+    color: var(--to-ink-3);
+  }
+
+  /* ---- the toast ---- */
+  .to-toast {
+    position: fixed;
+    left: 50%;
+    bottom: max(1em, env(safe-area-inset-bottom));
+    transform: translate(-50%, 0.5em);
+    padding: 0.625em 1em;
+    background: var(--to-ink);
+    color: var(--to-bg);
+    border-radius: var(--to-radius);
+    box-shadow: var(--to-shadow-pop);
+    opacity: 0;
+    pointer-events: none;
+    transition:
+      opacity 0.15s,
+      transform 0.15s;
+    z-index: 10;
+    max-width: calc(100vw - 2em);
+  }
+  .to-toast.shown {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  /* A pointer that hovers holds a toast while it is on it (toast.ts); a finger's taps go through it to the bar below. */
+  @media (hover: hover) {
+    .to-toast.shown {
+      pointer-events: auto;
+    }
+  }
+  /* What a toast says (kit/ui/toast.ts), in the page or a dialog: at the corner of what holds it, never below the page's foot. */
+  .to-said {
+    top: 0;
+    left: 0;
+  }
+  /* The size of everything while a pinch is in hand (kit/ui/pinch.ts): top centre, above everything, moving nothing. */
+  .to-pinch-pill {
+    position: fixed;
+    inset: max(0.5333em, env(safe-area-inset-top)) auto auto 50%;
+    transform: translateX(-50%);
+    margin: 0;
+    padding: 0.4em 0.9333em;
+    border: 0;
+    border-radius: 66.6em;
+    background: var(--to-ink);
+    color: var(--to-bg);
+    font: 600 calc(0.9375 * var(--to-scale))/1.2 var(--to-font);
+    font-variant-numeric: tabular-nums;
+    box-shadow: var(--to-shadow-pop);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s;
+    z-index: 20;
+  }
+  .to-pinch-pill.shown {
+    opacity: 1;
+  }
+
+  /* ---- the shell: a column the visible window's height (<to-chrome>, kit/ui/chrome.ts) ---- */
+  to-shell {
+    display: block;
+  }
+  /* The header, the banners, then the column: the bar's place and .to-main, which scrolls. Its height is the visual
+     viewport's, set as it resizes; 100% until then. */
+  to-chrome {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+  }
+  .to-column {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .to-column > main {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  /* The bar's place: the app's bar is taken out of the document's flow and set in it, at the column's top here and at
+     its bottom under a finger (responsive.css), one row however the words are scrolled. Its height is the nav's. */
+  .to-column.barred {
+    padding-top: var(--to-bar-h);
+  }
+  .to-column.barred > main > .to-editor to-bar:not(:is(dialog, [popover], .to-dialog, .deck-show) *) {
+    position: absolute;
+    inset-inline: 0;
+    top: 0;
+    z-index: 3;
+    height: var(--to-bar-h);
+    margin: 0;
+    overflow-y: hidden;
+    border-bottom: 1px solid var(--to-border);
+  }
+  .to-header,
+  #to-first > h1 {
+    flex: none;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    align-content: flex-start;
+    gap: 0.5em 0.375em;
+    height: var(--to-header-h);
+    padding: calc((var(--to-header-h) - var(--to-touch)) / 2) var(--to-gutter);
+    padding-inline-start: max(var(--to-gutter), env(safe-area-inset-left));
+    padding-inline-end: calc(var(--to-burger-w) + 0.375em);
+    background: var(--to-surface);
+    border-bottom: 1px solid var(--to-border);
+    transition: height 0.2s ease;
+  }
+  /* The home page's header starts where its column does, so the wordmark stands over the apps at every width; a
+     document's header keeps the gutter, where an editor's column (.to-wide) starts. */
+  .to-header:has(> .to-brand) {
+    padding-inline-start: var(--to-col-inset-l);
+  }
+  .to-header:has(> .to-brand):dir(rtl) {
+    padding-inline-start: var(--to-col-inset-r);
+  }
+  /* The menu, at the top inline end of the column on every screen (where the words are not: they begin at the other
+     side, and an iPhone's left edge is Safari's back swipe); on a card of its own once the header has stepped aside. */
+  .to-burger,
+  .to-share-btn {
+    position: absolute;
+    top: calc((var(--to-header-h) - var(--to-touch)) / 2);
+    inset-inline-end: var(--to-edge-e);
+    z-index: 4;
+    /* To the corner and back as the header steps aside and returns (responsive.css), never a jump; reduced motion: at once (a11y.css). */
+    transition:
+      top 0.2s ease-out,
+      inset-inline-end 0.2s ease-out,
+      opacity 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+  /* The title edited wide (Paul: "The title is too small to edit"): on a narrow page the header opens a second row,
+     the field across it at 20px, the first row keeping the rest, pushed to the inline end. On a wide page the field is
+     already wide, and it is edited where it is (Paul, 2026-10-16: "When the title bar is wide on desktop I don't need
+     you to push it down for me to edit"). */
+  @media (max-width: 47.9375rem) {
+    .to-header.titling {
+      height: calc(var(--to-header-h) + 0.5em + var(--to-touch));
+      overflow: hidden;
+    }
+    /* The second row runs under the menu button's room too, from one margin to the other. */
+    .to-header.titling .to-title {
+      order: 1;
+      flex: 0 0 calc(100% + var(--to-burger-w) + 0.375em - var(--to-gutter));
+      margin-inline-end: calc(var(--to-gutter) - var(--to-burger-w) - 0.375em);
+      height: var(--to-touch);
+      font-size: calc(1.25 * var(--to-scale));
+    }
+    .to-header.titling .to-title + * {
+      margin-inline-start: auto;
+    }
+  }
+  .to-header .to-tool,
+  .to-header .to-btn {
+    border-color: transparent;
+    background: transparent;
+  }
+  /* Share, a document's, one touch width before the menu button; the header keeps room for both (Paul, 2026-10-13: "sharing is very important"). */
+  .to-share-btn {
+    inset-inline-end: calc(var(--to-edge-e) + var(--to-touch) + 0.375em);
+  }
+  to-chrome:has(> .to-share-btn) .to-header {
+    --to-burger-w: calc(var(--to-edge-e) + 2 * var(--to-touch) + 0.375em);
+  }
+  /* The hamburger: no border (Paul, 2026-10-10), opaque so what slides under it is behind it. */
+  .to-burger,
+  .to-share-btn {
+    width: var(--to-touch);
+    height: var(--to-touch);
+    border-color: transparent;
+    color: var(--to-ink);
+    /* Opaque: the words scrolled under it while it floats are behind it. */
+    background: var(--to-surface);
+  }
+  .to-header .to-tool:hover {
+    background: var(--to-surface-2);
+  }
+  .to-here,
+  #to-first > h1:has(+ p)::before {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--to-touch);
+    height: var(--to-touch);
+    color: var(--to-accent);
+    flex: none;
+  }
+  .to-title {
+    flex: 1;
+    min-width: 0;
+    border-color: transparent;
+    background: transparent;
+    font-weight: 600;
+    text-overflow: ellipsis;
+  }
+  .to-title:hover,
+  .to-title:focus {
+    border-color: var(--to-border);
+    background: var(--to-input-bg);
+  }
+  .to-meter {
+    color: var(--to-accent);
+  }
+  /* A header too narrow for all of it (a phone with the nav at its limit) keeps one row: the meter goes while the link
+     is far from full (Share says how full), so the title keeps a little room and Share and Download stay at the right
+     rather than wrapping under the rest. */
+  .to-header {
+    container: to-header / inline-size;
+  }
+  @container to-header (width < 18.75em) {
+    .to-meter:not(.warn, .over) {
+      display: none;
+    }
+  }
+  .to-meter.warn {
+    color: var(--to-warning);
+  }
+  .to-meter.over {
+    color: var(--to-danger);
+  }
+  /* The document is the page, not a card on it (Paul, 2026-10-10: "we shouldn't really have viewports"). On a phone
+     an app's frame runs to the screen's edges through --to-bleed-l and --to-bleed-r (its margins: the main column's
+     side padding, negated; responsive.css); on a desktop they are 0 and the frame is the main's width. An editor's
+     main (.to-wide) is the window's width at any size, the gutter its only inset: each app sets its own measure
+     where it is words (the Word Processor's paper still runs edge to edge, its words at the page's measure). The
+     home page, the compare page and the empty states keep the column. */
+  .to-main,
+  #to-first > ul {
+    --to-inset-l: max(var(--to-gutter), env(safe-area-inset-left));
+    --to-inset-r: max(var(--to-gutter), env(safe-area-inset-right));
+    --to-bleed-l: 0rem;
+    --to-bleed-r: 0rem;
+    padding: var(--to-gutter);
+    /* The column scrolls the window's width (its scrollbar at the window's edge); what it holds is kept to the measure
+       (tokens.css, --to-col-inset-l and -r, which the home page's header reads too). */
+    padding-left: var(--to-col-inset-l);
+    padding-right: var(--to-col-inset-r);
+  }
+  /* An editor's column has half of what can be seen of it (--to-col-h, kit/ui/chrome.ts) as room below its last line, so
+     the caret typed at the end stays at the middle of the screen (Paul, 2026-10-12: "enough padding at the end of a
+     document we are editing that the cursor stays roughly in the middle of the screen unless we scroll"; kit/ui/scroll.ts
+     revealCaret's `middle`). The spatial canvases, which fill the column, and the Calendar and the Trip Planner, typed in
+     dialogs and rows, keep the gutter (their own stylesheets). */
+  .to-main.to-wide {
+    padding-left: var(--to-inset-l);
+    padding-right: var(--to-inset-r);
+    padding-bottom: calc(var(--to-col-h) / 2);
+  }
+  .to-editor {
+    display: block;
+  }
+  .to-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 2rem 0;
+    color: var(--to-ink-2);
+  }
+
+  /* ---- privacy: the lock beside the title, the unlock and password dialogs, the Privacy dialog ---- */
+  .to-header .to-trust,
+  .to-trust {
+    gap: 0.2857em;
+    padding: 0 0.7143em;
+    min-width: var(--to-touch);
+    min-height: var(--to-touch);
+    border-radius: var(--to-radius-pill);
+    font-size: calc(0.875 * var(--to-scale));
+    color: var(--to-ink-3);
+  }
+  .to-header .to-trust.locked,
+  .to-trust.locked {
+    color: var(--to-ink);
+    background: var(--to-accent-soft);
+  }
+  .to-trust-words {
+    max-width: 16em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .to-title-locked {
+    margin: 0;
+    font-size: var(--to-scale);
+    color: var(--to-ink-3);
+    padding: 0 0.625em;
+    border: 0;
+  }
+  .to-locked {
+    align-items: center;
+    text-align: center;
+  }
+  .to-trust-line {
+    display: flex;
+    align-items: center;
+    gap: 0.375em;
+    margin: 0;
+    font-weight: 600;
+  }
+  .to-trust-line > span {
+    min-width: 0;
+  }
+  .to-trust-line .to-icon {
+    align-self: flex-start;
+    margin-top: 0.1875em;
+  }
+  .to-trust-line.quiet {
+    font-weight: 400;
+    color: var(--to-ink-2);
+  }
+  .to-share-made {
+    margin: 0 0 0.2857em;
+    color: var(--to-ink-2);
+    font-size: calc(0.875 * var(--to-scale));
+  }
+  .to-share-protect-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5em;
+    width: 100%;
+  }
+  .to-password,
+  .to-unlock {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625em;
+    width: 100%;
+  }
+  /* The password the app made: large, in Plex Mono so no letter is taken for another, all of it in view; Copy beside
+     it where there is room, under it on a phone. */
+  .to-password-shown {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5em;
+  }
+  .to-password-made {
+    flex: 1 1 14em;
+    min-width: 0;
+    font-family: var(--to-font-mono);
+    font-size: calc(1.0625 * var(--to-scale));
+    text-align: center;
+  }
+  .to-password-another {
+    align-self: flex-start;
+  }
+  .to-unlock-field {
+    font-size: var(--to-scale);
+    width: 100%;
+  }
+  .to-unlock .to-ask-row input {
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 3.6em;
+  }
+  .to-unlock p,
+  .to-password p {
+    margin: 0;
+  }
+  .to-unlock-wrong {
+    min-height: 1.5em;
+    color: var(--to-danger);
+    font-weight: 600;
+  }
+  .to-privacy-section {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.625em;
+  }
+  .to-privacy-section + .to-privacy-section {
+    margin-top: 1.25em;
+    padding-top: 1em;
+    border-top: 1px solid var(--to-border);
+  }
+  .to-privacy-section h3 {
+    margin: 0;
+    font-size: var(--to-scale);
+  }
+  .to-privacy-section p {
+    margin: 0;
+  }
+  .to-held-now {
+    font-family: var(--to-font-mono);
+  }
+  .to-held {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+  }
+  .to-held li {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    padding: 0.375em 0;
+    border-bottom: 1px solid var(--to-border);
+  }
+  .to-held-words {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .to-held-words small {
+    color: var(--to-ink-3);
+    font-size: calc(0.8125 * var(--to-scale));
+  }
+  .to-held-now {
+    font-size: calc(0.875 * var(--to-scale));
+    color: var(--to-ink-2);
+    white-space: nowrap;
+  }
+
+  /* ---- the Display Link: the pages one under another, the title and Edit above them ---- */
+  .to-display-head {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    max-width: var(--to-max-w);
+    margin: 0;
+    padding: 0.5rem var(--to-gutter);
+    padding-left: max(var(--to-gutter), env(safe-area-inset-left));
+    padding-right: max(var(--to-gutter), env(safe-area-inset-right));
+  }
+  .to-display-title {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  /* The column (kit/ui/chrome.ts): it scrolls the window's width, what it holds kept to the measure in its middle. */
+  .to-display {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    /* The pages sit at the left of the screen, not centred (Paul, 2026-10-11: "The preview documents should be all the
+       way in the left of the screen"). */
+    padding: 0 var(--to-gutter) var(--to-gutter);
+    padding-left: max(var(--to-gutter), env(safe-area-inset-left));
+    padding-right: max(var(--to-gutter), env(safe-area-inset-right));
+  }
+  /* A page at its paper's width (a letter page about 816px), smaller only to fit a narrower screen, centred; never stretched. */
+  /* The pages in a box two fingers zoom (kit/core/shell.ts pinchZoom): --to-view-zoom is their width over the column's, 1 to 4,
+     and the column scrolls sideways to the rest (Paul, 2026-10-11: pinch zoom in view modes too). */
+  .to-display-pages {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+    width: calc(100% * var(--to-view-zoom, 1));
+  }
+  .to-display-page {
+    width: 100%;
+    max-width: calc(var(--page-w, 51rem) * var(--to-view-zoom, 1));
+    margin: 0;
+  }
+  .to-display {
+    overflow-x: auto;
+  }
+  .to-display-page svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    border: 1px solid var(--to-border);
+    border-radius: 0.1875rem;
+    box-shadow: var(--to-shadow);
+  }
+  /* The text layer (kit/text/text-view.ts): read by a screen reader before the pages; shown by Text in their place, reflowed
+     at the person's size in the theme's colors. Hidden, it is shown should the keyboard reach a link in it (a11y.css). */
+  .to-display-text {
+    max-width: 42em;
+    font-size: calc(1.0625 * var(--to-scale));
+    line-height: 1.6;
+    color: var(--to-ink);
+    overflow-wrap: anywhere;
+  }
+  .to-display-text :is(h1, h2, h3, h4) {
+    line-height: 1.25;
+    margin: 1.25em 0 0.5em;
+  }
+  .to-display-text :is(p, ul, ol, table, pre, blockquote) {
+    margin: 0 0 0.875em;
+  }
+  .to-display-text blockquote {
+    padding-inline-start: 1em;
+    border-inline-start: 0.1875em solid var(--to-border);
+    color: var(--to-ink-2);
+  }
+  .to-display-text li.to-text-task {
+    list-style: none;
+  }
+  /* A wide table scrolls with the column (main.to-display, in the tab order), not in a box of its own. */
+  .to-display-text table {
+    border-collapse: collapse;
+  }
+  .to-display-text :is(th, td) {
+    padding: 0.25em 0.75em;
+    border-bottom: 1px solid var(--to-border);
+    text-align: start;
+  }
+  .to-display-text pre {
+    font-family: var(--to-font-mono);
+    white-space: pre-wrap;
+  }
+  .to-display-text img {
+    max-width: 100%;
+    height: auto;
+  }
+  .to-display-text hr {
+    border: 0;
+    border-top: 1px solid var(--to-border);
+    margin: 1.5em 0;
+  }
+  .to-display-text .to-text-notes {
+    font-size: 0.875em;
+    color: var(--to-ink-2);
+  }
+  @media print {
+    .to-display-head {
+      display: none;
+    }
+    .to-display {
+      padding: 0;
+      gap: 0;
+    }
+    .to-display-page {
+      break-after: page;
+    }
+    .to-display-page svg {
+      border: 0;
+      box-shadow: none;
+    }
+  }
+
+  /* ---- home: the apps as cards in a grid, each its icon and name and nothing else, the documents kept here under
+     its card; the same cells at every width, a column or two on a phone, three or more on a desktop ---- */
+  .to-apps,
+  #to-first > ul {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 9.5em), 1fr));
+    gap: 0.75em;
+    align-items: start;
+  }
+  #to-first > ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .to-app,
+  #to-first li {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    gap: 0.5em;
+  }
+  /* The card itself is its link: a light surface, a hairline, a corner, a quiet shadow; the accent over it under a
+     pointer or the keys' focus, never a button inside it (2026-11-08). */
+  .to-app-open,
+  #to-first li > a {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    align-content: center;
+    gap: 0.625em;
+    min-width: 0;
+    min-height: var(--to-touch);
+    padding: 0.875em 0.75em;
+    color: var(--to-ink);
+    text-decoration: none;
+    background: var(--to-surface);
+    border: 1px solid var(--to-border);
+    border-radius: var(--to-radius);
+    box-shadow: var(--to-shadow);
+    transition:
+      border-color 0.15s,
+      box-shadow 0.15s;
+  }
+  .to-app-open:hover,
+  #to-first li > a:hover {
+    border-color: var(--to-accent);
+    box-shadow:
+      0 0 0 1px var(--to-accent),
+      var(--to-shadow);
+  }
+  /* The keys' own ring is kept for a keyboard: a pointer's focus draws nothing more than the hover. */
+  .to-app-open:focus-visible {
+    outline: 1px solid var(--to-accent);
+    outline-offset: 1px;
+  }
+  .to-app-open .to-icon {
+    color: var(--to-accent);
+  }
+  /* An icon before words that can wrap (a card here and the drawer's rows; the drawer's Theme and size of everything,
+     whose icon and words are one .to-field-words) stays beside their first line (Paul, 2026-10-11: "Align the icons in
+     the main menu to the top so they stay there when we zoom"): the icon in the middle of the first line, taking no more
+     room for it. A button's words never wrap (.to-btn). */
+  :is(.to-app-open, .to-field-words, .to-share-copy > span) > .to-icon:first-child {
+    --to-drop: max(0em, (1lh - var(--i, 1.25) * var(--to-scale)) / 2);
+    margin-block: var(--to-drop) calc(-1 * var(--to-drop));
+  }
+  /* The name is plain, not bold (Paul, 2026-10-10). A word wider than its card breaks rather than widening it. */
+  .to-app-open .to-app-name {
+    font-size: var(--to-scale);
+    font-weight: 400;
+    flex: 1 1 auto;
+    width: min-content;
+    min-width: 0;
+    overflow-wrap: break-word;
+  }
+  /* The card's question (<to-start>, home.ts): the one thing a card opens before anything else. */
+  .to-start-dialog {
+    width: min(24em, calc(100vw - 2em));
+  }
+  .to-start-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
+  }
+  .to-start-words {
+    margin: 0;
+    color: var(--to-ink-2);
+  }
+  .to-start-choices {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5em;
+  }
+  .to-start-choices .to-btn {
+    flex: 1 1 8em;
+    justify-content: center;
+  }
+  /* ---- the page before the app: index.html's <header id="to-first"> (scripts/seo.ts) ----
+     What the build writes for crawlers is drawn as the page the shell will draw over it (Paul, 2026-10-12: "What can we
+     do about fouc"), so when the app file arrives and the shell takes it away (kit/core/shell.ts) what changes is the
+     icons and the menu button, never the page. Each part reads the rule of what it stands for (the selectors beside
+     .to-header, .to-brand, .to-here, .to-main, .to-apps, .to-app, .to-app-open, .to-icon; Write's .write-page), so the
+     two cannot drift: test/browser/first-paint.test.ts holds every word within two pixels of the shell's.
+       On the home page: the site's name as the wordmark in the header, the apps' names as the rows under it, each with
+     its icon's room; the line for agents, first for a fetcher, is out of sight (.sr-only).
+       On an app's page: its name where a new document's title is (after the way home, in the title box's padding) and its
+     line where the document's first words are (on Write's paper, under the bar's room); its templates' names, which
+     are for crawlers, out of sight (.sr-only).
+     Until the shell sets the size of everything (kit/ui/zoom.ts applySize), the normal size: BASE, one. */
+  :root:has(> body > #to-first) {
+    --to-doc: 1;
+    --to-nav: 1;
+  }
+  #to-first > h1 {
+    margin: 0;
+    /* The Serif's stand-in alone (fonts.css), so the first paint asks for no face the page does not preload. */
+    font-family: 'IBM Plex Serif Stand-in', var(--to-font-serif);
+    /* The wordmark's line is the menu button's height, as the brand's box is, so its words sit where the brand's do. */
+    line-height: var(--to-touch);
+    padding-inline-start: calc(var(--to-col-inset-l) + var(--to-row-inset));
+  }
+  #to-first > h1:has(+ p) {
+    font: 400 var(--to-scale) / var(--to-line) var(--to-font);
+    letter-spacing: normal;
+    padding-inline-start: max(var(--to-gutter), env(safe-area-inset-left));
+    overflow: hidden;
+  }
+  #to-first > h1:has(+ p)::before {
+    content: '';
+    /* The title box's border and padding: its words start there. */
+    margin-inline-end: calc(1px + var(--to-field-pad));
+  }
+  #to-first li > a {
+    flex: none;
+  }
+  #to-first li > a::before {
+    content: '';
+    flex: none;
+  }
+  /* The first words on the paper, under the bar's room and the column's top (responsive.css takes them away where the
+     bar is at the foot or the paper meets the header). */
+  #to-first > h1 + p {
+    margin: calc(var(--to-bar-h) + var(--to-gutter)) 0 0;
+  }
+
+  /* An app's kept documents line up with its card (Paul, 2026-10-12: "The preview documents are supposed to be aligned
+     with the app names and icons"; a grid of cards, 2026-11-08): the card's own inset, so a preview's edge is the card's
+     words' edge; "n more" starts its words there too. */
+  .to-drive {
+    list-style: none;
+    margin: 0;
+    padding: 0 0.25em;
+  }
+  .to-drive li {
+    display: flex;
+    align-items: center;
+  }
+  .to-drive-open {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.625em;
+    min-height: var(--to-touch);
+    padding: 0.25em 0;
+    padding-inline-start: 0.5em;
+    color: var(--to-ink);
+    text-decoration: none;
+    border-radius: var(--to-radius-sm);
+  }
+  .to-drive-open:hover {
+    background: var(--to-surface-2);
+  }
+  .to-drive-words {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 0;
+  }
+  .to-drive-words span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: calc(0.9375 * var(--to-scale));
+  }
+  .to-drive-words small {
+    color: var(--to-ink-3);
+    font-size: calc(0.8125 * var(--to-scale));
+  }
+  .to-drive .to-tool {
+    border-color: transparent;
+    background: transparent;
+    color: var(--to-ink-3);
+  }
+  .to-drive-more {
+    align-self: flex-start;
+    margin: 0 0 0.375em;
+    padding: 0 0.5em;
+    border: 0;
+    background: transparent;
+    font-weight: 400;
+    color: var(--to-ink-2);
+  }
+
+  /* ---- a kept document's first page, small, beside its name (<to-preview>, kit/ui/preview.ts): the one 4:3 box, 72 by 54 ---- */
+  to-preview {
+    flex: none;
+    display: block;
+    width: 4.5rem;
+    height: 3.375rem;
+    overflow: hidden;
+    background: var(--to-paper);
+    border: 1px solid var(--to-border);
+    border-radius: 0.125rem;
+  }
+  to-preview svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  .to-found to-preview {
+    width: 3em;
+    height: 2.25em;
+  }
+
+  /* ---- the question before a link leaves the site (kit/ui/link-guard.ts) ---- */
+  .to-link-guard .lg-what {
+    margin: 0;
+    font-size: calc(1.25 * var(--to-scale));
+    font-weight: 600;
+  }
+  .to-link-guard .lg-host {
+    margin: 0.25em 0 0.75em;
+    font-size: clamp(calc(1.625 * var(--to-scale)), 8vw, calc(2.25 * var(--to-scale)));
+    font-weight: 600;
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+    /* An address reads left to right in every language, set apart from the words round it. */
+    unicode-bidi: isolate;
+  }
+  .to-link-guard .lg-warn {
+    display: flex;
+    gap: 0.375em;
+    align-items: center;
+    color: var(--to-danger);
+    font-weight: 600;
+  }
+  .to-link-guard .lg-label {
+    margin: 0 0 0.2857em;
+    color: var(--to-ink-3);
+    font-size: calc(0.875 * var(--to-scale));
+  }
+  .to-link-guard .lg-url {
+    display: block;
+    padding: 0.5714em 0.7143em;
+    font-family: var(--to-font-mono);
+    font-size: calc(0.875 * var(--to-scale));
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+    user-select: text;
+    unicode-bidi: isolate;
+    background: var(--to-surface-2);
+    border-radius: var(--to-radius-sm);
+  }
+  .to-link-guard .lg-note {
+    color: var(--to-ink-2);
+    font-size: calc(0.875 * var(--to-scale));
+  }
+  .to-link-guard .lg-buttons {
+    display: flex;
+    gap: 0.75em;
+  }
+  .to-link-guard .lg-buttons .to-btn {
+    flex: 1;
+    min-height: 2.7368em;
+    font-size: calc(1.1875 * var(--to-scale));
+    font-weight: 600;
+    color: var(--to-on-accent);
+  }
+  .to-link-guard .lg-cancel {
+    background: var(--to-danger);
+    border-color: var(--to-danger);
+  }
+  .to-link-guard .lg-go {
+    background: var(--to-go);
+    border-color: var(--to-go);
+  }
+
+  /* ---- Share: post the link to a service; the show link; the embed code ---- */
+  .to-post {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5em;
+  }
+  .to-mastodon {
+    max-width: 26.25em;
+  }
+  .to-mastodon input {
+    height: var(--to-touch) !important;
+    font-size: var(--to-scale);
+  }
+  .to-mastodon .to-btn {
+    height: var(--to-touch);
+  }
+
+  /* ---- the embed view: the pages alone, in another site's frame ---- */
+  .to-embed-head {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+  }
+  .to-embed-title {
+    flex: 1;
+    min-width: 0;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .to-embed {
+    padding: 0 0.75rem 0.75rem;
+  }
+  .to-embed-locked {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  /* ---- a document locked with a password, placed in another (kit/ui/locked-doc.ts): the card a tap opens ---- */
+  to-locked-doc {
+    display: contents;
+  }
+  .to-locked-open {
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    cursor: pointer;
+  }
+  .to-locked-open:focus-visible {
+    outline: 0.125rem solid var(--to-accent);
+    outline-offset: -0.125rem;
+  }
+  .to-locked-open svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  /* ---- Compare: two documents side by side, a row per block; stacked on a phone ---- */
+  .to-compare {
+    max-width: var(--to-max-w);
+    margin: 0 auto;
+    padding: 1rem var(--to-gutter) 3rem;
+  }
+  .to-compare h1 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0 0 0.25rem;
+    font-size: 1.375rem;
+  }
+  .cmp-sides,
+  .cmp-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 0.75rem;
+  }
+  .cmp-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-weight: 600;
+  }
+  .cmp-field input {
+    width: 100%;
+    min-height: var(--to-touch);
+    font-size: 1rem;
+    font-family: var(--to-font-mono);
+  }
+  .cmp-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.375rem;
+    margin: 0.375rem 0 0;
+    color: var(--to-ink-2);
+  }
+  .cmp-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin: 1rem 0 0.5rem;
+  }
+  .cmp-sum {
+    margin: 0;
+    font-weight: 600;
+  }
+  .cmp-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  .cmp-cell {
+    display: block;
+    padding: 0.375rem 0.625rem;
+    border-radius: var(--to-radius-sm);
+    font-family: var(--to-font-mono);
+    font-size: 0.875rem;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    text-decoration: none;
+    color: var(--to-ink-2);
+  }
+  .cmp-del {
+    background: var(--to-last-bg);
+    color: var(--to-last-ink);
+    text-decoration: line-through;
+  }
+  .cmp-add {
+    background: var(--to-ok-bg);
+    color: var(--to-ok-ink);
+  }
+  @media (max-width: 640px) {
+    .cmp-sides,
+    .cmp-row {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0.25rem;
+    }
+    .cmp-same,
+    .cmp-none {
+      display: none;
+    }
+    .cmp-row.changed {
+      padding: 0.25rem 0;
+    }
+  }
+
+  /* ---- the skip link: off the page until it has the focus ---- */
+  .to-skip {
+    position: fixed;
+    top: 0.25rem;
+    left: 0.25rem;
+    z-index: 10;
+    transform: translateY(-200%);
+    /* Inside the screen at any size: its words wrap rather than run past the edge. */
+    max-width: calc(100% - 0.5rem);
+    white-space: normal;
+    text-align: start;
+  }
+  .to-skip:focus-visible {
+    transform: none;
+  }
+
+  /* ---- another version kept here: a quiet line above the bar ---- */
+  .to-other {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    max-width: var(--to-max-w);
+    margin: 0.5rem auto 0;
+    padding: 0.375rem 0.5rem 0.375rem 0.75rem;
+    border: 1px solid var(--to-border);
+    border-radius: var(--to-radius);
+    background: var(--to-surface-2);
+    color: var(--to-ink-2);
+    font-size: 0.875rem;
+  }
+  .to-other p {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+  }
+  /* ---- the Display Link of someone else's document: a quiet line under the header, a link is a copy ---- */
+  .to-copies {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    max-width: var(--to-max-w);
+    margin: 0 max(var(--to-gutter), env(safe-area-inset-right)) 0.5rem max(var(--to-gutter), env(safe-area-inset-left));
+    padding: 0.375rem 0.5rem 0.375rem 0.75rem;
+    border: 1px solid var(--to-border);
+    border-radius: var(--to-radius);
+    background: var(--to-surface-2);
+    color: var(--to-ink-2);
+    font-size: 0.875rem;
+  }
+  .to-copies p {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+  }
+  @media print {
+    .to-copies {
+      display: none;
+    }
+  }
+
+  /* ---- Find in this document: a small bar under the app's bar ---- */
+  to-find {
+    position: fixed;
+    right: max(var(--to-gutter), env(safe-area-inset-right));
+    z-index: 4;
+  }
+  .to-find {
+    display: flex;
+    align-items: center;
+    gap: 0.25em;
+    padding: 0.25em 0.25em 0.25em 0.5em;
+    border: 1px solid var(--to-border);
+    border-radius: var(--to-radius);
+    background: var(--to-surface);
+    box-shadow: var(--to-shadow);
+  }
+  .to-find-input {
+    width: 14em;
+    min-width: 0;
+    font-size: var(--to-scale);
+    border: 0;
+    background: transparent;
+    color: inherit;
+  }
+  .to-find-input:focus {
+    outline: none;
+  }
+  .to-find:focus-within {
+    outline: 0.125em solid var(--to-accent);
+    outline-offset: 1px;
+  }
+  .to-find-count {
+    min-width: 4.5em;
+    color: var(--to-ink-3);
+    font-size: calc(0.8125 * var(--to-scale));
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  ::highlight(to-find) {
+    background-color: color-mix(in srgb, var(--to-warning) 35%, transparent);
+  }
+  ::highlight(to-find-now) {
+    background-color: var(--to-warning);
+    color: #18181b;
+  }
+
+  /* ---- the keyboard shortcuts: a .to-table a group ---- */
+  .to-keys {
+    margin: 0 0 1.1429em;
+    font-size: calc(0.875 * var(--to-scale));
+  }
+  .to-keys th,
+  .to-keys td {
+    padding: 0.3125em 0;
+  }
+  .to-keys th {
+    width: 45%;
+    padding-right: 0.75em;
+    font-weight: 400;
+  }
+  .to-keys kbd {
+    font-family: var(--to-font-mono);
+    font-size: calc(0.8125 * var(--to-scale));
+  }
+
+  /* ---- the size of everything, in the menu: the eye, then the stepper, no words (drawer.ts) ---- */
+  .to-size {
+    flex-wrap: wrap;
+  }
+  /* Near the drawer's top (drawer.ts), a row of its own. */
+  .to-drawer-inner > .to-size {
+    padding: 0.5em 1em;
+    border-bottom: 1px solid var(--to-border);
+  }
+  .to-size-step {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.125em;
+  }
+  .to-size-now {
+    min-width: 4.2em;
+    font-variant-numeric: tabular-nums;
+  }
+  .to-install-how {
+    margin: 0;
+  }
+
+  /* ---- search on the home page ---- */
+  .to-search {
+    display: block;
+    width: 100%;
+    margin: 0.5rem 0 0.25rem;
+    font-size: 1rem;
+  }
+  .to-found-docs {
+    list-style: none;
+    margin: 0 0 1rem;
+    padding: 0;
+  }
+  .to-found-docs a {
+    display: block;
+    padding: 0.5rem 0.25rem;
+    border-bottom: 1px solid var(--to-border);
+    color: inherit;
+    text-decoration: none;
+  }
+  .to-found-docs a:hover {
+    background: var(--to-surface-2);
+  }
+  .to-found-docs small {
+    display: block;
+    color: var(--to-ink-3);
+  }
+  .to-found-docs mark {
+    background: color-mix(in srgb, var(--to-warning) 35%, transparent);
+    color: inherit;
+  }
+
+  /* ---- Insert ▾ narrowed by the letters typed ---- */
+  .to-menu-filter {
+    padding: 0.3077em 0.7692em 0.4615em;
+    color: var(--to-ink-3);
+    font-size: calc(0.8125 * var(--to-scale));
+  }
+}
+@layer kit {
+  /* The hidden box that holds a phone's keyboard up between a tap that makes a document and its editor being drawn (kit/ui/chrome.ts startEditing). */
+  .to-keyboard-hold {
+    position: fixed;
+    inset: 0 auto auto 0;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    overflow: hidden;
+    /* iOS draws the caret of a focused box itself, whatever its opacity: none to draw, and nothing under the keyboard for it to scroll into view (at the top start, never the bottom end). */
+    caret-color: transparent;
+    color: transparent;
+    pointer-events: none;
+  }
+}
+@layer a11y {
+  /* The instant of a copy (kit/text/clipboard.ts installPlainCopy): the words black on white whatever the theme, so a
+     rendering the browser takes of the selection carries no dark theme's white into a paste. */
+  :root[data-copying] {
+    color-scheme: light;
+  }
+  :root[data-copying] to-shell,
+  :root[data-copying] to-shell * {
+    color: #000 !important;
+    background-color: #fff !important;
+    text-shadow: none !important;
+  }
+}
