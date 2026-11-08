@@ -1,0 +1,13 @@
+---
+app: cal
+title: The week of the stoop sale
+zone: America/New_York
+green: The sale
+blue: Everyone
+---
+- 2026-10-13 18:30-19:15: Pick up the coffee urn on Court Street {color=green}
+- 2026-10-14: Chalk the sidewalk signs {color=green}
+- 2026-10-15 08:00-08:30: Standup {every=day times=5}
+- 2026-10-16 19:00-21:00: Price everything, pizza after {color=green}
+- 2026-10-17 09:00-15:00: Stoop sale, rain or shine {color=green}
+- 2026-10-18: Leftovers to Housing Works, van at ten {color=blue}

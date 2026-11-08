@@ -1,0 +1,214 @@
+<!doctype html>
+<!-- Generated from src/kit/core/network.ts by scripts/network-doc.ts (npm run docs:network). Do not edit. -->
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>What leaves your browser · Tiny Little Office</title>
+<meta name="description" content="Every request Tiny Little Office can make: when, what it carries, and what stops it." />
+<link rel="icon" href="favicon.svg" type="image/svg+xml" />
+<style>
+@font-face{font-family:'IBM Plex Sans';src:url(./fonts/IBMPlexSans-Regular.woff2) format('woff2');font-weight:400;font-display:swap}
+@font-face{font-family:'IBM Plex Sans';src:url(./fonts/IBMPlexSans-SemiBold.woff2) format('woff2');font-weight:600;font-display:swap}
+@font-face{font-family:'IBM Plex Mono';src:url(./fonts/IBMPlexMono-Regular.woff2) format('woff2');font-weight:400;font-display:swap}
+:root{--bg:hsl(0 0% 97.5%);--surface:hsl(0 0% 100%);--border:hsl(240 4.9% 83.9%);--ink:hsl(240 5.9% 10%);--ink-2:hsl(240 5.3% 26.1%);--ink-3:hsl(240 5.2% 33.9%);--accent:hsl(243.4 75.4% 58.6%);--code:hsl(240 4.8% 95.9%);color-scheme:light dark}
+@media (prefers-color-scheme:dark){:root{--bg:hsl(240 6% 8%);--surface:hsl(240 5.1% 15%);--border:hsl(240 5.3% 58%);--ink:hsl(240 9.1% 91.8%);--ink-2:hsl(240 7.3% 84%);--ink-3:hsl(240 5.6% 73%);--accent:hsl(229.4 100% 78.3%);--code:hsl(240 5.7% 18.2%)}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-text-size-adjust:100%}
+main{max-width:760px;margin:0 auto;padding:24px 16px 64px}
+h1{font-size:1.75rem;line-height:1.2;margin:.5rem 0 1rem}
+h2{font-size:1.25rem;margin:2.25rem 0 .75rem}
+h3{font-size:1rem;margin:0 0 .25rem;overflow-wrap:anywhere}
+a{color:var(--accent)}
+code{font:.9em 'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--code);padding:.05em .3em;border-radius:4px;overflow-wrap:anywhere}
+ul{padding-left:1.25rem}
+li{margin:.4rem 0}
+.home{font-size:.95rem}
+.reach{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 16px;margin:12px 0}
+.reach p{margin:0 0 .5rem;color:var(--ink-2)}
+dl{display:grid;grid-template-columns:max-content 1fr;gap:4px 12px;margin:0;font-size:.95rem}
+dt{color:var(--ink-3)}
+dd{margin:0}
+@media (max-width:480px){dl{grid-template-columns:1fr}dd{margin-bottom:6px}}
+.note{color:var(--ink-3);font-size:.9rem}
+</style>
+</head>
+<body>
+<main>
+<p class="home"><a href="./">Tiny Little Office</a></p>
+<h1>What leaves your browser</h1>
+<p>Tiny Little Office keeps a document in its link. Opening one asks the site for its own files and nothing else. This page lists every other request the site can make: when it happens, what it carries, and what stops it. The Content-Security-Policy in <code>public/_headers</code> allows these places and no others, so a request not on this list is refused by the browser itself.</p>
+<h2>Every request the site can make</h2>
+<section class="reach">
+<h3><code>tinylittleoffice.com</code></h3>
+<p>The site’s own files: the page, the app file (every app, the English words, the icons, the emoji and the math), its stylesheet, an app’s templates when its list opens, a language when a page is in it, and the type (IBM Plex, a face when a page’s words need it), each fetched once and kept a year.</p>
+<dl>
+<dt>When</dt><dd>while shown</dd>
+<dt>Carries</dt><dd>Which file; never the document, which is after the &quot;#&quot; and stays in the browser</dd>
+<dt>Stopped by</dt><dd>Nothing to stop but not opening the site: these files are the app itself</dd>
+<dt>Made by</dt><dd><code>the whole site</code></dd>
+<dt>Allowed by</dt><dd><code>'self'</code></dd>
+</dl>
+</section>
+<section class="reach">
+<h3><code>tinylittleoffice.com</code></h3>
+<p>The service worker, /sw.js, with Save in browser on: it keeps the pages, the app file, its stylesheet, the Latin faces and each file a page fetches after, so the site opens offline.</p>
+<dl>
+<dt>When</dt><dd>after a tap</dd>
+<dt>Carries</dt><dd>Which file, as the pages ask; never the document, which is after the &quot;#&quot; and never reaches the worker, and never a shared link’s &quot;/c/&lt;id&gt;&quot; page with its card</dd>
+<dt>Stopped by</dt><dd>Save in browser, turned off: the worker is unregistered and everything it kept is deleted; while it is off there is none</dd>
+<dt>Made by</dt><dd><code>kit/share/offline.ts, sw.ts</code></dd>
+<dt>Allowed by</dt><dd><code>'self'</code></dd>
+</dl>
+</section>
+<section class="reach">
+<h3><code>tinylittleoffice.com</code></h3>
+<p>A preview card, at the site’s own /card: posted when you share with a network (Bluesky, Mastodon, X, LinkedIn or the share sheet) with “Show a preview of the first page” on; fetched later by that network.</p>
+<dl>
+<dt>When</dt><dd>on share</dd>
+<dt>Carries</dt><dd>A picture of the first page, the title and the first words, kept readable for a month so the network can fetch them; never the document, never its link</dd>
+<dt>Stopped by</dt><dd>The switch “Show a preview of the first page” in Share, turned off; Edit link, Present link and Email never make one, nor does a document with a password</dd>
+<dt>Made by</dt><dd><code>kit/share/card.ts</code></dd>
+<dt>Allowed by</dt><dd><code>'self'</code></dd>
+</dl>
+</section>
+<section class="reach">
+<h3><code>tiles.openfreemap.org</code></h3>
+<p>The Trip Planner’s map: its style, its vector tiles, its sprites and its fonts, from OpenFreeMap (made for this; no key, no limit), drawn here by MapLibre, which is fetched with the first map and is never part of the app file.</p>
+<dl>
+<dt>When</dt><dd>while shown</dd>
+<dt>Carries</dt><dd>Which squares of the map are on the screen, and no referrer (the site sends none, and OpenFreeMap asks for none); nothing of the document</dd>
+<dt>Stopped by</dt><dd>Map, in the Trip Planner’s bar, turned off: no map then asks for them; the home page’s pictures of the templates never do</dd>
+<dt>Made by</dt><dd><code>apps/trip/editor.ts</code></dd>
+<dt>Allowed by</dt><dd><code>connect-src</code></dd>
+</dl>
+</section>
+<section class="reach">
+<h3><code>tile.openstreetmap.org</code></h3>
+<p>The pictures (tiles) under a trip’s map drawn anywhere but the Trip Planner itself (a slide, a page, an item, a card, an export), asked directly as OpenStreetMap’s policy asks: only the tiles its box needs; a picture made of that map (a card, a PDF, a PNG, a PowerPoint) asks them again to write them into it.</p>
+<dl>
+<dt>When</dt><dd>while shown</dd>
+<dt>Carries</dt><dd>Which squares of the map are on the screen or in the picture, and the site’s name as the referrer (the origin alone, as OpenStreetMap’s tile policy asks of a web page; never the page’s path or anything of the document)</dd>
+<dt>Stopped by</dt><dd>Map, in the Trip Planner’s bar, turned off: no map then asks for them, anywhere a trip is drawn; the home page’s pictures of the templates never do</dd>
+<dt>Made by</dt><dd><code>apps/trip/view.ts, kit/draw/raster.ts</code></dd>
+<dt>Allowed by</dt><dd><code>img-src</code>, <code>connect-src</code></dd>
+</dl>
+</section>
+<section class="reach">
+<h3><code>nominatim.openstreetmap.org</code></h3>
+<p>Place search in the Trip Planner.</p>
+<dl>
+<dt>When</dt><dd>after a tap</dd>
+<dt>Carries</dt><dd>The words searched for, and the site’s name as the referrer (the origin alone, as Nominatim’s usage policy asks of an application; never the page’s path or anything of the document)</dd>
+<dt>Stopped by</dt><dd>Not searching: typing a stop’s place by hand asks no one</dd>
+<dt>Made by</dt><dd><code>apps/trip/editor.ts</code></dd>
+<dt>Allowed by</dt><dd><code>connect-src</code></dd>
+</dl>
+</section>
+<section class="reach">
+<h3><code>www.openstreetmap.org</code></h3>
+<p>The credit to OpenStreetMap under the Trip Planner’s map (with OpenMapTiles’ and OpenFreeMap’s) and in the corner of a trip’s map drawn on its tiles, a link.</p>
+<dl>
+<dt>When</dt><dd>after a tap</dd>
+<dt>Carries</dt><dd>Nothing of the document: it opens OpenStreetMap’s copyright page in a new tab</dd>
+<dt>Stopped by</dt><dd>Not following the link</dd>
+<dt>Made by</dt><dd><code>apps/trip/editor.ts, apps/trip/view.ts</code></dd>
+<dt>Allowed by</dt><dd>none: it opens in a new tab</dd>
+</dl>
+</section>
+<section class="reach">
+<h3><code>tinier.tinylittleoffice.com</code></h3>
+<p>Short links: made or opened.</p>
+<dl>
+<dt>When</dt><dd>after a tap</dd>
+<dt>Carries</dt><dd>The long link encrypted here, which the service cannot read, and how long to keep it</dd>
+<dt>Stopped by</dt><dd>Not making a short link: the long link needs no one</dd>
+<dt>Made by</dt><dd><code>kit/share/short.ts</code></dd>
+<dt>Allowed by</dt><dd><code>connect-src</code></dd>
+</dl>
+</section>
+<section class="reach">
+<h3><code>github.com</code></h3>
+<p>The site’s source: the repository, “GitHub” at the home page’s foot; the commit this copy was built from, in About; links.</p>
+<dl>
+<dt>When</dt><dd>after a tap</dd>
+<dt>Carries</dt><dd>Which page of the source; it opens in a new tab, and nothing of the document goes with it</dd>
+<dt>Stopped by</dt><dd>Not following the link: the commit’s name comes from the site’s own /version.json</dd>
+<dt>Made by</dt><dd><code>kit/ui/home.ts, kit/ui/drawer.ts, kit/core/version.ts</code></dd>
+<dt>Allowed by</dt><dd>none: it opens in a new tab</dd>
+</dl>
+</section>
+<section class="reach">
+<h3><code>aboard.com</code></h3>
+<p>Aboard, who made the site, named at the home page’s foot and in About, a link.</p>
+<dl>
+<dt>When</dt><dd>after a tap</dd>
+<dt>Carries</dt><dd>Nothing: it opens in a new tab, and nothing of the document goes with it</dd>
+<dt>Stopped by</dt><dd>Not following the link</dd>
+<dt>Made by</dt><dd><code>kit/ui/home.ts, kit/ui/drawer.ts</code></dd>
+<dt>Allowed by</dt><dd>none: it opens in a new tab</dd>
+</dl>
+</section>
+<section class="reach">
+<h3><code>bsky.app</code></h3>
+<p>Bluesky’s compose box.</p>
+<dl>
+<dt>When</dt><dd>on share</dd>
+<dt>Carries</dt><dd>The document’s title and its link, which is the whole document (it is in the link)</dd>
+<dt>Stopped by</dt><dd>Not choosing that service in Share; it opens in a new tab, which you then post from or close</dd>
+<dt>Made by</dt><dd><code>kit/share/share.ts</code></dd>
+<dt>Allowed by</dt><dd>none: it opens in a new tab</dd>
+</dl>
+</section>
+<section class="reach">
+<h3><code>x.com</code></h3>
+<p>X’s compose box.</p>
+<dl>
+<dt>When</dt><dd>on share</dd>
+<dt>Carries</dt><dd>The document’s title and its link, which is the whole document (it is in the link)</dd>
+<dt>Stopped by</dt><dd>Not choosing that service in Share; it opens in a new tab, which you then post from or close</dd>
+<dt>Made by</dt><dd><code>kit/share/share.ts</code></dd>
+<dt>Allowed by</dt><dd>none: it opens in a new tab</dd>
+</dl>
+</section>
+<section class="reach">
+<h3><code>www.linkedin.com</code></h3>
+<p>LinkedIn’s share box.</p>
+<dl>
+<dt>When</dt><dd>on share</dd>
+<dt>Carries</dt><dd>The document’s title and its link, which is the whole document (it is in the link)</dd>
+<dt>Stopped by</dt><dd>Not choosing that service in Share; it opens in a new tab, which you then post from or close</dd>
+<dt>Made by</dt><dd><code>kit/share/share.ts</code></dd>
+<dt>Allowed by</dt><dd>none: it opens in a new tab</dd>
+</dl>
+</section>
+<section class="reach">
+<h3>Any https address</h3>
+<p>A Mastodon server’s compose box: the one you name.</p>
+<dl>
+<dt>When</dt><dd>on share</dd>
+<dt>Carries</dt><dd>The document’s title and its link, which is the whole document (it is in the link)</dd>
+<dt>Stopped by</dt><dd>Not choosing that service in Share; it opens in a new tab, which you then post from or close</dd>
+<dt>Made by</dt><dd><code>kit/share/share.ts</code></dd>
+<dt>Allowed by</dt><dd>none: it opens in a new tab</dd>
+</dl>
+</section>
+<p>A document fetches nothing from any other site but a trip's map (OpenFreeMap's in the Trip Planner, OpenStreetMap's tiles under a trip drawn anywhere else), by the Map switch. A link in it is words that go somewhere when the reader follows them; nothing else in a document is drawn from another site's address.</p>
+<h2>Why each of these is asked directly</h2>
+<ul>
+<li><strong>The map.</strong> The Trip Planner's map comes from OpenFreeMap only while it is on the screen (its style, its vector tiles, its sprites and its fonts; MapLibre draws them here, fetched with the first map, never part of the app file; OpenFreeMap is made for this, with no key and no limit, and asks for no referrer); place search only when a search is tapped. A trip drawn on a slide, a page, an outline's item, a card or in an export is drawn on OpenStreetMap's tiles, at the zoom that fits its places: only the tiles its box needs (a handful, never a whole zoom level), nothing fetched ahead. A picture made of it (a card, a PDF, a PNG, a PowerPoint) fetches those tiles again to write them into the picture. The home page's pictures of the templates are drawn without them, so a visitor who has not opened a trip tells OpenStreetMap nothing, and Map in the Trip Planner's bar, turned off, turns them off everywhere. They are asked directly, by the browser with its own name: OpenStreetMap's usage policies are written for the browser that shows the map asking them directly, and a cache of ours in between would be the heavy, anonymous use they ask people not to make; nothing keeps them but the browser's own cache. The site sends no referrer.</li>
+<li><strong>Short links.</strong> Only when a short link is made or opened; the service holds ciphertext it cannot read, whose key is in the short link's fragment, which browsers never send (tinier/tinier.ts).</li>
+<li><strong>A preview.</strong> Only when a person shares with a network from Share with &quot;Show a preview of the first page&quot; on: a picture of the first page, the title and the first words go to the site's own <code>/card</code>, and the link shared carries the card's id in its path (<code>/c/&lt;id&gt;</code>, before the &quot;#&quot;): the one page the site's Worker serves, the app's page with the card's tags, which the shell moves to the app's own address as it opens. The card is kept readable for a month, then forgotten (tinier/cards.ts); the document and its link are never sent.</li>
+<li><strong>Sharing to a service.</strong> Share's Bluesky, Mastodon, X and LinkedIn open that service's own compose box in a new tab, with the title and the link in it: no script of theirs runs here. The link is the document, so whoever reads the post can read it. &quot;Any https address&quot; there is the Mastodon server the person names.</li>
+<li><strong>Fonts and icons.</strong> Self-hosted, from the site itself: the type is IBM Plex (<code>public/fonts/</code>), each face fetched when a page's words need it, and the policy's <code>font-src</code> is <code>'self'</code> alone; the icons and the emoji are in the site's own app file.</li>
+<li><strong>Offline.</strong> With Save in browser on, the site's service worker (<code>/sw.js</code>, from <code>src/sw.ts</code>) keeps the site's own files on the device: the eleven pages, the app file, its stylesheet, the manifest and icons and the Latin faces when it is installed, and each file a page fetches afterwards (an app's templates, a language, a face). It asks only the site, and only for its files; a page is asked of the network first, so a visit online is never stale. It never keeps a document (the document is after the &quot;#&quot;, which never reaches it) nor a shared link's <code>/c/&lt;id&gt;</code> page. Turning Save in browser off unregisters it and deletes everything it kept; while it is off nothing registers.</li>
+<li><strong>Links.</strong> A link in a document that leaves the site opens only after the reader is shown where it goes and says Go (kit/ui/link-guard.ts), in a new tab with no referrer.</li>
+</ul>
+<h2>Nothing else</h2>
+<p>No analytics, no error reporting, no fonts or scripts from a CDN, no tag manager, no fetch the person did not cause. <code>test/network.test.ts</code> reads the source (<code>src/</code> and the shortener in <code>tinier/</code>) and fails on any host that is not on this page, and on any analytics, error-reporting, font-CDN or tag-manager host anywhere in the site.</p>
+<h2>How this page is kept true</h2>
+<p>It is written from <code>src/kit/core/network.ts</code>, the one list of every host, by <code>scripts/network-doc.ts</code> (<code>npm run docs:network</code>, which <code>npm run build</code> runs first); a test fails when the committed page is not what the list says. Every module that asks the web takes its host from that list, so a new host cannot be reached without appearing here. The policy's <code>connect-src</code> and <code>img-src</code> are written from the same list (scripts/headers.ts), and <code>test/csp.test.ts</code> holds each host to the directive the list names and nothing else; the policy has no <code>frame-src</code> or <code>media-src</code> of its own, so no frame, film or sound comes from another site.</p>
+<p class="note">Written from <code>src/kit/core/network.ts</code>; the same page is <code>docs/network.md</code> in the repository.</p>
+</main>
+</body>
+</html>

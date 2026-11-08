@@ -1,0 +1,12 @@
+---
+app: draw
+title: How a page loads
+alt: A browser asks a server, which reads the data and answers.
+---
+Kind | X | Y | W | H | Style | Label
+--- | --- | --- | --- | --- | --- | ---
+o | 4 | 6 | 16 | 8 | 1b | Browser
+o | 32 | 6 | 16 | 8 | 1b | Server
+c | 60 | 5 | 14 | 10 | 1g | Data
+k | 0 | 1 | 0 | 0 | 0 | asks
+k | 1 | 2 | 0 | 0 | 0 | reads

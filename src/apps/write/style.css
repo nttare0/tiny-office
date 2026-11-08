@@ -1,0 +1,580 @@
+/* Write: the text as paper (white in the light theme, dark in the dark one; printed pages stay white), the document's fields over it, a
+   table block as a small grid, another document as a picture, the notes under the text, the count at the
+   foot. Every app's sheet sits in the apps layer, above the kit's. */
+@layer apps {
+  to-write-editor {
+    display: flex;
+    flex-direction: column;
+    gap: var(--to-gutter);
+    min-height: 0;
+  }
+
+  /* The paper is the page, not a card on it (Paul, 2026-10-10): its colour runs the window's width, edge to edge
+     under the bar at any size (the main's side insets, negated; none outside the main), and the words keep the
+     measure of a page at 96 px to the inch with its inch of margin, centred (less where the screen is narrower
+     than the page, 16px on a phone). An app's page draws its line here before the app is there (kit.css, #to-first). */
+  .write-page,
+  #to-first > h1 + p {
+    touch-action: manipulation;
+    --write-w: 51rem;
+    --write-m: 6rem;
+    --write-mx: clamp(1rem, 6vw, var(--write-m));
+    --write-bl: var(--to-inset-l, 0rem);
+    --write-br: var(--to-inset-r, 0rem);
+    margin-left: calc(-1 * var(--write-bl));
+    margin-right: calc(-1 * var(--write-br));
+    padding: clamp(1.25rem, 6vw, var(--write-m)) max(var(--write-mx), calc((100% + var(--write-bl) + var(--write-br) - var(--write-w)) / 2 + var(--write-m)));
+    color: var(--to-paper-ink);
+    background: var(--to-paper);
+    font-family: var(--to-font);
+  }
+  @media (max-width: 640px) {
+    .write-page,
+    #to-first > h1 + p {
+      --write-mx: 1rem;
+    }
+  }
+  .write-page[data-paper='a4'] {
+    --write-w: 49.625rem;
+    --write-m: 5.875rem;
+  }
+  .write-page .write-text > .tx,
+  #to-first > h1 + p {
+    min-height: 50dvh;
+    font-size: 1.0625rem;
+    line-height: 1.6;
+    caret-color: var(--to-paper-accent);
+  }
+  .write-page .tx h1 {
+    margin-top: 0.6em;
+  }
+  .write-page .tx h1.title {
+    font-size: 2.4em;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin: 0 0 0.5em;
+  }
+  .write-page .tx h2 {
+    margin-top: 0.5em;
+  }
+  .write-page .tx a,
+  .write-page .tx .ic,
+  .write-page .tx .fn,
+  .write-notes li::marker,
+  .to-note-back {
+    color: var(--to-paper-accent);
+  }
+  .write-page .tx .ic,
+  .write-page .tx .fn {
+    background: color-mix(in srgb, var(--to-paper-accent) 10%, transparent);
+  }
+  .write-page .tx .ic:hover,
+  .write-page .tx .fn:hover,
+  .write-page .tx .fn:focus-visible {
+    background: color-mix(in srgb, var(--to-paper-accent) 22%, transparent);
+  }
+  .write-page .tx li::before,
+  .write-page .tx blockquote,
+  .write-page .tx li[data-done='true'] {
+    color: var(--to-paper-muted);
+  }
+  .write-page .tx li[data-done]::before {
+    cursor: pointer;
+  }
+  .write-page .tx blockquote {
+    border-left-color: var(--to-paper-line);
+  }
+  .write-page .tx .tx-card:not(.tx-card-own) {
+    background: var(--to-paper-shade);
+    border-color: var(--to-paper-line);
+    color: var(--to-paper-muted);
+  }
+  .write-page .tx .tx-card-kind {
+    color: var(--to-paper-ink);
+  }
+  .write-page .tx .tx-card hr {
+    border-top-color: var(--to-paper-line);
+  }
+
+  /* The look (look.ts): the type the document is set in, its faces as two properties the page passes down.
+     The stacks are look.ts's STACKS: the sans, serif and mono are the site's (tokens.css), the narrow one written out. */
+  .write-page {
+    --write-sans: var(--to-font);
+    --write-serif: var(--to-font-serif);
+    --write-mono: var(--to-font-mono);
+    --write-narrow: 'Bodoni 72', Didot, 'Times New Roman', Times, 'Noto Serif', serif;
+    --write-head: var(--write-sans);
+    --write-body: var(--write-sans);
+  }
+  .write-page[data-look='serif'],
+  .write-page[data-look='book'] {
+    --write-head: var(--write-serif);
+    --write-body: var(--write-serif);
+  }
+  .write-page[data-look='mono'] {
+    --write-head: var(--write-mono);
+    --write-body: var(--write-mono);
+  }
+  .write-page[data-look='mixed'] {
+    --write-head: var(--write-serif);
+  }
+  .write-page[data-look='inverse'] {
+    --write-body: var(--write-serif);
+  }
+  .write-page[data-look='news'] {
+    --write-head: var(--write-narrow);
+  }
+  .write-page .tx,
+  .write-notes {
+    font-family: var(--write-body);
+  }
+  .write-page .tx h1,
+  .write-page .tx h2,
+  .write-page .tx h3,
+  .write-page .tx h4 {
+    font-family: var(--write-head);
+  }
+  .write-page[data-look='mono'] .tx {
+    font-size: 0.9375rem;
+  }
+  .write-page[data-look='mono'] .tx h1.title {
+    font-size: 1.9em;
+    letter-spacing: 0;
+  }
+  .write-page[data-look='book'] .tx p {
+    margin: 0;
+    text-align: justify;
+    hyphens: auto;
+  }
+  .write-page[data-look='book'] .tx p + p {
+    text-indent: 1.5em;
+  }
+  .write-page[data-look='book'] .tx h1:not(.title),
+  .write-page[data-look='book'] .tx h2,
+  .write-page[data-look='book'] .tx h3 {
+    font-variant: small-caps;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-align: center;
+  }
+  .write-page[data-look='book'] .tx h1.title {
+    text-align: center;
+    letter-spacing: 0;
+    font-weight: 400;
+  }
+  .write-page[data-look='news'] .tx h1.title {
+    font-size: 2.8em;
+    letter-spacing: -0.01em;
+    line-height: 1.02;
+  }
+
+  /* The Look menu: each sample drawn in its look's type, by its place in the menu (look.ts's order). */
+  .write-look .to-menu-item:nth-of-type(1) .to-menu-words {
+    font-family: var(--to-font);
+  }
+  .write-look .to-menu-item:nth-of-type(2) .to-menu-words {
+    font-family: var(--to-font-serif);
+  }
+  .write-look .to-menu-item:nth-of-type(3) .to-menu-words {
+    font-family: var(--to-font-mono);
+  }
+  .write-look .to-menu-item:nth-of-type(4) .to-menu-words > span {
+    font-family: var(--to-font-serif);
+  }
+  .write-look .to-menu-item:nth-of-type(5) .to-menu-words small {
+    font-family: var(--to-font-serif);
+  }
+  .write-look .to-menu-item:nth-of-type(6) .to-menu-words {
+    font-family: var(--to-font-serif);
+  }
+  .write-look .to-menu-item:nth-of-type(6) .to-menu-words > span {
+    font-variant: small-caps;
+    letter-spacing: 0.04em;
+  }
+  .write-look .to-menu-item:nth-of-type(7) .to-menu-words > span {
+    font-family: 'Bodoni 72', Didot, 'Times New Roman', Times, serif;
+    font-weight: 600;
+  }
+
+  /* The document's own head fields (an invoice's from and to): small labels over boxes, two to a row. */
+  .write-fields {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(12em, 1fr));
+    gap: 0.625rem 1rem;
+    margin: 0 0 1.25rem;
+    padding: 0 0 1rem;
+    border-bottom: 1px solid var(--to-paper-line);
+  }
+  .write-fields > div {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1875rem;
+    min-width: 0;
+  }
+  .write-fields dt {
+    font-size: 0.6875rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--to-paper-muted);
+  }
+  .write-fields dd {
+    margin: 0;
+  }
+  .write-fields input,
+  .write-fields textarea {
+    width: 100%;
+    padding: 0.375rem 0.5rem;
+    font: inherit;
+    font-size: 1rem;
+    line-height: 1.4;
+    color: var(--to-paper-ink);
+    background: var(--to-paper-shade);
+    border: 1px solid var(--to-paper-line);
+    border-radius: var(--to-radius-sm);
+    resize: vertical;
+  }
+  .write-fields input:focus-visible,
+  .write-fields textarea:focus-visible {
+    outline: 0.125rem solid var(--to-paper-accent);
+    outline-offset: -1px;
+  }
+
+  /* A page break: a thin dashed rule with its name small in the middle, as tall as a finger. */
+  .write-break {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    min-height: 2.75rem;
+    color: var(--to-paper-muted);
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+  }
+  .write-break::before,
+  .write-break::after {
+    content: '';
+    flex: 1;
+    border-top: 1px dashed color-mix(in srgb, var(--to-paper-muted) 60%, transparent);
+  }
+
+  /* A horizontal rule: a light line, the card a finger tall (the kit pads an hr card above and below), in rem so it grows with the size. */
+  .write-rule {
+    display: flex;
+    align-items: center;
+    min-height: 1.75rem;
+    cursor: pointer;
+  }
+  .write-rule hr {
+    flex: 1;
+    margin: 0;
+    border: 0;
+    border-top: 1px solid var(--to-paper-line);
+  }
+
+  /* A card in hand (it has the focus): outlined, whichever way it was taken. */
+  .write-page .tx .tx-card:focus {
+    outline: 0.125rem solid var(--to-paper-accent);
+    outline-offset: 0.125rem;
+  }
+
+  /* A table block: a small grid, the names over the columns, numbers to the right, the locked cells shaded.
+     It scrolls sideways in its own box when it is wider than the paper, so the page never does. */
+  to-write-table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+  table.wt {
+    width: 100%;
+    margin: 0.25rem 0;
+    border-collapse: collapse;
+    font-size: 0.9375rem;
+    line-height: 1.4;
+    color: var(--to-paper-ink);
+  }
+  table.wt th,
+  table.wt td {
+    padding: 0;
+    border: 1px solid var(--to-paper-line);
+  }
+  /* A head breaks between its words only: a column is never narrower than its name's longest word (the table scrolls
+     in its own box first). */
+  table.wt th {
+    padding: 0.375rem 0.5rem;
+    background: var(--to-paper-shade);
+    font-weight: 600;
+    font-size: 0.8125rem;
+    text-align: left;
+    overflow-wrap: normal;
+  }
+  table.wt th.letter {
+    color: var(--to-paper-muted);
+    font-weight: 400;
+    text-align: center;
+  }
+  /* A column's head and a row's number are buttons: a tap chooses the column or the row and opens its menu. */
+  table.wt th:has(> .wt-col) {
+    padding: 0;
+  }
+  table.wt .wt-col,
+  table.wt .wt-num,
+  table.wt .wt-hand,
+  table.wt .wt-add-col {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: 2rem;
+    padding: 0 0.5rem;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: inherit;
+    cursor: pointer;
+  }
+  /* A column's name typed in its head, where it is shown. */
+  table.wt .wt-cn {
+    width: 100%;
+    min-height: 2rem;
+    padding: 0 0.5rem;
+    border: 0;
+    outline: 0.125rem solid var(--to-paper-accent);
+    outline-offset: -0.125rem;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-size: max(1rem, 1em);
+  }
+  table.wt th.letter .wt-col,
+  table.wt .wt-num,
+  table.wt .wt-hand,
+  table.wt .wt-add-col {
+    justify-content: center;
+  }
+  table.wt .wt-col:hover,
+  table.wt .wt-num:hover,
+  table.wt .wt-hand:hover,
+  table.wt .wt-add-col:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--to-paper-accent) 10%, transparent);
+  }
+  table.wt .wt-col:focus-visible,
+  table.wt .wt-num:focus-visible,
+  table.wt .wt-hand:focus-visible,
+  table.wt .wt-add-col:focus-visible {
+    outline: 0.125rem solid var(--to-paper-accent);
+    outline-offset: -0.125rem;
+  }
+  table.wt th.wt-row,
+  table.wt .wt-corner {
+    width: 1.75rem;
+    padding: 0;
+    background: var(--to-paper-shade);
+  }
+  table.wt .wt-num,
+  table.wt .wt-hand,
+  table.wt .wt-add-col {
+    padding: 0;
+    color: var(--to-paper-muted);
+    font-size: 0.75rem;
+    font-weight: 400;
+  }
+  table.wt .wt-add,
+  table.wt .wt-pad {
+    width: 1.75rem;
+    border: 0;
+    background: none;
+  }
+  table.wt .wt-add-col:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+  @media (pointer: coarse) {
+    table.wt .wt-col,
+    table.wt .wt-num,
+    table.wt .wt-hand,
+    table.wt .wt-add-col {
+      min-height: var(--to-touch);
+    }
+  }
+  /* The cells of a range, and those a fill would write; the handle at the range's corner. */
+  table.wt td {
+    position: relative;
+  }
+  table.wt td.in {
+    background: color-mix(in srgb, var(--to-paper-accent) 14%, transparent);
+  }
+  table.wt td.filling {
+    outline: 1px dashed var(--to-paper-accent);
+    outline-offset: -1px;
+  }
+  table.wt.selecting td :is(input, textarea) {
+    caret-color: transparent;
+  }
+  table.wt .wt-fill {
+    position: absolute;
+    right: -0.25rem;
+    bottom: -0.25rem;
+    width: 0.5rem;
+    height: 0.5rem;
+    border: 1px solid var(--to-paper);
+    background: var(--to-paper-accent);
+    cursor: crosshair;
+    touch-action: none;
+    z-index: 1;
+  }
+  @media (pointer: coarse) {
+    table.wt .wt-fill::before {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 2.75rem;
+      height: 2.75rem;
+      transform: translate(-50%, -50%);
+    }
+  }
+  .wt-rowmenu > button,
+  .wt-colmenu > button {
+    display: none;
+  }
+  table.wt td :is(input, textarea) {
+    display: block;
+    width: 100%;
+    min-width: 4em;
+    height: 2.25rem;
+    padding: 0 0.5rem;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-size: 1rem;
+    text-overflow: ellipsis;
+    touch-action: manipulation;
+  }
+  /* A cell's words wrap in a narrow column and the row grows to hold them (table.ts): one line tall to start, as tall
+     as its words after, never a scroll inside it. Where the browser cannot size a field by its content, it scrolls. */
+  table.wt td textarea {
+    height: auto;
+    min-height: 2.25rem;
+    padding: calc((2.25rem - 1.4em) / 2) 0.5rem;
+    line-height: 1.4;
+    resize: none;
+    overflow: hidden;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    field-sizing: content;
+  }
+  @supports not (field-sizing: content) {
+    table.wt td textarea {
+      overflow-y: auto;
+    }
+  }
+  table.wt td :is(input, textarea).num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  table.wt td :is(input, textarea).err {
+    color: var(--to-danger);
+  }
+  table.wt td :is(input, textarea).locked {
+    background: var(--to-paper-shade);
+    color: var(--to-paper-muted);
+  }
+  table.wt td :is(input, textarea):focus-visible {
+    outline: 0.125rem solid var(--to-paper-accent);
+    outline-offset: -0.125rem;
+  }
+  table.wt td:has(:is(input, textarea):focus) {
+    background: color-mix(in srgb, var(--to-paper-accent) 8%, transparent);
+  }
+
+  /* Another document held in the text: a picture of its first page and its name. */
+  .write-doc {
+    margin: 0;
+    max-width: 35rem;
+    border: 1px solid var(--to-paper-line);
+    border-radius: 0.625rem;
+    overflow: hidden;
+    background: #fff;
+    cursor: pointer;
+  }
+  .write-doc svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 50dvh;
+  }
+  .write-doc pre {
+    margin: 0;
+    padding: 0.75rem;
+    font: 0.8125rem/1.5 var(--to-font-mono);
+    color: var(--to-paper-muted);
+    white-space: pre-wrap;
+  }
+  .write-doc figcaption {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.375rem 0.75rem;
+    border-top: 1px solid var(--to-paper-line);
+    background: var(--to-paper-shade);
+    font-size: 0.8438rem;
+    color: var(--to-paper-ink);
+  }
+  .write-doc figcaption b {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .write-doc figcaption small {
+    color: var(--to-paper-muted);
+  }
+  /* The notes under the text: a thin rule, small type, each with the way back to its mark. */
+  .write-notes {
+    margin-top: 1.5rem;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    color: var(--to-paper-muted);
+  }
+  .write-notes hr {
+    width: 4.5rem;
+    margin: 0 0 0.625rem;
+    border: 0;
+    border-top: 1px solid var(--to-paper-line);
+  }
+  .write-notes li {
+    margin: 0 0 0.25rem;
+  }
+  .write-notes li::marker {
+    font-size: 0.85em;
+  }
+  .write-notes a {
+    color: var(--to-paper-accent);
+  }
+  .write-notes .to-note-back {
+    padding: 0 0.25rem;
+    border-radius: 0.25rem;
+  }
+  .write-notes .to-note-back:hover,
+  .write-notes .to-note-back:focus-visible {
+    background: color-mix(in srgb, var(--to-paper-accent) 12%, transparent);
+    outline: none;
+  }
+
+  /* The foot: the count, the paper. */
+  .write-foot {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    font-size: 0.8125rem;
+    color: var(--to-ink-3);
+  }
+
+  @media print {
+    to-write-editor to-bar,
+    .write-foot,
+    .to-note-back {
+      display: none !important;
+    }
+  }
+}

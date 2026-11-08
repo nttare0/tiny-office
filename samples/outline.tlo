@@ -1,0 +1,17 @@
+---
+app: outline
+title: A talk about the document that is the link
+---
+- The document is the link
+  - What that means
+    - No account, no upload, no server that holds your words
+    - Copy the address and you have copied the document
+  - What it costs
+    - A link can be long; a QR code holds about three thousand characters
+    - Anyone with the link has the document, so share it like a key
+  - Ten apps on one kernel
+    - Words, outlines, slides, numbers, drawings, diagrams, animation, dates, maps
+  - Questions {.from label=last}
+    - Keep three minutes
+
+~ What it costs -> What that means: the other side of

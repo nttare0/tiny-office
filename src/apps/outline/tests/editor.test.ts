@@ -1,0 +1,1214 @@
+// The Outline editor in a real browser: typing makes items, Enter the next, Tab and the bar arrange them, Backspace on an
+// empty one takes it away, the bullet turns and names the line to the parent, Connect joins two items, folds and the
+// zoom hide and show families, Insert puts a document under an item, undo takes things back, and at phone width the bar
+// is one row and nothing is wider than the screen.
+import { test, expect } from 'vitest';
+import { page } from 'vitest/browser';
+// The page's styles first, as the app has them: they name the layers' order (an app's own rules over the kit's).
+import '../../../styles.css';
+import '../editor.ts';
+import type { ToOutlineEditor } from '../editor.ts';
+import type { ToText } from '../../../kit/text/text.ts';
+import { caret } from '../../../kit/text/textops.ts';
+import { until, tick } from '../../../../test/browser/helpers.ts';
+import { decodeDoc, encodeDoc } from '../../../kit/core/codec.ts';
+import { write, type Doc } from '../../../doc/index.ts';
+import { remScale } from '../../../kit/ui/zoom.ts';
+
+const TREE = '- Launch\n  - Product\n    - Pricing\n  - Marketing\n';
+
+async function editor(value = ''): Promise<{ el: ToOutlineEditor; last: () => string | undefined; changes: string[] }> {
+  document.body.innerHTML = '';
+  const main = document.createElement('main');
+  main.className = 'to-main';
+  document.body.append(main);
+  const el = document.createElement('to-outline-editor') as ToOutlineEditor;
+  el.value = value;
+  const changes: string[] = [];
+  el.addEventListener('docchange', (e) => changes.push((e as CustomEvent<string>).detail));
+  main.append(el);
+  await el.updateComplete;
+  await tick();
+  return { el, changes, last: () => changes.at(-1) };
+}
+const row = (el: HTMLElement, at: number) => el.querySelector<HTMLElement>(`.ol-row[data-at="${at}"]`)!;
+const textOf = (el: HTMLElement, at: number) => row(el, at).querySelector<ToText>('to-text')!;
+const button = (el: HTMLElement, label: string) => el.querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`)!;
+const byWords = (el: HTMLElement, words: string) => [...el.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent!.trim() === words)!;
+const rows = (el: HTMLElement) => [...el.querySelectorAll<HTMLElement>('.ol-row')].map((r) => Number(r.dataset.at));
+const input = (tx: ToText, inputType: string, data: string | null = null) => tx.tx.dispatchEvent(new InputEvent('beforeinput', { inputType, data, bubbles: true, cancelable: true }));
+/** The caret put in a row's words (at the end), as a tap does. */
+async function choose(el: ToOutlineEditor, at: number, offset = 99) {
+  const tx = textOf(el, at);
+  tx.sel = caret(0, offset);
+  await el.updateComplete;
+  await tick();
+}
+async function typeIn(el: ToOutlineEditor, at: number, text: string) {
+  for (const ch of text) {
+    input(textOf(el, at), 'insertText', ch);
+    await el.updateComplete;
+  }
+  await tick();
+}
+async function keyOn(el: ToOutlineEditor, at: number, key: string, more: KeyboardEventInit = {}) {
+  textOf(el, at).tx.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...more }));
+  await el.updateComplete;
+  await tick();
+}
+async function pick(el: ToOutlineEditor, opener: HTMLElement, words: string) {
+  opener.click();
+  await until(() => !!document.querySelector('[popover]:popover-open'));
+  const items = [...document.querySelectorAll<HTMLElement>('[popover]:popover-open [role^=menuitem]')];
+  const item = items.find((x) => x.textContent!.trim().startsWith(words));
+  if (!item) throw new Error(`no item ${words} among ${items.map((x) => x.textContent!.trim()).join(' | ')}`);
+  item.click();
+  await el.updateComplete;
+  await tick();
+}
+const focusedRow = () => Number((document.activeElement as HTMLElement).closest<HTMLElement>('.ol-row')?.dataset.at);
+
+test('typing makes the first item, Enter the next, Tab puts it under, Shift+Tab brings it out, Backspace on an empty item takes it away', async () => {
+  const { el, last } = await editor();
+  expect(rows(el)).toEqual([-1]);
+  expect(textOf(el, -1).placeholder).toBe('');
+  // The ghost row is -1, as are "no row is dating" and "no row is naming": it shows neither field (a new outline showed a date; Paul, 2026-10-15).
+  expect(el.querySelector('.ol-due-in, .ol-label-in')).toBeNull();
+  await choose(el, -1, 0);
+  // The first letter typed brings the item into the document; the row is then the document's.
+  await typeIn(el, -1, 'L');
+  expect(last()).toBe('- L\n');
+  expect(rows(el)).toEqual([0]);
+  await typeIn(el, 0, 'aunch');
+  expect(last()).toBe('- Launch\n');
+  expect(rows(el)).toEqual([0]);
+  expect(focusedRow()).toBe(0);
+  input(textOf(el, 0), 'insertParagraph');
+  await el.updateComplete;
+  await tick();
+  expect(last()).toBe('- Launch\n-\n');
+  expect(focusedRow()).toBe(1);
+  await typeIn(el, 1, 'Product');
+  expect(last()).toBe('- Launch\n- Product\n');
+  await keyOn(el, 1, 'Tab');
+  expect(last()).toBe('- Launch\n  - Product\n');
+  expect(focusedRow()).toBe(1);
+  expect(row(el, 1).style.getPropertyValue('--d')).toBe('1');
+  await keyOn(el, 1, 'Tab', { shiftKey: true });
+  expect(last()).toBe('- Launch\n- Product\n');
+  // Enter in the middle of a leaf splits its words.
+  await choose(el, 1, 3);
+  input(textOf(el, 1), 'insertParagraph');
+  await el.updateComplete;
+  await tick();
+  expect(last()).toBe('- Launch\n- Pro\n- duct\n');
+  expect(focusedRow()).toBe(2);
+  // Backspace at the start of words joins them to the row above (the next test says more); undone, they are apart again.
+  input(textOf(el, 2), 'deleteContentBackward');
+  await el.updateComplete;
+  expect(last()).toBe('- Launch\n- Product\n');
+  el.dispatchEvent(new CustomEvent('docundo', { cancelable: true }));
+  await el.updateComplete;
+  await tick();
+  expect(last()).toBe('- Launch\n- Pro\n- duct\n');
+  // On an empty item Backspace takes the item away and the caret lands above.
+  await choose(el, 2);
+  for (let i = 0; i < 4; i++) input(textOf(el, 2), 'deleteContentBackward');
+  await el.updateComplete;
+  expect(last()).toBe('- Launch\n- Pro\n-\n');
+  input(textOf(el, 2), 'deleteContentBackward');
+  await el.updateComplete;
+  await tick();
+  expect(last()).toBe('- Launch\n- Pro\n');
+  expect(focusedRow()).toBe(1);
+  // Undo brings the item back.
+  el.dispatchEvent(new CustomEvent('docundo', { cancelable: true }));
+  await el.updateComplete;
+  expect(last()).toBe('- Launch\n- Pro\n-\n');
+});
+
+test('the bar arranges the chosen row: Indent, Move up, Bring out take the family along; a drop places it; the keys move the caret between rows', async () => {
+  const { el, last } = await editor(TREE);
+  expect(rows(el)).toEqual([0, 1, 2, 3]);
+  expect(button(el, 'Indent').disabled).toBe(true);
+  await choose(el, 3);
+  expect(button(el, 'Indent').disabled).toBe(false);
+  button(el, 'Indent').click();
+  await el.updateComplete;
+  expect(last()).toBe('- Launch\n  - Product\n    - Pricing\n    - Marketing\n');
+  button(el, 'Move up').click();
+  await el.updateComplete;
+  await tick();
+  expect(last()).toBe('- Launch\n  - Product\n    - Marketing\n    - Pricing\n');
+  expect(focusedRow()).toBe(2);
+  // Brought out, Marketing takes Pricing (now below it) under it.
+  button(el, 'Outdent').click();
+  await el.updateComplete;
+  expect(last()).toBe('- Launch\n  - Product\n  - Marketing\n    - Pricing\n');
+  // Alt+Down on Product puts it past Marketing's family; the caret follows.
+  await choose(el, 1);
+  await keyOn(el, 1, 'ArrowDown', { altKey: true });
+  expect(last()).toBe('- Launch\n  - Marketing\n    - Pricing\n  - Product\n');
+  expect(focusedRow()).toBe(3);
+  // A drop: Product under Pricing.
+  el.dropAt(3, 2, 'under');
+  await el.updateComplete;
+  await tick();
+  expect(last()).toBe('- Launch\n  - Marketing\n    - Pricing\n      - Product\n');
+  expect(focusedRow()).toBe(3);
+  // The arrow keys walk the rows.
+  await keyOn(el, 3, 'ArrowUp');
+  expect(focusedRow()).toBe(2);
+  await keyOn(el, 2, 'ArrowDown');
+  expect(focusedRow()).toBe(3);
+});
+
+test('the bullet opens the kinds of line, each named for the items it joins; the name dialog writes a label the chip shows', async () => {
+  const { el, last } = await editor(TREE);
+  // A top item has no line to a parent: its bullet is only a dot. Every other row has one.
+  expect(row(el, 0).querySelector('button.ol-kind')).toBeNull();
+  const bullet = () => row(el, 2).querySelector<HTMLButtonElement>('button.ol-kind')!;
+  expect(bullet().getAttribute('aria-label')).toBe('Line from Product to Pricing: a plain line. Edit');
+  bullet().click();
+  await until(() => !!document.querySelector('[popover]:popover-open'));
+  const items = [...document.querySelectorAll<HTMLElement>('[popover]:popover-open [role^=menuitem]')];
+  // The item's own things first; the kinds of line last, under the parent's name alone (Paul, 2026-10-15).
+  expect(items.map((x) => x.textContent!.trim())).toEqual(['Edit statuses…', 'Due date…', 'Label', 'Plain line', 'Arrow from “Product”', 'Arrow to “Product”', 'Arrows both ways']);
+  expect(document.querySelector('[popover]:popover-open [role=menuitemcheckbox][aria-checked=true]')!.textContent!.trim()).toBe('Plain line');
+  items[4].click();
+  await el.updateComplete;
+  expect(last()!.split('\n')[2]).toBe('    - Pricing {.from}');
+  expect(bullet().getAttribute('aria-label')).toBe('Line from Product to Pricing: an arrow from the parent. Edit');
+  await pick(el, bullet(), 'Arrows both');
+  expect(last()!.split('\n')[2]).toBe('    - Pricing {.both}');
+  // Named: typed where the name is shown, no dialog; Enter keeps it; the chip shows the name and, tapped, is typed on again; emptied, the chip goes.
+  await pick(el, bullet(), 'Label');
+  const box = () => row(el, 2).querySelector<HTMLInputElement>('input.ol-label-in')!;
+  expect(document.activeElement).toBe(box());
+  expect(el.querySelector('dialog[open]')).toBeNull();
+  expect(parseFloat(getComputedStyle(box()).fontSize)).toBeGreaterThanOrEqual(16);
+  box().value = 'sets';
+  box().dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+  await el.updateComplete;
+  expect(last()!.split('\n')[2]).toBe('    - Pricing {.both label=sets}');
+  const chip = row(el, 2).querySelector<HTMLButtonElement>('.ol-label')!;
+  expect(chip.textContent).toBe('sets');
+  chip.click();
+  expect(document.activeElement).toBe(box());
+  expect(box().value).toBe('sets');
+  // Escape leaves it be.
+  box().value = 'gone';
+  box().dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+  await el.updateComplete;
+  expect(last()!.split('\n')[2]).toBe('    - Pricing {.both label=sets}');
+  // Emptied, and the focus gone elsewhere: kept, so the name goes.
+  row(el, 2).querySelector<HTMLButtonElement>('.ol-label')!.click();
+  box().value = '';
+  box().blur();
+  await el.updateComplete;
+  expect(last()!.split('\n')[2]).toBe('    - Pricing {.both}');
+  expect(row(el, 2).querySelector('.ol-label')).toBeNull();
+  // A parent's bullet zooms in too.
+  await pick(el, row(el, 1).querySelector<HTMLButtonElement>('button.ol-kind')!, 'Zoom in');
+  expect(rows(el)).toEqual([1, 2]);
+  expect([...el.querySelectorAll('.ol-crumbs button')].map((b) => b.textContent!.trim())).toEqual(['Everything', 'Launch', 'Product']);
+});
+
+test('Connect greys the outline until the other end is tapped; the join is turned, named, follows a renamed item and is taken away', async () => {
+  const { el, last } = await editor(TREE);
+  await choose(el, 2);
+  byWords(el, 'Connect').click();
+  await el.updateComplete;
+  expect(el.querySelector('.ol')!.classList.contains('connecting')).toBe(true);
+  expect(row(el, 2).classList.contains('source')).toBe(true);
+  expect(row(el, 2).querySelector('.ol-pick')).toBeNull();
+  expect(el.querySelector('.ol-hint')!.textContent).toBe('Tap the item to connect “Pricing” to.');
+  button(row(el, 3), 'Connect “Pricing” to “Marketing”').click();
+  await el.updateComplete;
+  expect(el.querySelector('.ol')!.classList.contains('connecting')).toBe(false);
+  expect(last()).toBe(TREE + '\n~ Pricing -- Marketing\n');
+  const link = () => el.querySelector<HTMLElement>('.ol-links .ol-link')!;
+  expect(link().querySelector('button.ol-kind')!.getAttribute('aria-label')).toBe('Connection from Pricing to Marketing: a plain line. Edit');
+  await pick(el, link().querySelector<HTMLButtonElement>('button.ol-kind')!, 'Arrow from Pricing to Marketing');
+  expect(last()!.split('\n').at(-2)).toBe('~ Pricing -> Marketing');
+  await pick(el, link().querySelector<HTMLButtonElement>('button.ol-kind')!, 'Label');
+  const box = link().querySelector<HTMLInputElement>('input.ol-label-in')!;
+  expect(document.activeElement).toBe(box);
+  box.value = 'feeds';
+  box.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+  await el.updateComplete;
+  expect(last()!.split('\n').at(-2)).toBe('~ Pricing -> Marketing: feeds');
+  expect(link().querySelector('.ol-label')!.textContent).toBe('feeds');
+  // Renaming an item carries its joins with it.
+  await choose(el, 3);
+  await typeIn(el, 3, 's');
+  expect(last()!.split('\n').at(-2)).toBe('~ Pricing -> Marketings: feeds');
+  expect(last()!.split('\n')[3]).toBe('  - Marketings');
+  // With nothing chosen, Connect asks for both ends; Escape gives up.
+  el.querySelector<HTMLButtonElement>('.ol-links .to-tool')!.click();
+  await el.updateComplete;
+  expect(last()).toBe('- Launch\n  - Product\n    - Pricing\n  - Marketings\n');
+  expect(el.querySelector('.ol-links')).toBeNull();
+  el.sel = -1;
+  await el.updateComplete;
+  byWords(el, 'Connect').click();
+  await el.updateComplete;
+  expect(el.querySelector('.ol-hint')!.textContent).toBe('Tap the item to connect from.');
+  button(row(el, 0), 'Connect from “Launch”').click();
+  await el.updateComplete;
+  expect(el.querySelector('.ol-hint')!.textContent).toBe('Tap the item to connect “Launch” to.');
+  el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+  await el.updateComplete;
+  expect(el.querySelector('.ol')!.classList.contains('connecting')).toBe(false);
+});
+
+test('folding hides the family and counts it; Fold all and Unfold all; the zoom shows one family with a trail back out', async () => {
+  const { el, changes } = await editor(TREE);
+  const fold = () => row(el, 0).querySelector<HTMLButtonElement>('.ol-fold')!;
+  expect(fold().getAttribute('aria-label')).toBe('Collapse');
+  expect(row(el, 2).querySelector('.ol-fold')).toBeNull();
+  fold().click();
+  await el.updateComplete;
+  expect(rows(el)).toEqual([0]);
+  expect(fold().getAttribute('aria-label')).toBe('Expand (3 items)');
+  expect(row(el, 0).querySelector('.ol-count')!.textContent).toBe('3');
+  // The fold is the document's (Paul, 2026-10-15: the model tracks open and shut; open is the default): written as the item's class.
+  expect(changes.at(-1)).toBe('- Launch {.shut}\n  - Product\n    - Pricing\n  - Marketing\n');
+  fold().click();
+  await el.updateComplete;
+  expect(rows(el)).toEqual([0, 1, 2, 3]);
+  expect(changes.at(-1)).toBe(TREE);
+  button(el, 'Collapse all').click();
+  await el.updateComplete;
+  expect(rows(el)).toEqual([0]);
+  button(el, 'Expand all').click();
+  await el.updateComplete;
+  expect(rows(el)).toEqual([0, 1, 2, 3]);
+  // Mod+Alt+Up folds the row the caret is in; Mod+Alt+Down unfolds it. Alt+Left/Right are the Mac's word jumps: left alone.
+  await choose(el, 1);
+  await keyOn(el, 1, 'ArrowUp', { ctrlKey: true, altKey: true });
+  expect(rows(el)).toEqual([0, 1, 3]);
+  await keyOn(el, 1, 'ArrowDown', { ctrlKey: true, altKey: true });
+  expect(rows(el)).toEqual([0, 1, 2, 3]);
+  const word = new KeyboardEvent('keydown', { key: 'ArrowLeft', altKey: true, bubbles: true, cancelable: true });
+  textOf(el, 1).tx.dispatchEvent(word);
+  expect(word.defaultPrevented).toBe(false);
+  expect(rows(el)).toEqual([0, 1, 2, 3]);
+  // Zoom: Mod+Shift+. on a row (Mod+, is a Mac's Settings); the rows step in from it; Zoom out goes to the parent, then everything.
+  expect(button(el, 'Zoom in').title).toContain('.');
+  await keyOn(el, 1, '>', { ctrlKey: true, shiftKey: true, code: 'Period' });
+  expect(rows(el)).toEqual([1, 2]);
+  expect(row(el, 2).style.getPropertyValue('--d')).toBe('1');
+  expect(row(el, 1).getAttribute('aria-level')).toBe('1');
+  // Mod+Shift+, zooms out a step, the same as the bar's Zoom out.
+  await keyOn(el, 2, '<', { ctrlKey: true, shiftKey: true, code: 'Comma' });
+  expect(rows(el)).toEqual([0, 1, 2, 3]);
+  expect(el.querySelector('.ol-crumbs')!.textContent).toContain('Launch');
+  button(el, 'Zoom out').click();
+  await el.updateComplete;
+  expect(el.querySelector('.ol-crumbs')).toBeNull();
+  expect(button(el, 'Zoom out')).toBeNull();
+  // None of this touched the document.
+  // Every change was a fold or an unfold: the words were never touched.
+  expect(changes.every((c) => c.replace(/ \{\.shut\}/g, '') === TREE)).toBe(true);
+});
+
+test('Insert puts a document under the chosen item; a tap below the last row starts an item; View as shows the page', async () => {
+  const { el, last, changes } = await editor(TREE);
+  await choose(el, 1);
+  await pick(el, el.querySelector<HTMLButtonElement>('to-insert button')!, 'Spreadsheet');
+  // The new spreadsheet is made in its own editor, in the dialog; Done puts it under the item.
+  await until(() => !!document.querySelector('to-doc-dialog dialog[open] to-sheet-editor'));
+  document.querySelector<HTMLButtonElement>('.to-doc-dialog-done')!.click();
+  await until(() => (last() ?? '').includes('```sheet'));
+  await until(() => !!row(el, 3)?.querySelector('.ol-doc') && document.activeElement === row(el, 3).querySelector('.ol-doc'));
+  expect(last()).toBe('- Launch\n  - Product\n    - Pricing\n\n```sheet {depth=1}\n```\n\n  - Marketing\n');
+  const card = row(el, 3).querySelector<HTMLElement>('.ol-doc')!;
+  expect(card.textContent).toContain('Spreadsheet');
+  expect(card.querySelector('a')!.getAttribute('href')).toMatch(/#\/v1\/sheet$/);
+  expect(document.activeElement).toBe(card);
+  // Delete on the card takes it away; undo brings it back.
+  card.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', bubbles: true, cancelable: true }));
+  await el.updateComplete;
+  expect(last()).toBe(TREE);
+  el.dispatchEvent(new CustomEvent('docundo', { cancelable: true }));
+  await el.updateComplete;
+  expect(last()).toContain('```sheet {depth=1}');
+  // A tap under the last row starts a new item at the margin.
+  const n = changes.length;
+  el.querySelector<HTMLElement>('.ol-below')!.click();
+  await el.updateComplete;
+  await tick();
+  expect(changes.length).toBe(n + 1);
+  expect(last()!.endsWith('\n-\n')).toBe(true);
+  expect(focusedRow()).toBe(5);
+  // A second tap only puts the caret back in the empty item.
+  el.querySelector<HTMLElement>('.ol-below')!.click();
+  await el.updateComplete;
+  expect(changes.length).toBe(n + 1);
+  // View as: the page, drawn in a dialog.
+  await pick(el, el.querySelector<HTMLButtonElement>('.ol-view-as button')!, 'As a page');
+  await until(() => !!el.querySelector('.ol-page-dialog dialog[open]'));
+  expect(el.querySelector('.ol-page svg')!.outerHTML).toContain('Pricing');
+});
+
+test('loose words arriving are made an outline with one undoable splice; a pasted Tiny Little Office link becomes that document', async () => {
+  const { el, last } = await editor('# Plan\n\nFirst\nSecond\n');
+  expect(last()).toBe('- Plan\n  - First\n  - Second\n');
+  expect(rows(el)).toEqual([0, 1, 2]);
+  el.dispatchEvent(new CustomEvent('docundo', { cancelable: true }));
+  await el.updateComplete;
+  expect(last()).toBe('# Plan\n\nFirst\nSecond\n');
+  el.dispatchEvent(new CustomEvent('docredo', { cancelable: true }));
+  await el.updateComplete;
+  await choose(el, 2);
+  input(textOf(el, 2), 'insertParagraph');
+  await el.updateComplete;
+  await tick();
+  const dt = new DataTransfer();
+  dt.setData('text/plain', 'https://tinylittleoffice.com/#/v1/draw');
+  textOf(el, 3).tx.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }));
+  await el.updateComplete;
+  await tick();
+  expect(last()).toBe('- Plan\n  - First\n  - Second\n\n```draw {depth=1}\n```\n');
+  expect(row(el, 3).querySelector('.ol-doc')!.textContent).toContain('Drawing Tool');
+});
+
+/* ---------- bullet-list semantics, rows chosen whole, numbered lists ---------- */
+
+const tree = (el: HTMLElement) => el.querySelector<HTMLElement>('.ol')!;
+/** A key pressed while rows are chosen: the tree has the focus. */
+async function treeKey(el: ToOutlineEditor, key: string, more: KeyboardEventInit = {}) {
+  tree(el).dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...more }));
+  await el.updateComplete;
+  await tick();
+}
+const ranged = (el: HTMLElement) => [...el.querySelectorAll<HTMLElement>('.ol-row.ranged')].map((r) => Number(r.dataset.at));
+const offsetIn = (el: HTMLElement, at: number) => textOf(el, at).sel?.focus.offset;
+const contextOpen = (el: HTMLElement) => !!el.querySelector('.ol-context .to-context')?.matches(':popover-open');
+const contextButton = (el: HTMLElement, label: string) => el.querySelector<HTMLButtonElement>(`.ol-context button[aria-label="${label}"]`)!;
+async function clip(el: ToOutlineEditor, type: 'copy' | 'cut' | 'paste', on: HTMLElement, data: Record<string, string> = {}) {
+  const dt = new DataTransfer();
+  for (const [k, v] of Object.entries(data)) dt.setData(k, v);
+  on.dispatchEvent(new ClipboardEvent(type, { clipboardData: dt, bubbles: true, cancelable: true }));
+  await el.updateComplete;
+  await tick();
+  return dt;
+}
+const undo = async (el: ToOutlineEditor) => {
+  el.dispatchEvent(new CustomEvent('docundo', { cancelable: true }));
+  await el.updateComplete;
+  await tick();
+};
+
+test('Enter at the start pushes the row down with the caret; Backspace at the start joins the row to the one above; Delete at the end joins the next one in', async () => {
+  const { el, last } = await editor(TREE);
+  await choose(el, 1, 0);
+  input(textOf(el, 1), 'insertParagraph');
+  await el.updateComplete;
+  await tick();
+  expect(last()).toBe('- Launch\n  -\n  - Product\n    - Pricing\n  - Marketing\n');
+  expect(focusedRow()).toBe(2);
+  expect(offsetIn(el, 2)).toBe(0);
+  // The caret stayed with the words: what is typed goes in before them.
+  await typeIn(el, 2, 'X');
+  expect(last()!.split('\n')[2]).toBe('  - XProduct');
+  await undo(el);
+  await undo(el);
+  expect(last()).toBe(TREE);
+  // Backspace at the start of Pricing: its words join Product's, the caret at the join.
+  await choose(el, 2, 0);
+  input(textOf(el, 2), 'deleteContentBackward');
+  await el.updateComplete;
+  await tick();
+  expect(last()).toBe('- Launch\n  - ProductPricing\n  - Marketing\n');
+  expect(focusedRow()).toBe(1);
+  expect(offsetIn(el, 1)).toBe(7);
+  await typeIn(el, 1, '|');
+  expect(last()!.split('\n')[1]).toBe('  - Product|Pricing');
+  // Delete at the end of Launch: the next row's words come in, the caret stays.
+  await choose(el, 0);
+  input(textOf(el, 0), 'deleteContentForward');
+  await el.updateComplete;
+  await tick();
+  expect(last()).toBe('- LaunchProduct|Pricing\n  - Marketing\n');
+  expect(focusedRow()).toBe(0);
+  expect(offsetIn(el, 0)).toBe(6);
+  // The first row has nothing before it: Backspace at its start does nothing.
+  await choose(el, 0, 0);
+  input(textOf(el, 0), 'deleteContentBackward');
+  await el.updateComplete;
+  expect(last()).toBe('- LaunchProduct|Pricing\n  - Marketing\n');
+});
+
+test('Backspace at the start joins into a row hidden under a fold, which opens; Delete on an empty row with children brings them out', async () => {
+  const { el, last } = await editor('- A\n  - a1\n- B\n');
+  row(el, 0).querySelector<HTMLButtonElement>('.ol-fold')!.click();
+  await el.updateComplete;
+  expect(rows(el)).toEqual([0, 2]);
+  await choose(el, 2, 0);
+  input(textOf(el, 2), 'deleteContentBackward');
+  await el.updateComplete;
+  await tick();
+  expect(last()).toBe('- A\n  - a1B\n');
+  expect(rows(el)).toEqual([0, 1]);
+  expect(focusedRow()).toBe(1);
+  expect(offsetIn(el, 1)).toBe(2);
+  const e = await editor('-\n  - a\n  - b\n');
+  await choose(e.el, 0);
+  input(textOf(e.el, 0), 'deleteContentForward');
+  await e.el.updateComplete;
+  await tick();
+  expect(e.last()).toBe('- a\n- b\n');
+  expect(focusedRow()).toBe(0);
+});
+
+test('Shift+Down chooses rows whole, a folded family with them; Backspace takes them away and undo brings them back; Escape and the arrows let go', async () => {
+  const { el, last } = await editor('- A\n- B\n  - b1\n- C\n- D\n');
+  row(el, 1).querySelector<HTMLButtonElement>('.ol-fold')!.click();
+  await el.updateComplete;
+  expect(contextOpen(el)).toBe(false);
+  // Closed, the bar is not drawn at all.
+  expect(getComputedStyle(el.querySelector('.ol-context .to-context')!).display).toBe('none');
+  await choose(el, 0);
+  await keyOn(el, 0, 'ArrowDown', { shiftKey: true });
+  expect(ranged(el)).toEqual([0]);
+  expect(document.activeElement).toBe(tree(el));
+  expect(document.getSelection()!.rangeCount).toBe(0);
+  expect(contextOpen(el)).toBe(true);
+  await treeKey(el, 'ArrowDown', { shiftKey: true });
+  // B is folded: its child is chosen with it, though not shown.
+  expect(ranged(el)).toEqual([0, 1]);
+  expect(row(el, 1).getAttribute('aria-selected')).toBe('true');
+  // Typing does nothing to chosen rows (the last change is the fold itself, the item's class).
+  await treeKey(el, 'x');
+  expect(last()).toBe('- A\n- B {.shut}\n  - b1\n- C\n- D\n');
+  await treeKey(el, 'Backspace');
+  expect(last()).toBe('- C\n- D\n');
+  expect(focusedRow()).toBe(0);
+  expect(contextOpen(el)).toBe(false);
+  await undo(el);
+  expect(last()).toBe('- A\n- B {.shut}\n  - b1\n- C\n- D\n');
+  // (A fold is the document's: B came back shut, as it went; opened again for the rest.) Up past the anchor, the range turns.
+  expect(rows(el)).toEqual([0, 1, 3, 4]);
+  row(el, 1).querySelector<HTMLButtonElement>('.ol-fold')!.click();
+  await el.updateComplete;
+  expect(rows(el)).toEqual([0, 1, 2, 3, 4]);
+  await choose(el, 3);
+  await keyOn(el, 3, 'ArrowDown', { shiftKey: true });
+  for (let i = 0; i < 3; i++) await treeKey(el, 'ArrowUp', { shiftKey: true });
+  expect(ranged(el)).toEqual([0, 1, 2, 3]);
+  await treeKey(el, 'ArrowDown', { shiftKey: true });
+  expect(ranged(el)).toEqual([1, 2, 3]);
+  // Escape: the caret into the focus row; a plain arrow: the row past the range.
+  await treeKey(el, 'Escape');
+  expect(ranged(el)).toEqual([]);
+  expect(focusedRow()).toBe(1);
+  await keyOn(el, 1, 'ArrowDown', { shiftKey: true });
+  await treeKey(el, 'ArrowDown');
+  expect(focusedRow()).toBe(3);
+  expect(contextOpen(el)).toBe(false);
+});
+
+test('chosen rows: Tab and Shift+Tab shift them all, Alt+arrows move them, the context bar does the same; a tap on a handle chooses, Shift extends', async () => {
+  const { el, last } = await editor('- A\n- B\n- C\n');
+  row(el, 1).querySelector<HTMLButtonElement>('.ol-handle')!.click();
+  await el.updateComplete;
+  await tick();
+  expect(ranged(el)).toEqual([1]);
+  row(el, 2)
+    .querySelector<HTMLButtonElement>('.ol-handle')!
+    .dispatchEvent(new MouseEvent('click', { bubbles: true, shiftKey: true }));
+  await el.updateComplete;
+  await tick();
+  expect(ranged(el)).toEqual([1, 2]);
+  await treeKey(el, 'Tab');
+  expect(last()).toBe('- A\n  - B\n  - C\n');
+  expect(ranged(el)).toEqual([1, 2]);
+  // In again is refused (no sibling before B now); out, and out again is refused at the margin.
+  expect(contextButton(el, 'Indent').disabled).toBe(true);
+  await treeKey(el, 'Tab', { shiftKey: true });
+  expect(last()).toBe('- A\n- B\n- C\n');
+  expect(contextButton(el, 'Outdent').disabled).toBe(true);
+  contextButton(el, 'Indent').click();
+  await el.updateComplete;
+  expect(last()).toBe('- A\n  - B\n  - C\n');
+  contextButton(el, 'Outdent').click();
+  await el.updateComplete;
+  // B alone, moved down past C, and back up with the bar.
+  row(el, 1).querySelector<HTMLButtonElement>('.ol-handle')!.click();
+  await el.updateComplete;
+  await treeKey(el, 'ArrowDown', { altKey: true });
+  expect(last()).toBe('- A\n- C\n- B\n');
+  expect(ranged(el)).toEqual([2]);
+  contextButton(el, 'Move up').click();
+  await el.updateComplete;
+  await tick();
+  expect(last()).toBe('- A\n- B\n- C\n');
+  expect(ranged(el)).toEqual([1]);
+  // The bar's Delete.
+  contextButton(el, 'Delete').click();
+  await el.updateComplete;
+  await tick();
+  expect(last()).toBe('- A\n- C\n');
+  expect(contextOpen(el)).toBe(false);
+  // A Shift+click on a bullet extends from the chosen row.
+  await choose(el, 0);
+  row(el, 1)
+    .querySelector<HTMLButtonElement>('button.ol-kind')
+    ?.dispatchEvent(new MouseEvent('click', { bubbles: true, shiftKey: true }));
+  row(el, 1)
+    .querySelector<HTMLElement>('.ol-bullet')!
+    .dispatchEvent(new MouseEvent('click', { bubbles: true, shiftKey: true }));
+  await el.updateComplete;
+  await tick();
+  expect(ranged(el)).toEqual([0, 1]);
+  // Words tapped let the range go.
+  textOf(el, 0).tx.focus();
+  await el.updateComplete;
+  expect(ranged(el)).toEqual([]);
+});
+
+test('copy gives the chosen rows as TLO from the margin and as our HTML; cut takes them; paste puts lines in as items after the row’s family, or in place of chosen rows', async () => {
+  const { el, last } = await editor(TREE);
+  await choose(el, 1);
+  await keyOn(el, 1, 'ArrowDown', { shiftKey: true });
+  const dt = await clip(el, 'copy', tree(el));
+  expect(dt.getData('text/plain')).toBe('- Product\n  - Pricing\n');
+  expect(dt.getData('text/html')).toContain('<meta name="generator" content="TinyLittleOffice">');
+  expect(dt.getData('text/html')).toContain('<li>Pricing</li>');
+  expect(last()).toBeUndefined();
+  // Pasted after Marketing's family: the copy, rebased to Marketing's depth, as items.
+  await choose(el, 3);
+  await clip(el, 'paste', textOf(el, 3).tx, { 'text/plain': dt.getData('text/plain'), 'text/html': dt.getData('text/html') });
+  expect(last()).toBe('- Launch\n  - Product\n    - Pricing\n  - Marketing\n  - Product\n    - Pricing\n');
+  expect(focusedRow()).toBe(5);
+  await undo(el);
+  // Three lines of plain text: three items after the caret row's family, the caret at the end of the last.
+  await choose(el, 1);
+  await clip(el, 'paste', textOf(el, 1).tx, { 'text/plain': 'one\ntwo\nthree' });
+  expect(last()).toBe('- Launch\n  - Product\n    - Pricing\n  - one\n  - two\n  - three\n  - Marketing\n');
+  expect(focusedRow()).toBe(5);
+  expect(offsetIn(el, 5)).toBe(5);
+  await undo(el);
+  // One line of words is the row's: it goes in as words.
+  await choose(el, 3);
+  await clip(el, 'paste', textOf(el, 3).tx, { 'text/plain': ' plan' });
+  expect(last()!.split('\n')[3]).toBe('  - Marketing plan');
+  await undo(el);
+  // Cut: the rows go; pasted over another chosen row, they take its place.
+  await choose(el, 1);
+  await keyOn(el, 1, 'ArrowDown', { shiftKey: true });
+  const cut = await clip(el, 'cut', tree(el));
+  expect(cut.getData('text/plain')).toBe('- Product\n  - Pricing\n');
+  expect(last()).toBe('- Launch\n  - Marketing\n');
+  await choose(el, 1);
+  await keyOn(el, 1, 'ArrowDown', { shiftKey: true });
+  await clip(el, 'paste', tree(el), { 'text/plain': cut.getData('text/plain') });
+  expect(last()).toBe('- Launch\n  - Product\n    - Pricing\n');
+  expect(ranged(el)).toEqual([]);
+});
+
+test('the context bar copies and pastes: the system clipboard where the page may use it, else what was copied here', async () => {
+  const { el, last } = await editor('- A\n- B\n- C\n');
+  row(el, 0).querySelector<HTMLButtonElement>('.ol-handle')!.click();
+  await el.updateComplete;
+  contextButton(el, 'Copy').click();
+  row(el, 2).querySelector<HTMLButtonElement>('.ol-handle')!.click();
+  await el.updateComplete;
+  contextButton(el, 'Paste').click();
+  await until(() => last() !== undefined);
+  expect(last()).toBe('- A\n- B\n- A\n');
+  expect(focusedRow()).toBe(2);
+});
+
+test('Select All twice chooses every row; Delete empties the outline, joins and all; undo brings it back', async () => {
+  const text = '- A\n  - a1\n- B\n\n~ A -> B\n';
+  const { el, last } = await editor(text);
+  await choose(el, 1);
+  // The first press is the browser's (it selects the line); with the line whole, the second asks for everything.
+  textOf(el, 1).sel = { anchor: { block: 0, offset: 0 }, focus: { block: 0, offset: 2 } };
+  await keyOn(el, 1, 'a', { ctrlKey: true });
+  expect(ranged(el)).toEqual([0, 1, 2]);
+  expect(contextOpen(el)).toBe(true);
+  await treeKey(el, 'Delete');
+  expect(last()).toBe('');
+  expect(rows(el)).toEqual([-1]);
+  expect(focusedRow()).toBe(-1);
+  await undo(el);
+  expect(last()).toBe(text);
+  // Mod+A with some rows chosen chooses them all.
+  await choose(el, 2);
+  await keyOn(el, 2, 'ArrowUp', { shiftKey: true });
+  await treeKey(el, 'a', { metaKey: true });
+  expect(ranged(el)).toEqual([0, 1, 2]);
+});
+
+test('Numbered toggles the list the row belongs to; the bullets show 1. 2.; on chosen rows it numbers their top rows', async () => {
+  const { el, last } = await editor('- A\n  - a1\n    - x\n  - a2\n- B\n');
+  expect(button(el, 'Numbered').disabled).toBe(true);
+  await choose(el, 1);
+  expect(button(el, 'Numbered').getAttribute('aria-pressed')).toBe('false');
+  button(el, 'Numbered').click();
+  await el.updateComplete;
+  expect(last()).toBe('- A\n  1. a1\n    - x\n  2. a2\n- B\n');
+  expect(row(el, 1).querySelector('.ol-n')!.textContent).toBe('1.');
+  expect(row(el, 3).querySelector('.ol-n')!.textContent).toBe('2.');
+  expect(row(el, 2).querySelector('.ol-n')).toBeNull();
+  expect(button(el, 'Numbered').getAttribute('aria-pressed')).toBe('true');
+  // Enter after a numbered row makes the next number.
+  await choose(el, 3);
+  input(textOf(el, 3), 'insertParagraph');
+  await el.updateComplete;
+  await tick();
+  expect(last()).toBe('- A\n  1. a1\n    - x\n  2. a2\n  3.\n- B\n');
+  expect(row(el, 4).querySelector('.ol-n')!.textContent).toBe('3.');
+  await undo(el);
+  // The number still opens the line's menu.
+  row(el, 1).querySelector<HTMLButtonElement>('button.ol-kind')!.click();
+  await until(() => !!document.querySelector('.ol-line-menu [popover]:popover-open'));
+  document.querySelector<HTMLElement>('.ol-line-menu [popover]:popover-open')!.hidePopover();
+  await choose(el, 1);
+  button(el, 'Numbered').click();
+  await el.updateComplete;
+  expect(last()).toBe('- A\n  - a1\n    - x\n  - a2\n- B\n');
+  // Rows chosen: their top rows (A and B, not what is under them).
+  await choose(el, 0);
+  await keyOn(el, 0, 'ArrowDown', { shiftKey: true });
+  await treeKey(el, 'ArrowDown', { shiftKey: true });
+  expect(ranged(el)).toEqual([0, 1, 2, 3, 4]);
+  expect(contextButton(el, 'Numbered').getAttribute('aria-pressed')).toBe('false');
+  contextButton(el, 'Numbered').click();
+  await el.updateComplete;
+  expect(last()).toBe('1. A\n  - a1\n    - x\n  - a2\n2. B\n');
+  expect(row(el, 0).querySelector('.ol-n')!.textContent).toBe('1.');
+  expect(contextButton(el, 'Numbered').getAttribute('aria-pressed')).toBe('true');
+});
+
+test('at phone width: the bar is one row of 44px buttons, type is 16px, nothing is wider than the screen, focusing a row does not scroll the page', async () => {
+  await page.viewport(390, 844);
+  try {
+    const { el } = await editor(TREE);
+    const bar = el.querySelector<HTMLElement>('to-bar')!;
+    const tops = new Set([...bar.children].filter((x) => (x as HTMLElement).offsetWidth > 0).map((x) => Math.round(x.getBoundingClientRect().top)));
+    expect(tops.size).toBe(1);
+    expect(Math.round(bar.getBoundingClientRect().height / remScale())).toBeLessThanOrEqual(56);
+    expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(390);
+    await choose(el, 2);
+    expect(Math.round(bar.getBoundingClientRect().height / remScale())).toBeLessThanOrEqual(56);
+    expect(document.scrollingElement!.scrollTop).toBe(0);
+    for (const tx of el.querySelectorAll<HTMLElement>('to-text .tx')) expect(parseFloat(getComputedStyle(tx).fontSize)).toBeGreaterThanOrEqual(16);
+    expect(row(el, 2).querySelector<HTMLElement>('.ol-kind')!.getBoundingClientRect().left).toBeGreaterThanOrEqual(0);
+    expect(row(el, 2).getBoundingClientRect().right).toBeLessThanOrEqual(390);
+    // The line menu opens inside the screen.
+    row(el, 2).querySelector<HTMLButtonElement>('button.ol-kind')!.click();
+    await until(() => !!document.querySelector('[popover]:popover-open'));
+    const r = document.querySelector('[popover]:popover-open')!.getBoundingClientRect();
+    expect(r.left).toBeGreaterThanOrEqual(0);
+    expect(r.right).toBeLessThanOrEqual(390);
+  } finally {
+    await page.viewport(1100, 800);
+  }
+});
+
+/* ---------- after the editing audit (docs/editing.md) ---------- */
+
+test('Enter on chosen rows edits the focus row; Escape in a row chooses it (selected words collapse first); a tap outside lets go', async () => {
+  const { el } = await editor('- A\n- B\n- C\n');
+  await choose(el, 1);
+  await keyOn(el, 1, 'Escape');
+  expect(ranged(el)).toEqual([1]);
+  expect(document.activeElement).toBe(tree(el));
+  await treeKey(el, 'Enter');
+  expect(ranged(el)).toEqual([]);
+  expect(focusedRow()).toBe(1);
+  expect(offsetIn(el, 1)).toBe(1);
+  // Words selected: the first Escape collapses them, the second chooses the row.
+  textOf(el, 2).sel = { anchor: { block: 0, offset: 0 }, focus: { block: 0, offset: 1 } };
+  await el.updateComplete;
+  await tick();
+  await keyOn(el, 2, 'Escape');
+  expect(ranged(el)).toEqual([]);
+  expect(textOf(el, 2).sel).toEqual({ anchor: { block: 0, offset: 1 }, focus: { block: 0, offset: 1 } });
+  await keyOn(el, 2, 'Escape');
+  expect(ranged(el)).toEqual([2]);
+  expect(contextOpen(el)).toBe(true);
+  // A tap on the page outside the outline lets the rows go and takes the bar away.
+  const outside = document.createElement('p');
+  outside.textContent = 'elsewhere';
+  document.body.append(outside);
+  outside.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+  await el.updateComplete;
+  await tick();
+  expect(ranged(el)).toEqual([]);
+  expect(contextOpen(el)).toBe(false);
+});
+
+test('Mod+D duplicates: a row with its family after it (the caret in the copy), chosen rows (the copy chosen), and the bar’s Duplicate; undo puts the selection back', async () => {
+  const { el, last } = await editor(TREE);
+  await choose(el, 1, 3);
+  await keyOn(el, 1, 'd', { ctrlKey: true });
+  expect(last()).toBe('- Launch\n  - Product\n    - Pricing\n  - Product\n    - Pricing\n  - Marketing\n');
+  expect(focusedRow()).toBe(3);
+  expect(offsetIn(el, 3)).toBe(3);
+  await undo(el);
+  expect(last()).toBe(TREE);
+  // The caret is back in the row it was in, where it was.
+  expect(focusedRow()).toBe(1);
+  expect(offsetIn(el, 1)).toBe(3);
+  // Chosen rows: the copy follows them and is chosen.
+  await keyOn(el, 1, 'ArrowDown', { shiftKey: true });
+  await treeKey(el, 'd', { metaKey: true });
+  expect(last()).toBe('- Launch\n  - Product\n    - Pricing\n  - Product\n    - Pricing\n  - Marketing\n');
+  expect(ranged(el)).toEqual([3, 4]);
+  contextButton(el, 'Duplicate').click();
+  await el.updateComplete;
+  await tick();
+  expect(
+    last()!
+      .split('\n')
+      .filter((l) => l.trim() === '- Product'),
+  ).toHaveLength(3);
+  expect(ranged(el)).toEqual([5, 6]);
+  // Undo: the rows chosen before the duplicate are chosen again.
+  await undo(el);
+  expect(ranged(el)).toEqual([3, 4]);
+  expect(contextOpen(el)).toBe(true);
+});
+
+test('undo brings back what was chosen: rows deleted, cut, moved or shifted are chosen again; typing puts the caret back where it began', async () => {
+  const { el, last } = await editor('- A\n- B\n- C\n');
+  row(el, 1).querySelector<HTMLButtonElement>('.ol-handle')!.click();
+  await el.updateComplete;
+  await treeKey(el, 'ArrowDown', { shiftKey: true });
+  await treeKey(el, 'Delete');
+  expect(last()).toBe('- A\n');
+  await undo(el);
+  expect(last()).toBe('- A\n- B\n- C\n');
+  expect(ranged(el)).toEqual([1, 2]);
+  expect(document.activeElement).toBe(tree(el));
+  await treeKey(el, 'ArrowUp', { altKey: true });
+  expect(last()).toBe('- B\n- C\n- A\n');
+  expect(ranged(el)).toEqual([0, 1]);
+  await undo(el);
+  expect(ranged(el)).toEqual([1, 2]);
+  await treeKey(el, 'Tab');
+  expect(last()).toBe('- A\n  - B\n  - C\n');
+  await undo(el);
+  expect(last()).toBe('- A\n- B\n- C\n');
+  expect(ranged(el)).toEqual([1, 2]);
+  // Typing, undone: the caret where the typing began.
+  await treeKey(el, 'Escape');
+  await choose(el, 0, 1);
+  await typeIn(el, 0, 'xyz');
+  expect(last()!.split('\n')[0]).toBe('- Axyz');
+  await undo(el);
+  expect(last()).toBe('- A\n- B\n- C\n');
+  expect(focusedRow()).toBe(0);
+  expect(offsetIn(el, 0)).toBe(1);
+});
+
+test('plain Up/Down keep the caret’s column and walk a long item’s lines; Left at the start and Right at the end cross into the next row', async () => {
+  const { el } = await editor('- abcdefgh\n- abcdefgh\n- abcdefgh\n');
+  await choose(el, 0, 4);
+  await tick(40);
+  await keyOn(el, 0, 'ArrowDown');
+  expect(focusedRow()).toBe(1);
+  await tick(40);
+  expect(offsetIn(el, 1)).toBe(4);
+  await keyOn(el, 1, 'ArrowUp');
+  expect(focusedRow()).toBe(0);
+  await tick(40);
+  expect(offsetIn(el, 0)).toBe(4);
+  // Right at the end of a row: the start of the next; Left at the start: the end of the one before.
+  await choose(el, 1, 8);
+  await keyOn(el, 1, 'ArrowRight');
+  expect(focusedRow()).toBe(2);
+  expect(offsetIn(el, 2)).toBe(0);
+  await keyOn(el, 2, 'ArrowLeft');
+  expect(focusedRow()).toBe(1);
+  expect(offsetIn(el, 1)).toBe(8);
+  // In the middle of the words they are the caret's own.
+  await choose(el, 1, 3);
+  const mid = new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true, cancelable: true });
+  textOf(el, 1).tx.dispatchEvent(mid);
+  expect(mid.defaultPrevented).toBe(false);
+  // A long item that wraps: Up from its last line stays in it (the browser walks the lines).
+  const long = await editor(`- short\n- ${'many words that wrap '.repeat(12)}\n`);
+  await choose(long.el, 1);
+  await tick(40);
+  const up = new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true, cancelable: true });
+  textOf(long.el, 1).tx.dispatchEvent(up);
+  expect(up.defaultPrevented).toBe(false);
+  await choose(long.el, 1, 0);
+  await tick(40);
+  await keyOn(long.el, 1, 'ArrowUp');
+  expect(focusedRow()).toBe(0);
+});
+
+test('“1. ” typed at the start of a row numbers its list, and an undo gives the marker back', async () => {
+  const { el, last } = await editor('- A\n  - a1\n  - a2\n');
+  await choose(el, 1, 0);
+  await typeIn(el, 1, '1. ');
+  expect(last()).toBe('- A\n  1. a1\n  2. a2\n');
+  expect(row(el, 1).querySelector('.ol-n')!.textContent).toBe('1.');
+  expect(focusedRow()).toBe(1);
+  expect(offsetIn(el, 1)).toBe(0);
+  await undo(el);
+  expect(last()).toBe('- A\n  - 1. a1\n  - a2\n');
+  // Not at the start, it is words.
+  await choose(el, 2);
+  await typeIn(el, 2, ' 1. ');
+  expect(last()!.split('\n')[2]).toBe('  - a2 1.\\ ');
+});
+
+test('the bar: Indent before Bring out as under chosen rows; Connect, Zoom out and the fold arrow keep the focus; the rows never zoom the page on a double tap', async () => {
+  const { el } = await editor(TREE);
+  const tools = [...el.querySelectorAll<HTMLButtonElement>('.ol-bar button[aria-label]')].map((b) => b.getAttribute('aria-label'));
+  expect(tools.indexOf('Indent')).toBeLessThan(tools.indexOf('Outdent'));
+  // Undo and Redo end the bar, off until there is something to do.
+  expect(tools.slice(-2)).toEqual(['Undo', 'Redo']);
+  expect(button(el, 'Undo').disabled).toBe(true);
+  await choose(el, 1);
+  await keyOn(el, 1, '>', { ctrlKey: true, shiftKey: true, code: 'Period' });
+  const keeps = (b: HTMLElement) => {
+    const e = new MouseEvent('mousedown', { bubbles: true, cancelable: true });
+    b.dispatchEvent(e);
+    return e.defaultPrevented;
+  };
+  expect(keeps(byWords(el, 'Connect'))).toBe(true);
+  expect(keeps(button(el, 'Zoom out'))).toBe(true);
+  expect(keeps(row(el, 1).querySelector<HTMLElement>('.ol-fold')!)).toBe(true);
+  expect(getComputedStyle(tree(el)).touchAction).toBe('manipulation');
+  // Escape while connecting cancels connecting, and does not choose the row.
+  byWords(el, 'Connect').click();
+  await el.updateComplete;
+  await keyOn(el, 1, 'Escape');
+  expect(el.querySelector('.ol.connecting')).toBeNull();
+  expect(ranged(el)).toEqual([]);
+  await typeIn(el, 1, 'X');
+  expect(button(el, 'Undo').disabled).toBe(false);
+  button(el, 'Undo').click();
+  await el.updateComplete;
+  expect(el.value).toBe(TREE);
+  expect(getComputedStyle(row(el, 1).querySelector('.ol-handle')!).touchAction).toBe('none');
+  // The handle is the kit's: no HTML5 drag.
+  expect(row(el, 1).querySelector('.ol-handle')!.getAttribute('draggable')).toBeNull();
+});
+
+test('a drag by a row’s handle (pointer events) moves its family under or after another row, with the target drawn; a still tap chooses', async () => {
+  const { el, last } = await editor('- A\n- B\n  - b1\n- C\n');
+  const handle = row(el, 1).querySelector<HTMLElement>('.ol-handle')!;
+  const h = handle.getBoundingClientRect();
+  const c = row(el, 3).getBoundingClientRect();
+  const at = (type: string, x: number, y: number) =>
+    handle.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, pointerId: 7, isPrimary: true, button: 0, pointerType: 'mouse', clientX: x, clientY: y }));
+  at('pointerdown', h.left + 4, h.top + 4);
+  at('pointermove', h.left + 5, h.top + 5);
+  expect(el.rows.drag).toBeNull();
+  // Onto C's right half: under C.
+  at('pointermove', c.right - 10, c.top + c.height / 2);
+  await el.updateComplete;
+  expect(el.rows.drag).toMatchObject({ id: 1, over: 3, how: 'under' });
+  expect(row(el, 1).classList.contains('dragging')).toBe(true);
+  const line = document.querySelector<HTMLElement>('.to-rows-target')!;
+  expect(line.hidden).toBe(false);
+  expect(line.dataset.how).toBe('under');
+  expect(Math.abs(line.getBoundingClientRect().top - c.bottom)).toBeLessThan(3);
+  at('pointerup', c.right - 10, c.top + c.height / 2);
+  await el.updateComplete;
+  await tick();
+  expect(last()).toBe('- A\n- C\n  - B\n    - b1\n');
+  expect(document.querySelector('.to-rows-target')).toBeNull();
+  expect(ranged(el)).toEqual([]);
+  // A press that does not move is a tap: the row chosen.
+  const h2 = row(el, 0).querySelector<HTMLElement>('.ol-handle')!;
+  const r = h2.getBoundingClientRect();
+  for (const type of ['pointerdown', 'pointerup'])
+    h2.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, pointerId: 8, isPrimary: true, button: 0, pointerType: 'mouse', clientX: r.left + 3, clientY: r.top + 3 }));
+  h2.click();
+  await el.updateComplete;
+  expect(ranged(el)).toEqual([0]);
+});
+
+/* ---------- documents edited in place; the footnotes ---------- */
+
+test('a document under an item: Edit opens its own editor in the dialog; Done writes it back, one undo takes it back; Cancel changes nothing', async () => {
+  const FENCE = '- Map\n\n```draw {depth=1}\nrect 10 10 100 60\n```\n';
+  const { el, last } = await editor(FENCE);
+  await until(() => !!el.querySelector('.ol-doc-edit'));
+  el.querySelector<HTMLButtonElement>('.ol-doc-edit')!.click();
+  await until(() => !!document.querySelector('to-doc-dialog dialog[open] to-draw-editor'));
+  expect(document.querySelector<HTMLElement & { value: string }>('to-doc-dialog to-draw-editor')!.value).toBe('rect 10 10 100 60\n');
+  document.querySelector<HTMLButtonElement>('.to-doc-dialog-cancel')!.click();
+  await until(() => !document.querySelector('to-doc-dialog'));
+  expect(last()).toBeUndefined();
+  el.querySelector<HTMLButtonElement>('.ol-doc-edit')!.click();
+  await until(() => !!document.querySelector('to-doc-dialog dialog[open] to-draw-editor'));
+  document.querySelector('to-doc-dialog to-draw-editor')!.dispatchEvent(new CustomEvent('docchange', { detail: 'rect 10 10 300 60\n', bubbles: true }));
+  document.querySelector<HTMLButtonElement>('.to-doc-dialog-done')!.click();
+  await until(() => last() === '- Map\n\n```draw {depth=1}\nrect 10 10 300 60\n```\n');
+  el.dispatchEvent(new CustomEvent('docundo', { cancelable: true }));
+  await until(() => last() === FENCE);
+});
+
+test('Insert ▾ lists Tiny Little Office Doc and every other app, and no web embed; a Tiny Little Office link goes in after the chosen item as its document', async () => {
+  const { el, last } = await editor('- One\n');
+  await choose(el, 0);
+  const opener = el.querySelector<HTMLButtonElement>('to-insert button')!;
+  opener.click();
+  await until(() => !!document.querySelector('[popover]:popover-open [role^=menuitem]'));
+  const labels = [...document.querySelectorAll<HTMLElement>('[popover]:popover-open [role^=menuitem]')].map((x) => x.textContent!.trim());
+  expect(labels).toEqual(expect.arrayContaining(['Item', 'Tiny Little Office Doc…', 'Drawing Tool', 'Calendar']));
+  expect(labels.filter((l) => /Picture|Embed/.test(l))).toEqual([]);
+  expect(labels).not.toContain('Outliner');
+  opener.click();
+  await tick();
+  await choose(el, 0);
+  await pick(el, opener, 'Tiny Little Office Doc');
+  await until(() => !!document.querySelector('.to-ask-doc .to-ask-url'));
+  const box = document.querySelector<HTMLInputElement>('.to-ask-doc .to-ask-url')!;
+  box.value = 'https://tinylittleoffice.com/#/v1/draw/' + encodeDoc('rect 1 1 5 5\n');
+  box.dispatchEvent(new Event('input', { bubbles: true }));
+  await until(() => !document.querySelector<HTMLButtonElement>('.to-ask-doc .to-ask-ok')!.disabled);
+  document.querySelector<HTMLButtonElement>('.to-ask-doc .to-ask-ok')!.click();
+  await until(() => (last() ?? '').includes('```draw'));
+  expect(last()).toBe('- One\n\n```draw {depth=0}\nrect 1 1 5 5\n```\n');
+});
+
+test('footnotes are listed under the outline, numbered as their marks are, and typed there: a mark tapped goes to its note, Enter comes back', async () => {
+  const { el, last } = await editor('- One^[The first note]\n  - Two^[The **second** note]\n');
+  await until(() => !!el.querySelector('.ol-fn'));
+  const notes = () => [...el.querySelectorAll<ToText>('.ol-fn to-text')];
+  expect(notes().map((n) => n.tx.textContent)).toEqual(['The first note', 'The second note']);
+  expect(notes()[1].tx.querySelector('b')!.textContent).toBe('second');
+  expect(el.querySelector('.ol-fn')!.getAttribute('aria-label')).toBe('Footnotes');
+  expect(textOf(el, 1).tx.querySelector('.fn')!.textContent).toBe('2');
+  // The second mark tapped: the caret at the end of its note; the words typed are the note's.
+  textOf(el, 1).tx.querySelector<HTMLElement>('.fn')!.click();
+  await until(() => notes()[1].hasFocus());
+  expect(notes()[1].sel?.focus.offset).toBe('The second note'.length);
+  input(notes()[1], 'insertText', '!');
+  await until(() => last() === '- One^[The first note]\n  - Two^[The **second** note!]\n');
+  // Enter comes back to the row, after the mark.
+  input(notes()[1], 'insertParagraph');
+  await until(() => textOf(el, 1).hasFocus());
+  expect(textOf(el, 1).sel?.focus.offset).toBe(4);
+  // The Footnote button puts a mark at the caret and the caret in its new note, in its place among the others.
+  textOf(el, 0).sel = { anchor: { block: 0, offset: 3 }, focus: { block: 0, offset: 3 } };
+  await tick();
+  button(el, 'Footnote').click();
+  await until(() => notes().length === 3 && notes()[0].hasFocus());
+  input(notes()[0], 'insertText', 'x');
+  await until(() => last() === '- One^[x]^[The first note]\n  - Two^[The **second** note!]\n');
+});
+
+test("§1 opens with the focus in the first row's words, the caret at their end, the page not scrolled", async () => {
+  const { el } = await editor(TREE);
+  await el.focusFirst();
+  await until(() => textOf(el, 0).hasFocus());
+  expect(textOf(el, 0).sel?.focus).toEqual({ block: 0, offset: 'Launch'.length });
+  const { el: blank } = await editor('');
+  await blank.focusFirst();
+  await until(() => !!blank.querySelector<ToText>('.ol-row to-text')?.hasFocus());
+  expect(document.scrollingElement!.scrollTop).toBe(0);
+});
+
+// The compound bullet (Paul, 2026-10-15): a status pill before the words in its color, a tap the next of the set; a due
+// chip after them; a task's box and the status keeping together (Mod+Enter checks the box and the status goes to the last).
+test('statuses: a pill before the words, tapped to the next; a due chip after them; Mod+Enter checks the box and the status follows', async () => {
+  const { el } = await editor('---\nstatuses: TODO=red, DOING=yellow, DONE=green\n---\n- Plan {status=TODO due=2027-03-01}\n  - [ ] Draft {status=DOING}\n  - Quotes\n');
+  const docOf = (x: ToOutlineEditor) => (x as unknown as { doc: Doc }).doc;
+  const pills = () => [...el.querySelectorAll<HTMLButtonElement>('.ol-status')].map((b) => b.textContent!.trim());
+  expect(pills()).toEqual(['TODO', 'DOING']);
+  expect(el.querySelector<HTMLElement>('.ol-status')!.style.getPropertyValue('--chip')).toBe('#b3261e');
+  const due = el.querySelector<HTMLButtonElement>('.ol-due')!;
+  expect(due.textContent!.replace(/\s+/g, ' ').trim()).toMatch(/Mar 1/);
+  expect(due.getAttribute('aria-label')).toMatch(/^Due Mar 1, 2027\. Tap to change$/);
+  // A tap on the pill: the next status, round the end.
+  el.querySelector<HTMLButtonElement>('.ol-status')!.click();
+  await el.updateComplete;
+  expect(pills()).toEqual(['DOING', 'DOING']);
+  // (A status brings the task's box with it: Plan is a task now, unchecked.)
+  expect(write(docOf(el))).toContain('- [ ] Plan {status=DOING due=2027-03-01}');
+  el.querySelector<HTMLButtonElement>('.ol-status')!.click();
+  el.querySelector<HTMLButtonElement>('.ol-status')!.click();
+  await el.updateComplete;
+  expect(pills()[0]).toBe('TODO');
+  // Mod+Enter in the task's row: checked, and DONE; again: unchecked, and TODO.
+  // (Rows by their block: Plan 0, Draft 1, Quotes 2; the head is no block.)
+  const tx = textOf(el, 1);
+  tx.focus();
+  tx.tx.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true, bubbles: true, cancelable: true }));
+  await el.updateComplete;
+  expect(write(docOf(el))).toContain('- [x] Draft {status=DONE}');
+  tx.tx.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true, bubbles: true, cancelable: true }));
+  await el.updateComplete;
+  expect(write(docOf(el))).toContain('- [ ] Draft {status=TODO}');
+  // The task's box is drawn in the row (the words' own marker is hidden there): a tap checks it, and the status follows.
+  const boxes = () => [...el.querySelectorAll<HTMLButtonElement>('.ol-task')].map((b) => b.getAttribute('aria-checked'));
+  expect(boxes()).toEqual(['false', 'false']);
+  row(el, 1).querySelector<HTMLButtonElement>('.ol-task')!.click();
+  await el.updateComplete;
+  expect(boxes()).toEqual(['false', 'true']);
+  expect(write(docOf(el))).toContain('- [x] Draft {status=DONE}');
+  row(el, 1).querySelector<HTMLButtonElement>('.ol-task')!.click();
+  await el.updateComplete;
+  expect(write(docOf(el))).toContain('- [ ] Draft {status=TODO}');
+  // The row with no status shows no pill and no chip; the words are untouched throughout.
+  expect(row(el, 2).querySelector('.ol-status, .ol-due')).toBeNull();
+  expect(write(docOf(el))).toContain('  - Quotes\n');
+});
+
+// Insert ▾'s three: Statuses writes the set once (the item in hand gets the first), Task makes the item a task (again:
+// checks it), Due date starts a day from today or the nearest day to come above, typed where it shows.
+test('Insert ▾: Statuses, Task and Due date on the item in hand; a document from before has none of it until asked', async () => {
+  const { el, last } = await editor('- Plan {due=2027-03-01}\n- Press list\n');
+  const docOf = (x: ToOutlineEditor) => (x as unknown as { doc: Doc }).doc;
+  expect(el.querySelector('.ol-status')).toBeNull();
+  await choose(el, 1);
+  await pick(el, el.querySelector<HTMLButtonElement>('to-insert button')!, 'Statuses');
+  // The set opens to edit, TODO, DOING and DONE to start from; Done writes it, and the item in hand gets the first.
+  await until(() => !!el.querySelector('to-dialog.ol-statuses dialog[open] .ol-statuses-done'));
+  el.querySelector<HTMLButtonElement>('.ol-statuses-done')!.click();
+  await until(() => !!el.querySelector('.ol-status'));
+  // (The status brought the task's box; Task on a task checks it, and again unchecks it, the status following.)
+  expect(write(docOf(el))).toBe('---\nstatuses: TODO=red, DOING=yellow, DONE=green\n---\n- Plan {due=2027-03-01}\n- [ ] Press list {status=TODO}\n');
+  await pick(el, el.querySelector<HTMLButtonElement>('to-insert button')!, 'Task');
+  await until(() => (last() ?? '').includes('- [x] Press list {status=DONE}'));
+  await pick(el, el.querySelector<HTMLButtonElement>('to-insert button')!, 'Task');
+  await until(() => (last() ?? '').includes('- [ ] Press list {status=TODO}'));
+  await pick(el, el.querySelector<HTMLButtonElement>('to-insert button')!, 'Due date');
+  // The day to start from: the nearest day still to come above, Plan's; the field shows it, Enter keeps it.
+  await until(() => !!el.querySelector<HTMLInputElement>('input.ol-due-in'));
+  const field = el.querySelector<HTMLInputElement>('input.ol-due-in')!;
+  expect(field.value).toBe('2027-03-01');
+  field.value = '2027-03-04';
+  field.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+  await until(() => (last() ?? '').includes('due=2027-03-04'));
+  expect(write(docOf(el))).toBe('---\nstatuses: TODO=red, DOING=yellow, DONE=green\n---\n- Plan {due=2027-03-01}\n- [ ] Press list {status=TODO due=2027-03-04}\n');
+  expect(el.querySelector('input.ol-due-in')).toBeNull();
+});
+
+test('a document opened with an item shut starts folded there, and one from before, with no such class, starts open', async () => {
+  const { el, last } = await editor('- A {.shut}\n  - a1\n- B\n  - b1\n');
+  expect(rows(el)).toEqual([0, 2, 3]);
+  expect(row(el, 0).querySelector<HTMLButtonElement>('.ol-fold')!.getAttribute('aria-label')).toBe('Expand (1 item)');
+  row(el, 0).querySelector<HTMLButtonElement>('.ol-fold')!.click();
+  await el.updateComplete;
+  expect(rows(el)).toEqual([0, 1, 2, 3]);
+  expect(last()).toBe('- A\n  - a1\n- B\n  - b1\n');
+  // Undo brings the fold back: it is an edit like any other.
+  el.dispatchEvent(new CustomEvent('docundo', { cancelable: true }));
+  await el.updateComplete;
+  await tick();
+  expect(rows(el)).toEqual([0, 2, 3]);
+});
+
+// The statuses edited in their dialog (Paul, 2026-10-15: "Can I edit statuses"): Insert ▾'s Statuses opens it, with TODO,
+// DOING and DONE to start from; a name typed over, a row taken away, Done writes the set and the items follow.
+test('Statuses opens the set to edit: renamed, one taken away, Done writes the head and the items follow', async () => {
+  // (Press list under Plan: a root has no line menu, and the second opening comes from the line menu.)
+  const { el } = await editor('- Plan\n  - Press list\n');
+  const docOf = (x: ToOutlineEditor) => (x as unknown as { doc: Doc }).doc;
+  await choose(el, 1);
+  await pick(el, el.querySelector<HTMLButtonElement>('to-insert button')!, 'Statuses');
+  await until(() => !!el.querySelector('to-dialog.ol-statuses dialog[open] .ol-statuses-row input'));
+  const rows = () => [...el.querySelectorAll<HTMLInputElement>('.ol-statuses-row input')].map((i) => i.value);
+  expect(rows()).toEqual(['TODO', 'DOING', 'DONE']);
+  const first = el.querySelector<HTMLInputElement>('.ol-statuses-row input')!;
+  first.value = 'Later';
+  first.dispatchEvent(new Event('input', { bubbles: true }));
+  await el.updateComplete;
+  el.querySelectorAll<HTMLButtonElement>('.ol-statuses-row button[aria-label="Remove"]')[1].click();
+  await el.updateComplete;
+  expect(rows()).toEqual(['Later', 'DONE']);
+  el.querySelector<HTMLButtonElement>('.ol-statuses-done')!.click();
+  await until(() => !el.querySelector('to-dialog.ol-statuses dialog[open]'));
+  expect(write(docOf(el))).toBe('---\nstatuses: Later=red, DONE=green\n---\n- Plan\n  - [ ] Press list {status=Later}\n');
+  // Again, from the line menu's Status group: the set as it is; a rename follows on the item.
+  await pick(el, row(el, 1).querySelector<HTMLButtonElement>('.ol-kind')!, 'Edit statuses');
+  await until(() => !!el.querySelector('to-dialog.ol-statuses dialog[open] .ol-statuses-row input'));
+  expect(rows()).toEqual(['Later', 'DONE']);
+  const again = el.querySelector<HTMLInputElement>('.ol-statuses-row input')!;
+  again.value = 'Soon';
+  again.dispatchEvent(new Event('input', { bubbles: true }));
+  el.querySelector<HTMLButtonElement>('.ol-statuses-done')!.click();
+  await until(() => (write(docOf(el)) ?? '').includes('status=Soon'));
+  expect(write(docOf(el))).toBe('---\nstatuses: Soon=red, DONE=green\n---\n- Plan\n  - [ ] Press list {status=Soon}\n');
+});
+
+// View as ▾'s agenda and by-status (Paul, 2026-10-15): the things to do as a table sorted by status or day, and grouped by
+// status; a tap lands on the item with the caret. Find shows only the matching rows and a tap on one lands there too.
+test('Agenda lists the things to do, sorted by status or by day; By status groups them; a tap lands on the item', async () => {
+  const { el } = await editor(
+    '---\nstatuses: TODO=red, DOING=yellow, DONE=green\n---\n- Plan {status=DONE due=2027-03-09}\n  - [ ] Draft {status=TODO due=2027-03-01}\n  - Quotes {status=DOING}\n- Nothing here\n',
+  );
+  await pick(el, el.querySelector<HTMLButtonElement>('.ol-view-as button')!, 'Agenda');
+  await until(() => !!el.querySelector('to-dialog.ol-agenda dialog[open] .ol-agenda-list'));
+  const names = () => [...el.querySelectorAll<HTMLElement>('.ol-agenda-list .ol-agenda-item')].map((b) => b.textContent!.trim());
+  expect(names()).toEqual(['Plan', 'Draft', 'Quotes']);
+  el.querySelector<HTMLButtonElement>('.ol-agenda-sorts button')!.click();
+  await el.updateComplete;
+  expect(names()).toEqual(['Draft', 'Quotes', 'Plan']);
+  [...el.querySelectorAll<HTMLButtonElement>('.ol-agenda-sorts button')].at(-1)!.click();
+  await el.updateComplete;
+  expect(names()).toEqual(['Draft', 'Plan', 'Quotes']);
+  // The row's own box and status act on the data: the box checks Draft (its status following to DONE), the pill moves
+  // Plan's status on (round the end, DONE to TODO); the view stays open.
+  const docOf = (x: ToOutlineEditor) => (x as unknown as { doc: Doc }).doc;
+  const rowOf = (words: string) => [...el.querySelectorAll<HTMLElement>('.ol-view-row')].find((r) => r.querySelector('.ol-agenda-item')!.textContent!.trim() === words)!;
+  rowOf('Draft').querySelector<HTMLButtonElement>('.ol-task')!.click();
+  await until(() => write(docOf(el)).includes('- [x] Draft {status=DONE due=2027-03-01}'));
+  rowOf('Plan').querySelector<HTMLButtonElement>('.ol-status')!.click();
+  await until(() => write(docOf(el)).includes('Plan {status=TODO due=2027-03-09}'));
+  expect(el.querySelector('to-dialog.ol-agenda dialog[open]')).not.toBeNull();
+  el.querySelectorAll<HTMLButtonElement>('.ol-agenda-list .ol-agenda-item')[1].click();
+  await until(() => !el.querySelector('to-dialog.ol-agenda dialog[open]'));
+  await until(() => textOf(el, 0)?.hasFocus() === true);
+  await pick(el, el.querySelector<HTMLButtonElement>('.ol-view-as button')!, 'By status');
+  await until(() => !!el.querySelector('to-dialog.ol-by-status dialog[open] .ol-by-status-group'));
+  expect([...el.querySelectorAll<HTMLElement>('.ol-by-status-group h3')].map((h) => h.textContent!.replace(/\s+/g, ' ').trim())).toEqual(['TODO 1', 'DOING 1', 'DONE 1']);
+  el.querySelector<HTMLButtonElement>('.ol-by-status-group .ol-agenda-item')!.click();
+  await until(() => !el.querySelector('to-dialog.ol-by-status dialog[open]'));
+  // Calendar: the dated items handed to the Calendar in a new tab, the statuses its legend.
+  const opened: string[] = [];
+  const open = window.open;
+  window.open = ((url?: string | URL) => (opened.push(String(url)), null)) as typeof window.open;
+  try {
+    await pick(el, el.querySelector<HTMLButtonElement>('.ol-view-as button')!, 'Calendar');
+    await until(() => opened.length === 1);
+    expect(opened[0]).toMatch(/#\/v1\/cal\//);
+    expect(decodeDoc(opened[0].slice(opened[0].indexOf('#/v1/cal/') + '#/v1/cal/'.length))).toBe(
+      '---\nred: TODO\norange: DOING\ngreen: DONE\n---\n- 2027-03-09: Plan {color=red}\n- 2027-03-01: Draft {color=green}\n',
+    );
+  } finally {
+    window.open = open;
+  }
+});
+
+test('Find shows only the rows whose words hold the terms; a tap on one lifts the filter, zooms to it and gives it the caret', async () => {
+  const { el } = await editor('- Launch\n  - Press list\n    - Local press\n  - Marketing\n- Press party\n');
+  const found = el.find(['press']);
+  await el.updateComplete;
+  expect(found.count).toBe(3);
+  expect(rows(el)).toEqual([1, 2, 4]);
+  found.go(0);
+  await el.updateComplete;
+  // A tap on a row: the filter lifts; the item with a family is zoomed to, its words with the caret.
+  row(el, 1).dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+  await el.updateComplete;
+  await until(() => el.zoom === 1 && textOf(el, 1)?.hasFocus() === true);
+  expect(rows(el)).toEqual([1, 2]);
+  // Cleared: everything back.
+  el.zoomOut();
+  el.zoomOut();
+  await el.updateComplete;
+  const again = el.find(['nothing']);
+  await el.updateComplete;
+  expect(again.count).toBe(0);
+  expect(rows(el)).toEqual([]);
+  again.clear!();
+  await el.updateComplete;
+  expect(rows(el)).toEqual([0, 1, 2, 3, 4]);
+});

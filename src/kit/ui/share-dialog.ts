@@ -1,0 +1,473 @@
+/**
+ * <to-share>: the Share dialog (Paul, 2026-10-09: "The short link function modal needs to be redesigned"). When the
+ * document was first written and by whom; the head line, where the link fits, red past the link's limit, with Copy,
+ * opening a table of the rooms it fits in (kit/share/limits.ts) on a hover or a tap; the sentence that says a link is a copy
+ * (whoever opens it gets their own; their changes stay in their link); Edit link and Present link (each copies its link; Paul, 2026-10-12), and
+ * the device's share sheet; Password (drawn by <to-privacy>, renderProtect, handed in as `protect`);
+ * a short link that expires (the lifetimes as one row, Make, then the link with Copy; it cannot be changed or recalled
+ * once made, so there is nothing more to do with it); posting the link to a service's compose box (through the link guard), under the
+ * switch that sends a preview of the first page with it (kit/share/card.ts: the link then carries "/c/<id>"), a deck's show link; the QR code;
+ * the embed code; the short links kept here.
+ *
+ * It gets the document through properties (`app`, `doc`, `heading`, `locked`, `payloadLength`, and
+ * `linkTo`, the link the shell projects, made current first) and says back `to-link-copied` when the link (or the Display Link) is on the clipboard, so the document lives somewhere now. It is
+ * drawn only while open.
+ */
+import { LitElement, html, nothing, type TemplateResult } from 'lit';
+import { unsafeSVG } from 'lit/directives/unsafe-svg.js';
+import { appOf, siteRoot } from '../core/apps.ts';
+import { budgetFor, encodeDoc } from '../core/codec.ts';
+import type { AppDef } from '../core/app.ts';
+import type { Locker } from '../share/crypt.ts';
+import { withHead } from '../../doc/tlo.ts';
+import { readEnvelope } from '../core/envelope.ts';
+import { ensureIcons, icon, iconNames, UI } from '../draw/icons.ts';
+import { chosenLanguage, t } from '../core/i18n.ts';
+import { dateWords } from '../core/dates.ts';
+import { picture, raster, saveFile, slug, utf8 } from '../file/exports.ts';
+import { parseHash, routeHash } from '../core/route.ts';
+import { fitLine, fitWords, limitWords, roomFor, shown } from '../share/limits.ts';
+import { DEFAULT_TTL, EXPIRIES, expiresLine, SHORT_LINK_MAX, shorten, type Shortened } from '../share/short.ts';
+import { dropKept, keepLink, keptLinks } from '../share/kept-links.ts';
+import { CARDS, cardFor, previewOn, setPreview, withCardId } from '../share/card.ts';
+import { pack } from '../share/privacy.ts';
+import { store } from '../core/store.ts';
+import { QR_MAX_BYTES, qrSvg } from '../draw/qr.ts';
+import { canShareNative, copyText, embedCode, mastodonHost, SERVICE_NAMES, SERVICES, shareNative, shareUrl, type Service } from '../share/share.ts';
+import { openLink } from './link-guard.ts';
+import { toast } from '../core/say.ts';
+import type { ToDialog } from './dialog.ts';
+import './dialog.ts';
+
+/** The Mastodon server a link is posted to, asked once and remembered (under Saved; for the visit under Private). */
+const MASTODON_KEY = 'tinyoffice.mastodon';
+
+/** Where the lifetime chosen for short links is remembered (under Saved; for the visit under Private). */
+const TTL_KEY = 'tinyoffice.shortTtl';
+const savedTtl = () => {
+  const n = Number(store.get(TTL_KEY));
+  return EXPIRIES.some((x) => x.seconds === n) ? n : DEFAULT_TTL;
+};
+
+/** Where the site is served from: the page's folder, less an app's own page ("/sheet/") or the embed page's. */
+export const siteDir = (): string => new URL(siteRoot()).pathname;
+
+/** A document as a fresh plain link in a new tab: "Copy of …", not yet written; sealed with the same password if it has one. */
+export function openCopy(def: AppDef, doc: string, title: string, locker: Locker | null) {
+  const copy = withHead(def.retitle(doc, t('share-copy-of-title', { title })), { by: '', created: '' });
+  const open = (payload: string) => {
+    const u = new URL(location.href);
+    u.hash = routeHash(def.id, payload, '', false, null, chosenLanguage());
+    window.open(u.href, '_blank', 'noopener');
+    toast(t('share-copy-opened-in-new-tab'));
+  };
+  // A plain one opens at once, inside the tap.
+  if (locker) void pack(copy, locker).then(open);
+  else open(encodeDoc(copy));
+}
+
+export class ToShare extends LitElement {
+  static properties = {
+    app: { attribute: false },
+    doc: { attribute: false },
+    heading: { attribute: false },
+    locked: { attribute: false },
+    payloadLength: { attribute: false },
+    sizing: { state: true },
+    protect: { attribute: false },
+    short: { state: true },
+    shortTtl: { state: true },
+    busy: { state: true },
+    posting: { state: true },
+    qrDisplay: { state: true },
+    shortDisplay: { state: true },
+    sharing: { state: true },
+    askMastodon: { state: true },
+    preview: { state: true },
+  };
+  declare app: string;
+  declare doc: string;
+  /** What the document is called. */
+  declare heading: string;
+  /** It has a password: nothing of it goes out but its ciphertext link, no picture, no title. */
+  declare locked: boolean;
+  declare payloadLength: number;
+  /** Max Link Sizes open: its table is drawn only then (the link it reads is asked of the shell, which writes the address when asked). */
+  declare sizing: boolean;
+  /** The Password part, drawn by <to-privacy>. */
+  declare protect: TemplateResult | typeof nothing;
+  declare short: Shortened | null;
+  declare shortTtl: number;
+  /** A short link is being made. */
+  declare busy: boolean;
+  /**
+   * The network whose preview card is being drawn and posted: its button says so, and every post button waits for it.
+   * Apart from `busy`: each is one button's work, and Make and the networks never wait for each other.
+   */
+  declare posting: Service | null;
+  /** Which link the QR code holds, and which a short link opens: the Display Link, or the editing one. */
+  declare qrDisplay: boolean;
+  declare shortDisplay: boolean;
+  /** Open: what it shows (the QR code above all) is drawn only then. */
+  declare sharing: boolean;
+  /** Mastodon asked for with no server known: the field for one shows. */
+  declare askMastodon: boolean;
+  /** A network gets a preview of the first page with the link (the switch; on unless the person turned it off). */
+  declare preview: boolean;
+  /** The link, made current first: the editing one, or the Display Link. */
+  linkTo: (display: boolean) => string = () => location.href;
+
+  constructor() {
+    super();
+    this.app = '';
+    this.doc = '';
+    this.heading = '';
+    this.locked = false;
+    this.payloadLength = 0;
+    this.sizing = false;
+    this.protect = nothing;
+    this.short = null;
+    this.shortTtl = savedTtl();
+    this.busy = false;
+    this.posting = null;
+    this.qrDisplay = false;
+    this.shortDisplay = false;
+    this.sharing = false;
+    this.askMastodon = false;
+    this.preview = CARDS && previewOn();
+  }
+  createRenderRoot() {
+    return this;
+  }
+  private say(name: string, detail: unknown) {
+    this.dispatchEvent(new CustomEvent(name, { bubbles: true, detail }));
+  }
+  get link(): string {
+    return this.linkTo(false);
+  }
+  /** What the document is called where the link goes (a post, the embed's frame): "Locked document" for a locked one. */
+  private get named(): string {
+    return this.locked ? t('common-locked-document') : this.heading;
+  }
+  /** The link (or the Display Link) copied: said to the shell, which then no longer warns before the tab closes. */
+  private copyLink = async (link: string) => void ((await copyText(link)) && this.say('to-link-copied', null));
+  get displayLink(): string {
+    return this.linkTo(true);
+  }
+  /** What a short link opens. */
+  private get shortTarget() {
+    return this.shortDisplay ? this.displayLink : this.link;
+  }
+
+  /** Open. */
+  async show() {
+    this.querySelector<ToDialog>('to-dialog.to-rooms-dialog')?.close();
+    this.sharing = true;
+    await this.updateComplete;
+    await this.querySelector<ToDialog>('to-dialog.to-share-dialog')?.show();
+  }
+  /** Max Link Sizes, alone: Share, if open, is closed first, one dialog at a time (the header's meter). */
+  async showRooms() {
+    this.close();
+    this.sizing = true;
+    await this.updateComplete;
+    await this.querySelector<ToDialog>('to-dialog.to-rooms-dialog')?.show();
+  }
+  /** Max Link Sizes from Share's head line: Share steps aside for it and is back, as it was, when it closes (the kit's one modal at a time). */
+  private async handOverRooms(back: HTMLElement) {
+    const share = this.querySelector<ToDialog>('to-dialog.to-share-dialog');
+    const rooms = this.querySelector<ToDialog>('to-dialog.to-rooms-dialog');
+    this.sizing = true;
+    await this.updateComplete;
+    if (share && rooms) await share.handOver(rooms, back);
+  }
+  close() {
+    this.querySelector<ToDialog>('to-dialog.to-share-dialog')?.close();
+  }
+
+  /** The lifetime chosen, remembered. */
+  private setTtl(seconds: number) {
+    this.shortTtl = seconds;
+    store.set(TTL_KEY, String(seconds));
+  }
+  /** A short link made: one request, errors said. */
+  private async shortDo(work: () => Promise<void>) {
+    this.busy = true;
+    try {
+      await work();
+    } catch (err) {
+      toast(err instanceof Error ? err.message : t('share-could-not-shorten-link'));
+    } finally {
+      this.busy = false;
+    }
+  }
+  /** A new short link, kept in the list of those made here (for the visit under Private). */
+  private makeShort = () =>
+    this.shortDo(async () => {
+      this.short = await shorten(this.shortTarget, this.shortTtl);
+      keepLink({ link: this.short.short, title: this.locked ? '' : this.heading, made: Date.now(), expires: this.short.expires });
+    });
+  private async saveQr(svg: string, ext: 'png' | 'svg') {
+    const file = `${(!this.locked && slug(this.heading)) || 'document'}-qr.${ext}`;
+    if (ext === 'svg') return saveFile(file, 'image/svg+xml', utf8(svg));
+    const side = 1024;
+    const png = await raster(svg.replace(/width="\d+" height="\d+"/, `width="${side}" height="${side}"`), side, side);
+    if (png) await saveFile(file, 'image/png', png);
+  }
+
+  /** When the document was first written, and by whom: "Created 9 Oct 2026, 14:03 · by Paul". */
+  private madeLine(): string {
+    const env = readEnvelope(this.doc);
+    const lang = document.documentElement.lang || undefined;
+    const when =
+      env.created === null ? '' : t('privacy-created-date', { date: dateWords({ day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }, lang).format(env.created) });
+    const by = env.by ? t('privacy-by-name', { name: env.by }) : '';
+    return [when, by].filter(Boolean).join(' · ');
+  }
+
+  /** The one Share dialog: where the link fits, the two copies, the short link, the QR code, the short links kept here. */
+  private renderShare() {
+    const def = appOf(this.app)!;
+    const share = async () => {
+      await ensureIcons(iconNames(this.doc));
+      if (this.locked) return shareNative(this.named, this.link);
+      const link = await this.networkLink();
+      return shareNative(this.heading, link, await picture(def.view(this.doc, { still: true })));
+    };
+    const made = this.madeLine();
+    // A link is a copy, never a shared document (Paul, 2026-10-11: "docs are not collaborative like Google Docs: that's
+    // fine. Communicate it in all the languages"): said under the link, before the ways of sending it.
+    return html`${made ? html`<p class="to-share-made">${made}</p>` : nothing}${this.renderFit()}
+      <p class="to-hint to-share-copies">${t('common-whoever-opens-this-link-gets')}</p>
+      <div class="to-share-links">
+        <button type="button" class="to-btn to-share-copy to-copy-link" @click=${() => void this.copyLink(this.link)}><span>${icon(UI.link, 18)}${t('share-edit-link')}</span><small>${t('share-opens-in-editor')}</small></button>
+        <button type="button" class="to-btn to-share-copy to-copy-display" @click=${() => void this.copyLink(this.displayLink)}><span>${icon(UI.view, 18)}${t('share-present-link')}</span><small>${t('share-opens-as-pages-to-read')}</small></button>
+        ${canShareNative() ? html`<button type="button" class="to-btn to-share-native" @click=${() => void share()}>${icon(UI.share, 18)}<span>${t('common-share')}</span></button>` : nothing}
+      </div>
+      ${this.protect}
+      <section class="to-share-section to-share-short" aria-labelledby="to-share-short-h">
+        <h3 id="to-share-short-h">${t('share-short-link-that-expires')}</h3>
+        ${this.short ? this.renderMade(this.short) : this.renderMaker()}
+      </section>
+      ${this.renderPost()}
+      ${this.renderQr()}
+      ${this.renderEmbedCode()}
+      ${this.renderKept()}`;
+  }
+
+  /** A deck's show link: the same deck, opening already presenting. */
+  get showLink(): string {
+    const u = new URL(this.link);
+    u.hash += u.hash.includes('?') ? '&show' : '?show';
+    return u.href;
+  }
+
+  /**
+   * The link a network gets: with the switch on, the link carrying its preview card's id (drawn and posted once per
+   * link: kit/share/card.ts); with it off, or for a document with a password, the link alone. A card that could not be
+   * made is said in a toast, and the link goes without it.
+   */
+  private async networkLink(): Promise<string> {
+    const link = this.link;
+    if (this.locked || !this.preview) return link;
+    try {
+      await ensureIcons(iconNames(this.doc));
+      const site = `${location.origin}${siteDir()}`;
+      return withCardId(link, await cardFor(`${site}card`, link, appOf(this.app)!, this.doc, this.heading), site);
+    } catch (err) {
+      toast(t('share-shared-without-preview-reason', { reason: err instanceof Error ? err.message : '' }));
+      return link;
+    }
+  }
+  private setPreview(on: boolean) {
+    this.preview = on;
+    setPreview(on);
+  }
+  /**
+   * The link to a service's compose box: Bluesky, Mastodon (its server asked once), X, LinkedIn, Email; each opened through the link guard. Email never carries a preview.
+   * While a network's card is drawn and posted its button says 'Making the preview…' (Paul, 2026-10-12: "Make it look like the
+   * button is working"), and a press on any post button does nothing.
+   */
+  private async post(service: Service) {
+    if (this.posting) return;
+    const server = mastodonHost(store.get(MASTODON_KEY) ?? '');
+    if (service === 'mastodon' && !server) {
+      this.askMastodon = true;
+      void this.updateComplete.then(() => this.querySelector<HTMLInputElement>('.to-mastodon-server')?.focus());
+      return;
+    }
+    if (service === 'email' || this.locked || !this.preview) return openLink(shareUrl(service, this.named, this.link, server));
+    let link: string;
+    this.posting = service;
+    try {
+      link = await this.networkLink();
+    } finally {
+      this.posting = null;
+    }
+    openLink(shareUrl(service, this.named, link, server));
+  }
+  private setMastodon(e: Event) {
+    e.preventDefault();
+    const box = this.querySelector<HTMLInputElement>('.to-mastodon-server')!;
+    const host = mastodonHost(box.value);
+    box.setCustomValidity(host ? '' : t('share-mastodon-server-like-mastodon-social'));
+    if (!box.reportValidity()) return;
+    store.set(MASTODON_KEY, host);
+    this.askMastodon = false;
+    void this.post('mastodon');
+  }
+  private renderPost() {
+    const server = mastodonHost(store.get(MASTODON_KEY) ?? '');
+    return html`<section class="to-share-section to-share-post" aria-labelledby="to-share-post-h">
+      <h3 id="to-share-post-h">${t('share-post-link')}</h3>
+      ${
+        this.locked || !CARDS
+          ? nothing
+          : html`<label class="to-switch to-share-preview">
+            <input type="checkbox" role="switch" .checked=${this.preview} @change=${(e: Event) => this.setPreview((e.target as HTMLInputElement).checked)} />
+            <span class="to-switch-words"><b>${t('share-show-preview-of-first-page')}</b><small>${t('share-picture-of-first-page-and')}</small></span>
+          </label>`
+      }
+      <div class="to-post">${SERVICES.map(
+        (s) =>
+          html`<button type="button" class="to-btn to-post-${s}" aria-busy=${this.posting === s ? 'true' : nothing} @click=${() => void this.post(s)}>${icon(s === 'email' ? UI.mail : UI.post, 16)}<span>${this.posting === s ? t('share-making-preview') : SERVICE_NAMES[s]}</span></button>`,
+      )}</div>
+      ${
+        this.askMastodon || server
+          ? html`<form class="to-share-field to-mastodon" @submit=${(e: Event) => this.setMastodon(e)}>
+            <input type="text" class="to-mastodon-server" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label=${t('share-your-mastodon-server')} placeholder="mastodon.social" .value=${server} />
+            <button type="submit" class="to-btn">${server ? t('share-change') : t('share-post')}</button>
+          </form>`
+          : nothing
+      }
+      ${this.app === 'deck' ? html`<button type="button" class="to-btn to-copy-show" @click=${() => void copyText(this.showLink)}>${icon(UI.play, 16)}<span>${t('share-copy-show-link')}</span></button><p class="to-hint">${t('share-opens-deck-already-presenting')}</p>` : nothing}
+    </section>`;
+  }
+  /** The embed code: the document's pages in another site's page, in a frame. */
+  get embedLink(): string {
+    const u = new URL(this.link);
+    u.pathname = `${siteDir()}embed/`;
+    u.search = '';
+    const { payload, lang } = parseHash(u.hash);
+    u.hash = routeHash(this.app, payload, 'embed', false, null, lang ?? null);
+    return u.href;
+  }
+  private renderEmbedCode() {
+    return html`<section class="to-share-section to-share-embed" aria-labelledby="to-share-embed-h">
+      <h3 id="to-share-embed-h">${t('share-embed')}</h3>
+      <p class="to-hint">${t('share-pages-in-frame-on-another')}</p>
+      <button type="button" class="to-btn to-copy-embed" @click=${() => void copyText(embedCode(this.embedLink, this.named), t('share-embed-code-copied'))}>${icon(UI.code, 16)}<span>${t('share-copy-embed-code')}</span></button>
+    </section>`;
+  }
+
+  /**
+   * The head line: where the link fits, red once it is past the link's limit, with Copy; a tap on the words opens
+   * Max Link Sizes (renderRooms) in Share's place.
+   */
+  private renderFit() {
+    const { available } = budgetFor(`${location.origin}${location.pathname}${routeHash(this.app)}/`);
+    const over = this.payloadLength - available;
+    return html`<div class="to-share-fit ${over > 0 ? 'over' : ''}">
+      <button type="button" class="to-btn to-fit-words" aria-haspopup="dialog" @click=${(e: Event) => void this.handOverRooms(e.currentTarget as HTMLElement)}>${over > 0 ? t('shell-n-characters-over-link-limit', { n: over }) : fitLine(this.link)}</button>
+      <button type="button" class="to-btn to-tool to-fit-copy" aria-label=${t('share-copy-link')} title=${t('share-copy-link')} @click=${() => void this.copyLink(this.link)}>${icon(UI.copy, 18)}</button>
+    </div>`;
+  }
+
+  /** Link or Display Link: a pair of buttons, the one chosen pressed. */
+  private renderWhich(display: boolean, choose: (display: boolean) => void) {
+    return html`<div class="to-seg to-which" role="group" aria-label=${t('share-opens')}>
+      <button type="button" class="to-btn" aria-pressed=${String(!display)} @click=${() => choose(false)}>${icon(UI.link, 16)}<span>${t('common-link')}</span></button>
+      <button type="button" class="to-btn" aria-pressed=${String(display)} @click=${() => choose(true)}>${icon(UI.view, 16)}<span>${t('share-display-link')}</span></button>
+    </div>`;
+  }
+  /** The lifetimes, one row of segments (a radio group) writing shortTtl. */
+  private renderTtl() {
+    return html`<fieldset class="to-seg to-ttl"><legend class="sr-only">${t('share-expires-after')}</legend>${EXPIRIES.map(
+      (x) => html`<label><input type="radio" name="to-ttl" value=${x.seconds} .checked=${x.seconds === this.shortTtl} @change=${() => this.setTtl(x.seconds)} /><span>${x.name()}</span></label>`,
+    )}</fieldset>`;
+  }
+  /** A link to copy: big, read-only, Copy at its right. */
+  private renderField(link: string, cls: string, label: string) {
+    return html`<div class="to-share-field">
+      <input type="text" class=${cls} readonly .value=${link} aria-label=${label} @focus=${(e: Event) => (e.target as HTMLInputElement).select()} />
+      <button type="button" class="to-btn primary" @click=${() => void copyText(link)}>${icon(UI.copy, 16)}<span>${t('common-copy')}</span></button>
+    </div>`;
+  }
+  /**
+   * The lifetimes, which link, Make. Past what a short link holds (SHORT_LINK_MAX), Make is disabled and a line under it
+   * says the numbers before anyone presses it (Paul, 2026-10-11); the toast stays for a document grown since.
+   */
+  private renderMaker() {
+    const n = utf8(this.shortTarget).length;
+    const over = n - SHORT_LINK_MAX;
+    return html`${this.renderTtl()}
+      ${this.renderWhich(this.shortDisplay, (d) => (this.shortDisplay = d))}
+      <p class="to-hint to-short-fixed">${t('share-short-link-cannot-be-changed')}</p>
+      <p class="to-hint">${t('share-encrypted-here-service-holds-only')} ${t('share-up-to-hundred-links-day')}</p>
+      <button type="button" class="to-btn primary to-make" ?disabled=${this.busy || over > 0} @click=${() => void this.makeShort()}>${icon(UI.link, 16)}<span>${this.busy ? t('share-making') : t('share-make-short-link')}</span></button>
+      ${over > 0 ? html`<p class="to-hint to-short-why">${t('share-this-document-is-n-characters', { n, max: SHORT_LINK_MAX, over })}</p>` : nothing}`;
+  }
+  /** Just made: the link to share, big, with Copy, and when it expires. */
+  private renderMade(short: Shortened) {
+    return html`${this.renderField(short.short, 'to-short-field', t('common-short-link'))}
+      <p class="to-hint to-short-expires">${expiresLine(short.expires, Date.now(), document.documentElement.lang)}</p>`;
+  }
+  /** The QR code, drawn here when the link fits in one; else why not, in a sentence. */
+  private renderQr() {
+    const bytes = new TextEncoder().encode(this.qrDisplay ? this.displayLink : this.link);
+    const fits = bytes.length <= QR_MAX_BYTES;
+    const qr = fits ? qrSvg(bytes, 4) : '';
+    return html`<section class="to-share-section to-share-qr" aria-labelledby="to-share-qr-h">
+      <h3 id="to-share-qr-h">${t('common-qr-code')}</h3>
+      ${
+        fits
+          ? html`${this.renderWhich(this.qrDisplay, (d) => (this.qrDisplay = d))}
+            <div class="to-qr-code" role="img" aria-label=${t('common-qr-code-of-this-document')}>${unsafeSVG(qr)}</div>
+            <div class="to-row">
+              <button type="button" class="to-btn" @click=${() => void this.saveQr(qr, 'png')}>${icon(UI.download, 16)}<span>PNG</span></button>
+              <button type="button" class="to-btn" @click=${() => void this.saveQr(qr, 'svg')}>${icon(UI.download, 16)}<span>SVG</span></button>
+            </div>`
+          : html`<p class="to-hint to-qr-why">${t('share-this-document-is-n-bytes', { n: bytes.length, max: QR_MAX_BYTES, over: bytes.length - QR_MAX_BYTES })}</p>`
+      }
+    </section>`;
+  }
+  /** The short links made on this device, folded: "2 short links kept here". */
+  private renderKept() {
+    const kept = keptLinks();
+    if (!kept.length) return nothing;
+    const lang = document.documentElement.lang;
+    return html`<details class="to-share-section to-kept-list">
+      <summary>${t('share-n-short-links-kept-here', { n: kept.length })}</summary>
+      <ul class="to-kept">${kept.map(
+        (l) =>
+          html`<li><a href=${l.link} class="to-short-link">${l.title || l.link}</a><small>${expiresLine(l.expires, Date.now(), lang)}</small><button type="button" class="to-btn to-tool" aria-label=${t('share-remove')} title=${t('share-remove')} @click=${() => (dropKept(l.link), this.requestUpdate())}>${icon(UI.close, 16)}</button></li>`,
+      )}</ul>
+    </details>`;
+  }
+
+  /**
+   * Max Link Sizes: the table of where the link fits, a dialog of its own beside Share, placed as Share is (Paul,
+   * 2026-10-16: "Make the sizing menu dismissable and give it a title: 'Max Link Sizes'… Position it exactly as you
+   * position the share menu. If one is invoked then hide the other one"): the header's meter opens it alone, Share's
+   * head line opens it in Share's place.
+   */
+  private renderRooms() {
+    return html`<to-dialog class="to-rooms-dialog" heading=${t('share-max-link-sizes')} @to-close=${() => (this.sizing = false)} .body=${
+      !this.sizing
+        ? nothing
+        : html`<div class="to-rooms">
+        <table class="to-table">
+          <caption>${t('share-this-link-n-characters-n-bytes', { n: this.link.length, bytes: utf8(this.link).length })}</caption>
+          <thead><tr><th scope="col">${t('share-where')}</th><th scope="col">${t('share-limit')}</th><th scope="col">${t('share-fits')}</th></tr></thead>
+          <tbody>${shown(roomFor(this.link)).map(
+            (r) => html`<tr class=${r.left < 0 ? 'over' : ''} data-target=${r.target.id}><th scope="row">${r.target.where()}</th><td>${limitWords(r)}</td><td>${fitWords(r)}</td></tr>`,
+          )}</tbody>
+        </table>
+      </div>`
+    }></to-dialog>`;
+  }
+  render() {
+    return html`<to-dialog class="to-share-dialog" heading=${this.heading} @to-close=${() => ((this.short = null), (this.sharing = false))} .body=${this.sharing ? this.renderShare() : nothing}></to-dialog>${this.renderRooms()}`;
+  }
+}
+customElements.define('to-share', ToShare);

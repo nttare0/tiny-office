@@ -1,0 +1,125 @@
+/* Diagram: the picture in a frame that scrolls when it is wider than the screen, the hint line under the bar, and the
+   words typed over the thing tapped (the things to do to it are a <to-context> under the words). */
+@layer apps {
+  /* The picture fills the column: no room below it for a caret at the middle (kit.css .to-main.to-wide). */
+  .to-main:has(> to-diagram-editor) {
+    padding-bottom: var(--to-gutter);
+  }
+  to-diagram-editor {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  /* One line, always there, so the picture never jumps when the hint changes. */
+  .dg-hint {
+    margin: 0;
+    padding: 0.25rem 0 0.5rem;
+    min-height: 1.6em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .dg-wrap {
+    position: relative;
+    /* The picture is the page: no frame round it, to the screen's edges on a phone. */
+    margin-left: var(--to-bleed-l);
+    margin-right: var(--to-bleed-r);
+    background: var(--to-surface);
+    overflow: auto;
+    /* The column's height below the bar and the hint, whatever the zoom: a zoomed picture scrolls inside it, and two
+       fingers keep their point of it under them (kit/ui/pinch.ts). */
+    height: calc(var(--to-col-h) - 5.875rem);
+    min-height: 13.75rem;
+    cursor: copy;
+  }
+  .dg-wrap:focus-visible {
+    outline: 0.125rem solid var(--to-accent);
+    outline-offset: -0.125rem;
+  }
+  .dg-wrap.joining {
+    cursor: crosshair;
+  }
+  svg.dg-pic {
+    display: block;
+    height: auto;
+    margin: 0 auto;
+    /* (No background of its own: the frame paints the surface, and the picture would paint over the frame's focus ring where it meets the edge; Paul, 2026-10-15.) */
+    /* One finger pans the frame; two are the picture's zoom (kit/ui/pinch.ts); a thing takes the finger only for its drag. */
+    touch-action: pan-x pan-y;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  svg.dg-pic text {
+    font-family: var(--to-font);
+    pointer-events: none;
+  }
+  .dg-thing {
+    cursor: pointer;
+    outline: none;
+  }
+  .dg-thing:not(.edge) {
+    touch-action: none;
+  }
+  .dg-thing:focus-visible,
+  .dg-thing.on,
+  .dg-thing.over {
+    filter: drop-shadow(0 0 0.1875rem var(--to-accent)) drop-shadow(0 0 1px var(--to-accent));
+  }
+  .dg-thing.dragging {
+    opacity: 0.7;
+    cursor: grabbing;
+  }
+  .dg-empty {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    margin: 0;
+    padding: 1.5rem;
+    text-align: center;
+    pointer-events: none;
+  }
+  /* The words, typed where they are drawn: over the thing, its own font at the size the picture shows it (set at
+     16px or more and scaled, so iOS does not zoom); the editor places it (placeWords, by Draw's wordsOver). */
+  .dg-words {
+    position: absolute;
+    display: block;
+    z-index: 1;
+    margin: 0;
+    padding: 0 0.125rem;
+    border: 0;
+    border-radius: 0.125rem;
+    background: transparent;
+    outline: 1px solid var(--to-accent);
+    outline-offset: 0.125rem;
+    font-family: var(--to-font);
+    line-height: 1.25;
+    text-align: center;
+    transform-origin: 0 0;
+    cursor: text;
+    touch-action: manipulation;
+    user-select: text;
+    -webkit-user-select: text;
+  }
+  .dg-words > :not(.tx) {
+    position: absolute;
+  }
+  .dg-words .tx {
+    min-height: 0;
+    font-size: inherit;
+    line-height: 1.25;
+  }
+  .dg-words .tx > * {
+    white-space: pre;
+  }
+  .dg-words.wrap .tx > * {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  .dg-words.left {
+    text-align: left;
+  }
+  .dg-words[hidden] {
+    display: none;
+  }
+}

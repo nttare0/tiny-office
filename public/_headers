@@ -1,0 +1,78 @@
+# Headers for the site on Cloudflare (Workers static assets). The build fills {{scripts}} with the hash of every
+# script the apps' pages carry (pageScript in src/kit/draw/page.ts) and of the theme script in every page (index.html),
+# so no other inline script can run, even in a frame.
+# The site is its own only source of code, style and type (font-src 'self': IBM Plex, public/fonts/); nothing may embed the editor (frame-ancestors 'none') but the
+# embed page, /embed/ (the embed view: the pages alone, for another site's frame), below. Where the site may reach is
+# filled in by scripts/headers.ts from src/kit/core/network.ts, the one list of every host (docs/network.md, /network):
+# {{img}} and {{connect}} are the hosts the list allows by each directive: the map's tiles, place search and the
+# short-link service. Nothing else: a document fetches nothing from any other site, so there is no frame-src or
+# media-src of the list's (default-src 'self' holds frames, films and sounds to the site's own).
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
+  Permissions-Policy: camera=(), microphone=(), geolocation=(self), payment=()
+  Content-Security-Policy: default-src 'self'; script-src 'self' {{scripts}}; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: {{img}}; font-src 'self'; connect-src 'self' data: {{connect}}; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self' mailto:; frame-ancestors 'none'
+  Cache-Control: no-cache
+# The pages themselves: no-transform, so Cloudflare does not rewrite them to add its analytics beacon (which the
+# policy above would block anyway). Only the HTML: the scripts keep their compression.
+/
+  ! Cache-Control
+  Cache-Control: no-cache, no-transform
+/:app/
+  ! Cache-Control
+  Cache-Control: no-cache, no-transform
+# Built files carry a hash in their name: once fetched, they are never asked for again. They are the app file and
+# its stylesheet, an app's templates and a language (scripts/budgets.ts holds the folder to those).
+# The service worker, /sw.js, is not among them: it is asked for each time (no-cache, above), so a deploy's new one
+# is found on the next online visit.
+/assets/*
+  ! Cache-Control
+  Cache-Control: public, max-age=31536000, immutable
+# The type (public/fonts/): kept a month, so a page does not ask for its faces again on every visit.
+/fonts/*
+  ! Cache-Control
+  Cache-Control: public, max-age=2592000
+# The embed page: the same policy, but any page may frame it (it shows the document's pages and a link to open them).
+/embed/
+  ! Content-Security-Policy
+  Content-Security-Policy: default-src 'self'; script-src 'self' {{scripts}}; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: {{img}}; font-src 'self'; connect-src 'self' data:; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self' mailto:; frame-ancestors *
+  ! Cache-Control
+  Cache-Control: no-cache, no-transform
+# For programs: the guides (/llms.txt, short; /llms-full.txt, whole; /llms/<app>.txt, an app each; the same at
+# /.well-known/llms.txt), the examples (/examples/<app>.json), the API (/api.js, and the one part of it under /api/)
+# and the helper for pages (/tinyoffice.js) from any origin. The guides are plain text in UTF-8 and kept five
+# minutes, so an agent's second fetch is quick and a new guide is read within minutes of a deploy.
+/tinyoffice.js
+  Access-Control-Allow-Origin: *
+/llms.txt
+  Access-Control-Allow-Origin: *
+  ! Content-Type
+  Content-Type: text/plain; charset=utf-8
+  ! Cache-Control
+  Cache-Control: public, max-age=300
+/llms-full.txt
+  Access-Control-Allow-Origin: *
+  ! Content-Type
+  Content-Type: text/plain; charset=utf-8
+  ! Cache-Control
+  Cache-Control: public, max-age=300
+/llms/*
+  Access-Control-Allow-Origin: *
+  ! Content-Type
+  Content-Type: text/plain; charset=utf-8
+  ! Cache-Control
+  Cache-Control: public, max-age=300
+/.well-known/llms.txt
+  Access-Control-Allow-Origin: *
+  ! Content-Type
+  Content-Type: text/plain; charset=utf-8
+  ! Cache-Control
+  Cache-Control: public, max-age=300
+/examples/*
+  Access-Control-Allow-Origin: *
+  ! Cache-Control
+  Cache-Control: public, max-age=300
+/api.js
+  Access-Control-Allow-Origin: *
+/api/*
+  Access-Control-Allow-Origin: *

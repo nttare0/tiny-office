@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.env
+.env.*
+.dev.vars
+!.env.example
+test-results/
+playwright-report/
+.wrangler/
+.vite/
+*.local
+tinier/worker-configuration.d.ts
+site/worker-configuration.d.ts
+/data/

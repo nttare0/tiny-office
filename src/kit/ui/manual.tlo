@@ -1,0 +1,298 @@
+---
+app: deck
+title: Introducing Tiny Little Office
+theme: midnight
+transition: slide
+created: 2026-10-13T22:00Z
+---
+## :link: Tiny Little Office {.title}
+
+The link is the document.
+
+---
+
+## What it is
+
+- An office suite with no accounts and no server that holds your work
+- Every document lives in the address of its page, after the #
+- Copy the link and you have copied the document
+- Open a link, change it, and the address bar is your own copy
+
+> The browser never sends the part after the # to any server. That one fact is the whole design.
+
+---
+
+## How it is made {.two}
+
+- Ten apps on one kit
+- One text format: Markdown with a few additions
+- Any document can sit inside another: a chart on a slide, a map on a page
+
+|
+
+- Share: the link, a short link, a QR code
+- Download: PDF, PNG, Markdown, PowerPoint, Word, Excel, OPML, GPX, ICS
+- Open source under the MIT license
+
+---
+
+## :presentation: Presentation Builder {.icon}
+
+- You are looking at it
+- Ten looks: Boardroom, Ivory, Midnight, Graphite, Confetti, Sunset, Ocean, Bubblegum, Arcade, Chalkboard
+- Prints as a zine, a booklet, a brochure, a comic, a poster or name badges
+- Every deck ends with a QR code of itself
+
+---
+
+## :file-text: Word Processor
+
+```write
+# A letter to the block {.title}
+
+Dear neighbors,
+
+The stoop sale is **Saturday, October 24**, ten to four. Three jobs are still open:
+
+- [x] Tables, from the church basement
+- [ ] A sign for the corner^[Big letters. Last year nobody saw it.]
+- [ ] Someone to mind the cash box
+
+Yours, Rosa
+```
+
+> A page with a task list, a footnote and a table that adds up. It prints, and it downloads as Word.
+
+---
+
+## :list-tree: Outliner
+
+```outline
+- The link is the document
+  - The problem {label="5 min"}
+    - A file needs a place to live, an account to reach it, a server to keep it
+    - Sharing a file is sharing a place
+  - The idea {label="10 min"}
+    - Put the whole document after the # in the address
+    - Nothing is sent anywhere
+    - Copy the link and you have copied the file
+```
+
+> Presented, an outline builds up an item at a time. The same text opens as a mind map or a deck.
+
+---
+
+## :chart-column: Spreadsheet with charts galore
+
+```sheet
+---
+chart: bar
+chart-at: top
+---
+Week | Raised so far:money | Goal:money
+--- | --- | ---
+Sep 7 | 3150 | 25000
+Sep 14 | 5820 | 25000
+Sep 21 | 8400 | 25000
+Sep 28 | 10275 | 25000
+Oct 5 | 13940 | 25000
+Oct 12 | 16480 | 25000
+Oct 19 | 19905 | 25000
+Oct 26 | 21730 | 25000
+{big=B8}
+```
+
+> Formulas, named cells, money and dates. A chart is one line in the head.
+
+---
+
+## :waves: We got Sankeys baby!
+
+```sheet
+---
+chart: sankey
+lock: C1:C5, E7:E9
+---
+From | To | Amount:number | Assumption:name | Value:number
+--- | --- | --- | --- | ---
+Monthly donors | Fund | =monthly_donors*average_gift | Monthly donors | 120
+One-off gifts | Fund | =one_off_gifts | Average gift | 15
+Fund | Grants | =fund*grant_share/100 | One-off gifts | 900
+Fund | Admin | =admin | Grant share | 80
+Fund | Reserve | =fund-grants-admin | Admin | 150
+| |  |  |  |
+| |  |  | Fund | =SUMIF(B1:B20, "Fund", C1:C20)
+| |  |  | Grants | =SUMIF(B1:B20, "Grants", C1:C20)
+| |  |  | Reserve | =SUMIF(B1:B20, "Reserve", C1:C20)
+{big=Grants}
+```
+
+> A Sankey of a mutual aid fund's month. Change an assumption and the flows redraw.
+
+---
+
+## :calculator: Tip Splitting Calculator
+
+```calc
+food = 164.50
+drinks = 58
+tip = (food + drinks) * 18%
+total = food + drinks + tip
+total / 6
+```
+
+> A tape: an expression a line, a name for any answer. It also graphs curves.
+
+---
+
+## :pencil: Drawing Tool
+
+```draw
+---
+alt: A browser asks a server, which reads the data.
+---
+Kind | X | Y | W | H | Style | Label
+--- | --- | --- | --- | --- | --- | ---
+o | 4 | 6 | 16 | 8 | 1b | Browser
+o | 32 | 6 | 16 | 8 | 1b | Server
+c | 60 | 5 | 14 | 10 | 1g | Data
+k | 0 | 1 | 0 | 0 | 0 | asks
+k | 1 | 2 | 0 | 0 | 0 | reads
+```
+
+> Shapes, arrows, icons and pixel art, on an 8px grid. The alt text travels with it.
+
+---
+
+## :workflow: Diagram Maker
+
+```diagram
+---
+kind: mind
+---
+- Launch :rocket:
+  - Product
+    - Pricing
+    - Onboarding
+    - The first ten customers
+  - Marketing
+    - Press
+    - Social
+    - A launch-day post
+  - Support
+    - Help pages
+    - Who answers, and when
+
+~ A launch-day post -> Help pages: links to
+```
+
+> Mind maps, org charts, family trees, swimlanes, timelines, Venns, seating charts and networks, each from a list.
+
+---
+
+## :clapperboard: Highly Janky Animator
+
+```anim
+---
+frames: 64
+fps: 8
+alt: A rocket lifts off and flies up and away to the right, under the words Lift off.
+loop: bounce
+---
+Kind | X | Y | W | H | Style | Label
+--- | --- | --- | --- | --- | --- | ---
+t | 4 | 20 | 20 | 4 | 04 | Lift off
+i | 8 | 36 | 8 | 8 | 0b | rocket
+t | 46 | 21 | 14 | 3 | 0r | **Let’s gooooooo**
+t | 12 | 10 | 61 | 6 | 04 | 10, 9, 8, 7, 6, 5, 4, 3, 2, 1
+
+Shape | Keys
+--- | ---
+0 | 0,597,233,0,1,0; 23,0,-80,0,1,0,i; 63,257,-107,0,4,0,i
+1 | 0,0,0,0,1,0; 23,259,-148,80,4,-30,d; 63,206,-94,80,4,-30,d
+2 | 0,-329,-134,0,1,0; 63,151,155,0,4,0
+3 | 0,502,-9,0,1,0; 23,0,-80,0,1,0,i; 63,-564,109,0,3.2,0,i
+```
+
+> A drawing with keyframes. It plays on the slide, and downloads as a GIF or a film.
+
+---
+
+## :calendar: Calendar
+
+```cal
+---
+blue: Main stage
+orange: Workshops
+---
+- 2027-06-18 18:00-19:00: Doors open, welcome drinks
+- 2027-06-18 19:30-21:00: Opening concert: the Gowanus Brass {color=blue}
+- 2027-06-19 10:00-12:00: Screen printing workshop {color=orange}
+- 2027-06-19 14:00-15:30: Panel: making things in a big city
+- 2027-06-19 22:00 to 2027-06-20 02:00: Late set, DJ Marta {color=blue}
+- 2027-06-20 11:00-12:30: Bread workshop {color=orange}
+- 2027-06-20 17:00: Close and thanks
+```
+
+> Days, spans and times, in colors. The same list draws as a Gantt chart, and downloads as an ICS file.
+
+---
+
+## :map: Trip Planner
+
+```trip
+---
+units: km
+---
+Place | Lat:number | Lon:number | Note
+--- | --- | --- | ---
+Lisbon | 38.7223 | -9.1393 | Pastéis de nata in Belém, then the 28 tram up to Graça
+Sintra | 38.8029 | -9.3817 | Pena Palace first thing, before the tour buses
+Óbidos | 39.3606 | -9.1571 | Walk the town walls; ginjinha in a chocolate cup
+Coimbra | 40.2033 | -8.4103 | The Joanina Library: book the 10 am slot
+Porto | 41.1579 | -8.6291 | Port cellars across the river in Gaia
+```
+
+> Stops in order on OpenStreetMap, with the distance between them. Presented, a stop a step.
+
+---
+
+## :languages: Twenty-one languages
+
+1-7 | 8-14 | 15-21
+--- | --- | ---
+English | español | français
+Deutsch | italiano | Nederlands
+polski | português (Brasil) | Kreyòl ayisyen
+русский | українська | עברית
+العربية | اردو | ייִדיש
+हिन्दी | বাংলা | 日本語
+한국어 | 简体中文 | 繁體中文
+
+> Mostly the languages spoken in New York City. Every word of the interface, in each.
+
+---
+
+## :globe: The document is the link
+
+- El documento es el enlace
+- Le document, c'est le lien
+- Dokiman an se lyen an
+- Das Dokument ist der Link
+- Документ — это ссылка
+- המסמך הוא הקישור
+- المستند هو الرابط
+- 文档就是链接
+- 문서가 곧 링크입니다
+
+> The page opens in the reader's own language, or the one the link names.
+
+---
+
+## :qr-code: tinylittleoffice.com
+
+```qr
+https://tinylittleoffice.com
+```
+
+> Scan for the site. The next slide is this deck itself.

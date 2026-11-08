@@ -1,0 +1,13 @@
+---
+app: trip
+title: The last 100 km of the Camino
+units: km
+---
+Place | Lat:number | Lon:number | Note
+--- | --- | --- | ---
+Sarria | 42.7811 | -7.4144 | Get the credencial stamped before you start
+Portomarín | 42.8076 | -7.6153 | The church was moved stone by stone when the dam came
+Palas de Rei | 42.8731 | -7.8690 | Pulpo for dinner
+Arzúa | 42.9297 | -8.1618 | The cheese town
+O Pedrouzo | 42.9067 | -8.3609 | Last night; an early start tomorrow
+Santiago de Compostela | 42.8806 | -8.5446 | The cathedral at noon

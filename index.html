@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#4f46e5" />
+    <title>Tiny Little Office</title>
+    <meta name="description" content="A tiny office suite where the link is the document. No accounts. Nothing is saved anywhere unless you choose to keep it on this device." />
+    <meta name="application-name" content="Tiny Little Office" />
+    <meta name="apple-mobile-web-app-title" content="Tiny Little Office" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="referrer" content="no-referrer" />
+    <link rel="canonical" href="%VITE_SITE_URL%" />
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="./favicon-32.png" sizes="32x32" type="image/png" />
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <!-- For a program that fetches the page: the guide to making a document as a link (scripts/make-skill.ts). -->
+    <link rel="alternate" type="text/plain" href="/llms.txt" title="For agents" />
+    <!-- The type, IBM Plex, is the site's own (src/styles/fonts.css): the two faces every page draws first (the words
+         and the headings), fetched at once beside the app file and the stylesheet. -->
+    <link rel="preload" href="./fonts/IBMPlexSans-Regular.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="./fonts/IBMPlexSans-SemiBold.woff2" as="font" type="font/woff2" crossorigin />
+    <!-- Link previews. A document lives in the part of the address after "#", which is never sent to a server, so a
+         link previews as its app's card (public/og/, greeked: scripts/make-cards.ts). A link shared with a network from
+         the app, with its preview on, carries "?c=<id>": the site's Worker writes that card into these tags, each
+         written once here (site/site.ts, tinier/cards.ts). -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Tiny Little Office" />
+    <meta property="og:title" content="Tiny Little Office: the link is the document" />
+    <meta property="og:description" content="A tiny office suite where the link is the document. No accounts. Nothing is saved anywhere unless you choose to keep it on this device." />
+    <meta property="og:url" content="%VITE_SITE_URL%" />
+    <meta property="og:image" content="%VITE_SITE_URL%og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Tiny Little Office: a tiny office suite where the link is the document." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Tiny Little Office: the link is the document" />
+    <meta name="twitter:description" content="A tiny office suite where the link is the document. No accounts. Nothing is saved anywhere unless you choose to keep it on this device." />
+    <meta name="twitter:image" content="%VITE_SITE_URL%og.png" />
+    <script>
+      // Light or dark, before the first paint: the choice in the menu if there is one (kept on the device with Save in browser
+      // on or off alike: kit/core/store.ts), otherwise whatever the device says (kit/ui/theme.ts keeps it afterwards).
+      // In the page, so a first visit asks for no file of its own; the build writes its hash into the
+      // Content-Security-Policy beside the apps' page scripts (vite.config.ts), and no other inline script runs.
+      (function () {
+        var mq = window.matchMedia('(prefers-color-scheme: dark)');
+        var apply = function () {
+          var t = null;
+          try { t = localStorage.getItem('to-theme'); } catch (e) {}
+          document.documentElement.dataset.theme = t === 'light' || t === 'dark' ? t : mq.matches ? 'dark' : 'light';
+        };
+        apply();
+      })();
+
+      // iPhones and iPads zoom in on a box whose type is under 16px when it is tapped, and stay zoomed. Told the
+      // page may not zoom, iOS no longer does that, but still lets a person pinch to zoom; elsewhere the setting
+      // would stop the pinch, so it is said to iOS alone.
+      (function () {
+        var ios = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        var vp = document.querySelector('meta[name="viewport"]');
+        if (ios && vp) vp.content += ', maximum-scale=1';
+      })();
+    </script>
+    <script type="module" src="./src/main.ts"></script>
+  </head>
+  <body>
+    <!-- What the page says before any script runs, taken away as the shell starts (kit/core/shell.ts): the build writes the
+         apps' names here, or on an app's page its name, its line and its templates' names (scripts/seo.ts). -->
+    <header id="to-first"><h1>Tiny Little Office</h1></header>
+    <to-shell></to-shell>
+    <noscript>
+      <p>A tiny office suite where the link is the document. No accounts. Nothing is saved anywhere unless you choose to keep it on this device. Tiny Little Office needs JavaScript to show a document.</p>
+      <p>Agents: %VITE_SITE_URL%llms.txt says how to make a document as a link; a document goes inside another as a fence named by its app.</p>
+    </noscript>
+  </body>
+</html>

@@ -1,0 +1,232 @@
+/* Calculator: at phone width, the graph (when graphing), the tape, the line being typed and the keys, one under
+   the other, the keys at the foot where a thumb is; wider, the keys on the left and the tape beside them. Every
+   key and row is a finger tall; every box is 16px or more, so a phone never zooms on it. */
+@layer apps {
+  to-calc-editor {
+    display: block;
+  }
+  /* The tape and the keys keep their measure, centred in the window's width. */
+  .calc {
+    max-width: var(--to-max-w);
+    margin-inline: auto;
+    display: grid;
+    gap: 0.75rem;
+    grid-template-areas: 'graph' 'paper' 'pad';
+    /* A double tap selects a word; the page never zooms on it. */
+    touch-action: manipulation;
+  }
+  .calc-graph {
+    grid-area: graph;
+    margin: 0;
+  }
+  .calc-plot {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  .calc-paper {
+    grid-area: paper;
+    min-width: 0;
+  }
+  .calc-pad {
+    grid-area: pad;
+    min-width: 0;
+  }
+  .calc-empty {
+    margin: 0.25rem 0;
+  }
+
+  /* The tape: a row a line, its answer a key that puts it into the line being typed. */
+  .calc-tape {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    background: var(--to-surface);
+  }
+  .calc-row {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    min-height: var(--to-touch);
+    padding-left: 0.25rem;
+  }
+  .calc-row + .calc-row {
+    border-top: 1px solid var(--to-border);
+  }
+  .calc-tape:focus {
+    outline: none;
+  }
+  /* Lines chosen whole (kit/text/rows.ts), and the one being carried. */
+  .calc-row.ranged {
+    background: var(--to-accent-soft);
+  }
+  .calc-row.dragging {
+    opacity: 0.5;
+  }
+  /* The grip: a tap chooses the line, a drag carries it (44px to a finger: .to-rows-handle). */
+  .calc-grip {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 1.25rem;
+    min-height: 2.25rem;
+    padding: 0;
+    border: 0;
+    border-radius: var(--to-radius-sm);
+    background: none;
+    color: var(--to-ink-3);
+    cursor: grab;
+  }
+  .calc-grip:hover {
+    color: var(--to-ink);
+  }
+  .calc-grip:focus-visible {
+    outline: 0.125rem solid var(--to-accent);
+  }
+  .calc-swatch {
+    flex: none;
+    width: 0.875rem;
+    height: 0.25rem;
+    margin-left: 0.375rem;
+    border-radius: 0.125rem;
+    background: var(--c);
+  }
+  .calc-line {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 2.25rem;
+    padding: 0.25rem 0.5rem;
+    border: 1px solid transparent;
+    border-radius: var(--to-radius-sm);
+    background: none;
+    font: 1rem var(--to-font-mono);
+    color: var(--to-ink-2);
+  }
+  /* A note: words across the tape, in the reading font and ink, with no answer beside it. */
+  .calc-note .calc-line {
+    font: 1rem var(--to-font);
+    color: var(--to-ink);
+  }
+  .calc-line:hover {
+    border-color: var(--to-border);
+  }
+  .calc-line:focus-visible {
+    outline: 0.125rem solid var(--to-accent);
+    outline-offset: -1px;
+    color: var(--to-ink);
+  }
+  .calc-ans {
+    flex: none;
+    max-width: 50%;
+    min-height: var(--to-touch);
+    padding: 0 0.5rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    border: 0;
+    border-radius: var(--to-radius-sm);
+    background: none;
+    font: 600 1rem var(--to-font-mono);
+    color: var(--to-ink);
+    cursor: pointer;
+  }
+  .calc-ans:hover:not(:disabled) {
+    background: var(--to-surface-2);
+  }
+  .calc-ans:disabled {
+    color: var(--to-ink-3);
+    cursor: default;
+  }
+  .calc-drop {
+    flex: none;
+    border-color: transparent;
+    background: none;
+    color: var(--to-ink-3);
+  }
+
+  /* The line being typed, and what it comes to. */
+  .calc-entry {
+    display: grid;
+    gap: 0.125rem;
+    margin-bottom: 0.5rem;
+  }
+  .calc-display {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 3.25rem;
+    padding: 0.5rem 0.75rem;
+    font: 1.375rem var(--to-font-mono);
+    text-align: right;
+    color: var(--to-ink);
+    background: var(--to-input-bg);
+    border: 1px solid var(--to-input-border);
+    border-radius: var(--to-radius);
+  }
+  .calc-display::placeholder {
+    color: var(--to-placeholder);
+  }
+  .calc-display:focus-visible {
+    outline: 0.125rem solid var(--to-accent);
+    outline-offset: 1px;
+  }
+  .calc-live {
+    min-height: 1.4em;
+    padding: 0 0.75rem;
+    text-align: right;
+    font: 1rem var(--to-font-mono);
+    color: var(--to-ink-2);
+    overflow-wrap: anywhere;
+  }
+
+  /* The keys: five across, as wide as the line. */
+  .calc-keys {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0.375rem;
+  }
+  .calc-key {
+    min-height: 3.25rem;
+    padding: 0;
+    font: 400 1.25rem var(--to-font);
+    touch-action: manipulation;
+    color: var(--to-ink);
+    background: var(--to-surface);
+    border: 1px solid var(--to-border);
+    border-radius: var(--to-radius);
+    cursor: pointer;
+  }
+  .calc-key:hover {
+    background: var(--to-surface-2);
+  }
+  .calc-key.op {
+    color: var(--to-accent);
+  }
+  .calc-key.eq {
+    background: var(--to-accent);
+    border-color: var(--to-accent);
+    color: var(--to-on-accent);
+  }
+  .calc-key:focus-visible,
+  .calc-ans:focus-visible {
+    outline: 0.125rem solid var(--to-accent);
+    outline-offset: 1px;
+  }
+
+  /* One column: the graph and the tape run to the screen's edges on a phone (no frame round either, at any width). */
+  @media (max-width: 759px) {
+    .calc-graph,
+    .calc-tape {
+      margin-left: var(--to-bleed-l);
+      margin-right: var(--to-bleed-r);
+    }
+  }
+  @media (min-width: 760px) {
+    .calc {
+      grid-template-columns: minmax(18.75rem, 23.75rem) minmax(0, 1fr);
+      grid-template-rows: auto 1fr;
+      grid-template-areas: 'pad graph' 'pad paper';
+      gap: 1rem 1.5rem;
+      align-items: start;
+    }
+  }
+}

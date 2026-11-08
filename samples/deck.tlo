@@ -1,0 +1,47 @@
+---
+app: deck
+title: Status, week of October 12
+theme: boardroom
+---
+## :calendar: Status, week of October 12 {.title}
+
+Tiny Little Office
+
+---
+
+## This week and next {.two}
+
+- Shipped the phone slide rail
+- Backticks are code in every app
+- About says who we are
+
+|
+
+- Horizontal rules in the Word Processor
+- Sample documents in the README
+- A day off
+
+---
+
+## :chart-column: Deploys this week
+
+```sheet
+---
+chart: bar
+---
+Day | Deploys:number
+--- | ---
+Mon | 2
+Tue | 3
+Wed | 4
+Thu | 5
+```
+
+---
+
+## :help: Asks
+
+- A second pair of eyes on the README
+- Bugs, filed in the repository
+
+> Keep this to two minutes.

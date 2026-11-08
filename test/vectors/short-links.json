@@ -1,0 +1,22 @@
+{
+  "about": "Tiny Little Office short links (src/kit/share/short.ts, tinier/, docs/crypto/short-links.md). c = AES-256-GCM(key, iv, UTF-8 of the long link) with its 16-byte tag last and no additional data; key, iv and c travel as base64url without padding. The service stores c and iv; the short link is <service>/<id>#<key>. Fixed keys and IVs are for these vectors only: the site draws them from crypto.getRandomValues. Base64url here is RFC 4648's URL alphabet with '~' for 62 where the RFC has '-' (a hyphen is where a pasted link breaks a line), no padding; '-' is read as 62 too.",
+  "cipher": {
+    "name": "AES-GCM",
+    "keyBits": 256,
+    "ivBytes": 12,
+    "tagBytes": 16,
+    "additionalData": null
+  },
+  "vectors": [
+    {
+      "keyHex": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f",
+      "key": "ICEiIyQlJicoKSorLC0uLzAxMjM0NTY3ODk6Ozw9Pj8",
+      "ivHex": "404142434445464748494a4b",
+      "link": "https://tinylittleoffice.com/#/v1/text/yA-UoYJZLVQAlK2AOAibQZGCRVqzHBQA",
+      "c": "qiDJ8SNM6iQmWz5R6SMlBn_r8uWTKcS7QJ37bU_J4HT7PGt7TqiOXwy6aOvEmumjiMmoXPbYkbI_jasxfOIXQ2OR0sBXcn03r4P6w3mly9Rw1dofzits",
+      "iv": "QEFCQ0RFRkdISUpL",
+      "id": "abcdefg",
+      "short": "https://tinier.tinylittleoffice.com/abcdefg#ICEiIyQlJicoKSorLC0uLzAxMjM0NTY3ODk6Ozw9Pj8"
+    }
+  ]
+}

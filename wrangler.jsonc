@@ -1,0 +1,44 @@
+// The site on Cloudflare: the build in dist/, served as static assets, with public/_headers. A small Worker
+// (site/worker.ts) runs first only for the preview cards: "/c/<id>", the page a link shared with a network opens
+// (the app's page with the card's tags), "/card" and "/card/*". Every other path, the home page and each app's page
+// among them, is the assets alone, which Cloudflare serves without counting them. The link shortener is its own
+// Worker (tinier/).
+//
+// Until 2026-10-15 the Worker ran first for "/" and each app's page, to put a card's tags on a page opened with
+// ?c=<id>: on launch day that put every visit through the Worker, past the free plan's 100,000 requests a day
+// (124,273 by noon), and Cloudflare answered the pages with 429 (Paul: "we just broke through cloudflare's free tier
+// and the site is down"). A shared link's card is in its path now, so only those visits are the Worker's; a link made
+// before, with ?c= on the app's page, opens as built (the shell reads the hash) and previews as the app's card.
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "tinylittleoffice",
+  "main": "site/worker.ts",
+  "compatibility_date": "2026-10-08",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page",
+    // The cards alone (test/cards.test.ts holds it): an app's page is never the Worker's.
+    "run_worker_first": ["/c/*", "/card", "/card/*"],
+  },
+  // The cards are kept in the shortener's database (tinier/wrangler.jsonc, tinier/migrations/), whose sweep forgets them.
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "tinier",
+      "database_id": "6ede155f-083c-4ab9-a33e-64eea0704bb5",
+      "migrations_dir": "tinier/migrations",
+    },
+  ],
+  // A hundred cards a day from one address, counted under a keyed hash (tinier/brake.ts); the key is this Worker's own
+  // secret BRAKE_KEY (`wrangler secret put BRAKE_KEY`), set once by hand, never here.
+  // Only on its own domain: no workers.dev copy once this is live.
+  "workers_dev": false,
+  "routes": [
+    { "pattern": "tinylittleoffice.com", "custom_domain": true },
+    { "pattern": "www.tinylittleoffice.com", "custom_domain": true },
+  ],
+  // The site keeps no record of who asked for what; see "What it is not" in the README.
+  "observability": { "enabled": false },
+}

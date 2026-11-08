@@ -1,0 +1,11 @@
+---
+app: calc
+title: The apartment on Court Street
+---
+price = 875000
+deposit = 20% * price
+loan = price - deposit
+rate = 6.4% / 12
+months = 30 * 12
+payment = loan * rate / (1 - (1 + rate)^(-months))
+payment * 12

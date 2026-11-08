@@ -1,0 +1,11 @@
+---
+app: diagram
+title: Fast, cheap, good
+kind: venn
+---
+- Fast: espresso, a sandwich, the subway
+- Cheap: instant noodles, a library book, the bus
+- Good: a slow roast, a letter by hand, a long walk
+- Fast & Cheap: a slice, the dollar van
+- Cheap & Good: home cooking, a park bench
+- Fast & Good: a great takeaway, the express train

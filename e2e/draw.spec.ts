@@ -1,0 +1,240 @@
+/**
+ * Draw on the built site, at desktop size in Chromium and at iPhone size in WebKit: a key and a click make a
+ * shape that lands in the link, the bar is one row, nothing is wider than the screen; pixel mode paints a
+ * square and "Use as background" writes the tile; a shape tapped has its contextual bar inside the screen, its words
+ * are typed on it, a text is centred from the bar, and the bar's Delete takes it away. Run on its own:
+ *
+ *   PW_PORT=4184 npx playwright test e2e/draw.spec.ts --workers=1
+ */
+import { test, expect } from '@playwright/test';
+import { link } from './link.ts';
+
+test('draw: a shape from a key and a click, then a pixel grid that becomes the background', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.goto('/#/v1/draw');
+  const canvas = page.locator('svg.draw-canvas');
+  await expect(canvas).toBeVisible();
+  const measure = () =>
+    page.evaluate(() => {
+      const bar = document.querySelector<HTMLElement>('to-draw-editor to-bar')!;
+      const tops = new Set([...bar.children].filter((el) => (el as HTMLElement).offsetWidth > 0).map((el) => Math.round((el as HTMLElement).getBoundingClientRect().top)));
+      return {
+        bar: Math.round(bar.getBoundingClientRect().height / (parseFloat(getComputedStyle(document.documentElement).fontSize) / 16)),
+        rows: tops.size,
+        pageTop: document.scrollingElement!.scrollTop,
+        wide: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      };
+    });
+  // On a phone the bar comes with the focus (kit/ui/chrome.ts indoc): the canvas is touched before the bar is reached for.
+  await canvas.click({ position: { x: 4, y: 4 } });
+  // (The bar glides in: measured once it has settled.)
+  await expect.poll(async () => (await measure()).rows).toBe(1);
+  const first = await measure();
+  expect(first.rows).toBe(1);
+  expect(first.bar).toBeLessThanOrEqual(56);
+  expect(first.wide).toBeLessThanOrEqual(0);
+  // R, then a click: a rectangle of the default size, selected, and the link holds it.
+  await page.getByRole('button', { name: /^Rectangle/ }).click();
+  const box = (await canvas.boundingBox())!;
+  await canvas.click({ position: { x: box.width * 0.2, y: box.height * 0.3 } });
+  await expect.poll(() => link(page)).toMatch(/#\/v1\/draw\/[ryz]/);
+  await expect(canvas.locator('.handle:not(.handle-hit)')).toBeVisible();
+  const after = await measure();
+  expect(after.bar).toBe(first.bar);
+  expect(after.pageTop).toBe(0);
+  // Pixel mode from the menu: a square painted, then the grid made the background. (On a phone the chosen shape's bar is
+  // the bottom row and the app's bar steps aside under it, kit/ui/context.ts docked: the shape is let go first.)
+  await canvas.click({ position: { x: box.width - 4, y: box.height - 4 } });
+  await page.locator('.draw-mode > button').click();
+  await page.getByRole('menuitemcheckbox', { name: 'Pixels 8×8' }).click();
+  const grid = page.locator('svg.draw-pixels');
+  await expect(grid).toBeVisible();
+  await page.getByRole('button', { name: 'Red', exact: true }).click();
+  const g = (await grid.boundingBox())!;
+  await grid.click({ position: { x: g.width / 16, y: g.height / 16 } });
+  await page.getByRole('button', { name: 'Background', exact: true }).click();
+  await expect(canvas).toBeVisible();
+  await expect(canvas.locator('pattern#draw-tile')).toHaveCount(1);
+  expect((await measure()).wide).toBeLessThanOrEqual(0);
+  expect(errors).toEqual([]);
+});
+
+test("draw: a shape tapped has its contextual bar inside the screen, and the bar's Delete takes the shape away", async ({ page }, info) => {
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.goto('/#/v1/draw');
+  const canvas = page.locator('svg.draw-canvas');
+  await expect(canvas).toBeVisible();
+  const touch = !!info.project.use.hasTouch;
+  const box = (await canvas.boundingBox())!;
+  const at = (x: number, y: number) => ({ position: { x: (x / 640) * box.width, y: (y / 400) * box.height } });
+  // On a phone the bar comes with the focus (kit/ui/chrome.ts indoc): the canvas is touched before the bar is reached for.
+  if (touch) await canvas.tap(at(600, 380));
+  // A rectangle at (192, 120), 96 by 48; a tap on nothing lets it go, a tap on it takes it again.
+  await page.getByRole('button', { name: /^Rectangle/ }).click();
+  await canvas.click(at(192, 120));
+  await expect(canvas.locator('[data-idx="0"]')).toHaveCount(1);
+  const bar = page.locator('.draw-context .to-context');
+  if (touch) await canvas.tap(at(600, 380));
+  else await canvas.click(at(600, 380));
+  await expect(bar).toBeHidden();
+  if (touch) await canvas.tap(at(240, 144));
+  else await canvas.click(at(240, 144));
+  await expect(bar).toBeVisible();
+  const r = (await bar.boundingBox())!;
+  const width = page.viewportSize()!.width;
+  expect(r.x).toBeGreaterThanOrEqual(0);
+  expect(r.x + r.width).toBeLessThanOrEqual(width);
+  // Under the shape (or over it, where there is no room below): never on it.
+  const shape = (await canvas.locator('[data-idx="0"]').boundingBox())!;
+  expect(r.y >= shape.y + shape.height - 1 || r.y + r.height <= shape.y + 1).toBe(true);
+  // Its words, typed on the shape itself from the bar's Edit the words: the overlay has the focus at once.
+  const edit = bar.getByRole('button', { name: 'Edit text' });
+  if (touch) await edit.tap();
+  else await edit.click();
+  const words = page.locator('.draw-words .tx');
+  await expect(words).toBeFocused();
+  await page.keyboard.type('Hi there');
+  await page.keyboard.press('Enter');
+  await expect(words).toBeHidden();
+  await expect(canvas.locator('[data-idx="0"] text')).toHaveText('Hi there');
+  await expect(bar).toBeVisible();
+  // The T tool and a tap: a text whose words are open at once, the focus in them (no mouse event after the touch takes it).
+  // On a phone the shape in hand has the bottom row, so it is let go before the bar's Text is reached for.
+  if (touch) await canvas.tap(at(600, 380));
+  await page.getByRole('button', { name: /^Text/ }).click();
+  if (touch) await canvas.tap(at(400, 300));
+  else await canvas.click(at(400, 300));
+  await expect(words).toBeFocused();
+  await page.keyboard.type('Note');
+  await page.keyboard.press('Enter');
+  await expect(canvas.locator('[data-idx="1"] text')).toHaveText('Note');
+  // The text in hand: its Align, beside the sizes, centres it under a finger as under a mouse, and says so.
+  const align = bar.getByRole('button', { name: 'Align: left' });
+  if (touch) await align.tap();
+  else await align.click();
+  await expect(canvas.locator('[data-idx="1"] text')).toHaveAttribute('text-anchor', 'middle');
+  await expect(bar.getByRole('button', { name: 'Align: center' })).toBeVisible();
+  if (touch) await canvas.tap(at(240, 144));
+  else await canvas.click(at(240, 144));
+  await expect(bar).toBeVisible();
+  if (!touch) {
+    // A double click opens the words too, all chosen; Escape lets the choice go, and again leaves them as they were.
+    await canvas.dblclick(at(240, 144));
+    await expect(words).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(words).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(words).toBeHidden();
+    await expect(canvas.locator('[data-idx="0"] text')).toHaveText('Hi there');
+  }
+  const del = bar.getByRole('button', { name: 'Delete' });
+  if (touch) await del.tap();
+  else await del.click();
+  await expect(canvas.locator('[data-idx]')).toHaveCount(1);
+  await expect(bar).toBeHidden();
+  expect(errors).toEqual([]);
+});
+
+test("draw by finger: two taps on a shape type its words; the fitted canvas and a shape keep the finger; the bar's Undo brings back a deleted shape, chosen", async ({ page }, info) => {
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.goto('/#/v1/draw');
+  const canvas = page.locator('svg.draw-canvas');
+  await expect(canvas).toBeVisible();
+  const touch = !!info.project.use.hasTouch;
+  const box = (await canvas.boundingBox())!;
+  const at = (x: number, y: number) => ({ position: { x: (x / 640) * box.width, y: (y / 400) * box.height } });
+  // On a phone the bar comes with the focus (kit/ui/chrome.ts indoc): the canvas is touched before the bar is reached for.
+  if (touch) await canvas.tap(at(600, 380));
+  const hit = (x: number, y: number) => (touch ? canvas.tap(at(x, y)) : canvas.click(at(x, y)));
+  await page.getByRole('button', { name: /^Rectangle/ }).click();
+  await hit(192, 120);
+  await expect(canvas.locator('[data-idx="0"]')).toHaveCount(1);
+  // While the drawing fits, a finger on the empty canvas draws the marquee rather than panning.
+  expect(await canvas.evaluate((el) => getComputedStyle(el).touchAction)).toBe('none');
+  expect(await canvas.locator('[data-idx="0"]').evaluate((el) => getComputedStyle(el).touchAction)).toBe('none');
+  const words = page.locator('.draw-words .tx');
+  if (touch) {
+    // Two taps on the shape (no dblclick under a finger): its words open, the focus in them.
+    await hit(240, 144);
+    await hit(240, 144);
+    await expect(words).toBeFocused();
+    await page.keyboard.type('Tapped');
+    await page.keyboard.press('Enter');
+    await expect(canvas.locator('[data-idx="0"] text')).toHaveText('Tapped');
+  } else {
+    await canvas.dblclick(at(240, 144));
+    await expect(words).toBeFocused();
+    await page.keyboard.press('Escape');
+  }
+  const bar = page.locator('.draw-context .to-context');
+  await expect(bar).toBeVisible();
+  const del = bar.getByRole('button', { name: 'Delete' });
+  if (touch) await del.tap();
+  else await del.click();
+  await expect(canvas.locator('[data-idx]')).toHaveCount(0);
+  const undo = page.locator('to-draw-editor to-bar').getByRole('button', { name: 'Undo' });
+  if (touch) await undo.tap();
+  else await undo.click();
+  await expect(canvas.locator('[data-idx]')).toHaveCount(1);
+  await expect(canvas.locator('.handle').first()).toBeVisible();
+  await expect(bar).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test("draw: the turn handle is in reach above a chosen shape and turns it; a finger's drag on the empty canvas with Select in hand chooses the shapes inside its box", async ({ page }, info) => {
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.goto('/#/v1/draw');
+  const canvas = page.locator('svg.draw-canvas');
+  await expect(canvas).toBeVisible();
+  const touch = !!info.project.use.hasTouch;
+  const box = (await canvas.boundingBox())!;
+  const at = (x: number, y: number) => ({ position: { x: (x / 640) * box.width, y: (y / 400) * box.height } });
+  // On a phone the bar comes with the focus (kit/ui/chrome.ts indoc): the canvas is touched before the bar is reached for.
+  if (touch) await canvas.tap(at(600, 380));
+  const hit = (x: number, y: number) => (touch ? canvas.tap(at(x, y)) : canvas.click(at(x, y)));
+  // Two rectangles, 96 by 48: at (96, 120) and (320, 120).
+  for (const x of [96, 320]) {
+    // (On a phone the first, in hand, has the bottom row: it is let go before the bar's Rectangle is reached for.)
+    if (touch && x !== 96) await hit(600, 380);
+    await page.getByRole('button', { name: /^Rectangle/ }).click();
+    await hit(x, 120);
+  }
+  await expect(canvas.locator('[data-idx]')).toHaveCount(2);
+  // The second is in hand: its round handle sits above the middle of its top, and is what a finger there finds.
+  const rotor = canvas.locator('.rotor circle:not(.rotor-hit)');
+  await expect(rotor).toHaveCount(1);
+  const r = (await rotor.boundingBox())!;
+  const [rx, ry] = [r.x + r.width / 2, r.y + r.height / 2];
+  expect(await page.evaluate(([x, y]) => !!document.elementFromPoint(x, y)?.closest('.rotor'), [rx, ry])).toBe(true);
+  if (touch) expect((await canvas.locator('.rotor-hit').boundingBox())!.width).toBeGreaterThanOrEqual(43);
+  // Dragged round to the right of the shape's centre: a quarter turn, in the link.
+  const c = [box.x + (368 / 640) * box.width, box.y + (144 / 400) * box.height];
+  await page.mouse.move(rx, ry);
+  await page.mouse.down();
+  await page.mouse.move(c[0] + 60, c[1], { steps: 4 });
+  await page.mouse.up();
+  await expect.poll(() => page.evaluate(() => (document.querySelector('to-draw-editor') as HTMLElement & { value: string }).value)).toContain('| Rot\n');
+  // A finger's drag from the empty top left round both: both are chosen, and the bar is theirs.
+  await page.evaluate(
+    ([x0, y0, x1, y1]) => {
+      const svg = document.querySelector('svg.draw-canvas')!;
+      const send = (type: string, x: number, y: number) =>
+        (type === 'pointerdown' ? (document.elementFromPoint(x, y) ?? svg) : svg).dispatchEvent(
+          new PointerEvent(type, { clientX: x, clientY: y, pointerId: 7, pointerType: 'touch', isPrimary: true, button: 0, buttons: type === 'pointerup' ? 0 : 1, bubbles: true, cancelable: true }),
+        );
+      send('pointerdown', x0, y0);
+      for (let i = 1; i <= 5; i++) send('pointermove', x0 + ((x1 - x0) * i) / 5, y0 + ((y1 - y0) * i) / 5);
+      send('pointerup', x1, y1);
+    },
+    [box.x + 4, box.y + 4, box.x + (480 / 640) * box.width, box.y + (260 / 400) * box.height],
+  );
+  await expect(canvas.locator('rect[stroke-dasharray="4 3"]')).toHaveCount(2);
+  const bar = page.locator('.draw-context .to-context');
+  await expect(bar).toBeVisible();
+  await expect(bar.getByRole('button', { name: 'Join two shapes' })).toBeVisible();
+  expect(errors).toEqual([]);
+});

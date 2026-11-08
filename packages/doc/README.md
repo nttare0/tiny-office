@@ -1,0 +1,94 @@
+# Tiny Little Office from the command line, and the API
+
+A document is a link: the whole thing is packed into the part of the URL after `#`, which no server ever sees.
+`tinyoffice` makes those links from files and files from those links, over `src/api.ts`, the module the site
+serves at `/api.js`.
+
+**An agent's quick start**, with Node 24 and nothing installed:
+
+```sh
+npx tinylittleoffice shapes sheet                # what a sheet reads: a money column, a formula, a bar chart…
+npx tinylittleoffice example sheet money         # the smallest sheet with a money column, its JSON, its lint and measures
+npx tinylittleoffice try deck draft.tlo          # a draft's lint, measures and JSON in one call (- for stdin)
+npx tinylittleoffice link deck draft.tlo         # its link, once the lint is clean
+```
+
+The npm package `tinylittleoffice` is this folder: `dist/tinyoffice.js` (the command line, as both
+`tinylittleoffice` and `tinyoffice`) and `dist/api.js` (`import { link, read, lint } from 'tinylittleoffice'` in
+Node), each built by `npm run build:cli` from the source here (vite.cli.config.ts: one file with everything it
+needs, no dependencies), with every app's examples in `examples/<app>.json`. The deploy publishes it when its
+version is new. In a clone, Node 24 runs the source as it is, with no build: `npm ci`, then
+`node packages/doc/tinyoffice.ts …` (or `npm run tinyoffice -- …`).
+
+```sh
+tinyoffice apps                                  # every app, with a line on each
+tinyoffice templates deck                        # a deck's templates; `template deck talk` prints one
+echo "- [ ] Sweep" | tinyoffice link write --title Chores --by chores-agent
+tinyoffice link plan.tlo                         # a .tlo file names its app in its head
+tinyoffice link deck talk.md --view show         # a deck that opens presenting
+tinyoffice link sheet budget.md --plain          # the readable form: /sheet/#title=…&doc=…
+tinyoffice link write pay.md --seal              # under a password the app makes: the link, then the password
+tinyoffice read <link>                           # the document's TLO text (--json for app, title, by and the JSON)
+tinyoffice json <link>                           # the document as JSON, to the schema in schema/tlo.schema.json
+tinyoffice link sheet --json budget.json         # a link from a document in JSON (its app given, or in its head)
+tinyoffice read --text <link>                    # what it says, as Markdown: what a screen reader reads on its Display Link
+tinyoffice file <link>                           # <title>.tlo; --as md|json|csv|ics|docx|… for the app's own formats
+tinyoffice diff <old link> <new link>            # what the second changed, block by block; exit 1 when they differ
+tinyoffice lint talk.tlo                         # what the eye would have seen, a line a finding; exit 1 on one
+tinyoffice measure <link>                        # the sizes the layouts chose, slide by slide, and failing formulas, as JSON
+tinyoffice shapes <app>                          # the shapes an app reads, a line each
+tinyoffice example <app> [shape]                 # the smallest document that shows a shape (every shape without one)
+tinyoffice try <app> <file|->                    # lint, measure and the JSON of a draft; exit 1 on a finding
+tinyoffice skill --into ~/.claude/skills         # the agent skill, installed for Claude Code (below)
+```
+
+The examples are cut by `npm run skill` (scripts/make-skill.ts, scripts/shapes.ts) from the apps' own templates:
+for each shape, the smallest document that still shows it, comes back from the kernel byte for byte and lints
+clean. The site serves the same files at `https://tinylittleoffice.com/examples/<app>.json`, for an agent that
+can only fetch.
+
+Check a document with `lint` and `measure`, never by opening it: they read the same layout code that draws the
+pages (a connection naming no thing, a comma splitting a number, a label too long for its box, bullets under a
+chart that are not drawn, a headline shrunk or cut, a link too long to paste, a formula that works out to an error
+such as `#CIRC`), so no browser is needed.
+
+`file` makes what needs no browser: `.tlo`, `.md` and `.json` for every app, and the app's own formats that are text or
+zipped XML (a sheet's `.csv` and `.xlsx`, a calendar's `.ics`, a text's `.docx`…). Pictures and the `.pdf` are
+drawn by a browser: open the link with `view=pdf` (or `#/v1/<app>.pdf/…`) to have it downloaded on arrival.
+
+## In code
+
+```js
+import { link, plain, read, text, compare, encode, decode, parse, write, toJson, fromJson, apps, templates, file, lint, measure, shapes, example, tryDraft } from 'https://tinylittleoffice.com/api.js';
+
+const url = link('sheet', 'Item | Cost:money\n--- | ---\nRent | 1200\n', { title: 'Budget', by: 'planner-agent' });
+read(url);               // { app: 'sheet', view: '', text: '---\ntitle: Budget\nby: planner-agent\n---\n…', title, by, display }
+compare(url, revised);   // { same, removed, added, changes: [{ kind: ' ' | '-' | '+', line }…] }
+await link('write', 'Salaries…\n', { seal: true });  // { url, password }: the app makes the password; one given is refused
+parse(read(url).text);   // the kernel's document: { head, blocks }; write() gives the text back
+read(url).json;          // the same document as JSON (toJson(text)); fromJson(json) gives the text back, or throws naming where it does not fit
+await text(url);         // '# Budget\n\nItem | Cost\n--- | ---\nRent | $1,200.00\n': what it says, as Markdown
+await templates('deck'); // [{ id, name, blurb, text }…]
+await lint('deck', text); // [{ app, at: 'slide 3', block, kind, words, fix }…]; [] when clean
+await measure('deck', text); // { app, length, words, headings, slides: [{ slide, title: { px, lines, cut }, body: { px, over }, hidden }…] }
+await shapes('sheet');   // [{ id: 'money', name: 'a money column', for }…]
+await example('sheet', 'money'); // [{ id, name, for, from, text, link, json, lint, measure }]
+await tryDraft('deck', text); // { lint, measure, json }
+```
+
+The guide an agent reads first is `/llms.txt` (short); the guide to every app's format is served whole as
+`/llms-full.txt`, with a page per app at `/llms/<app>.txt`, and is the skill below, cut into its folder.
+
+## The skill
+
+The package carries the skill, the folder `dist/skill/tinyoffice/`, as Claude Code reads one: `SKILL.md`, under front
+matter that says when to use it, holds what every document needs (the link, the rules, the format, the apps, how to
+check), and `references/` the rest, a file an app (`deck.md`), one for the files and the API (`api.md`) and one for
+the editors' keys (`editors.md`), each read when the task needs it. `npm run skill` writes the folder from one
+template and `npm run build:cli` puts it in the package; nothing copies it by hand.
+
+```sh
+npx tinylittleoffice skill                              # SKILL.md on stdout
+npx tinylittleoffice skill --into ~/.claude/skills      # installs ~/.claude/skills/tinyoffice/, for every project
+npx tinylittleoffice skill --into .claude/skills        # for this project alone; --force replaces one already there
+```

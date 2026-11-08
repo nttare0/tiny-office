@@ -1,0 +1,38 @@
+---
+app: deck
+title: Rosa's Bakery, the second shop
+theme: ivory
+---
+## :croissant: A second Rosa's {.title}
+
+Red Hook, spring 2027
+
+---
+
+## Why now
+
+- The Carroll Gardens shop sells out by eleven
+- Red Hook has no bakery within a mile
+- The lease on Van Brunt is ours if we say yes by December
+
+---
+
+## The numbers
+
+```sheet
+---
+chart: bar
+---
+Year | Revenue:money
+--- | ---
+2024 | 410000
+2025 | 560000
+2026 | 690000
+```
+
+---
+
+## The ask {.icon}
+
+- $180,000 for the oven, the build-out and three months of wages
+- Paid back over four years from the second shop's own takings

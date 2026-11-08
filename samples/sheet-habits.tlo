@@ -1,0 +1,10 @@
+---
+app: sheet
+title: Habit tracker, October
+---
+Habit | Mon:check | Tue:check | Wed:check | Thu:check | Fri:check | Done:number
+--- | --- | --- | --- | --- | --- | ---
+Walk before breakfast | x | x |  | x | x | =COUNTIF(B1:F1, "x")
+Read twenty pages | x |  | x | x |  | =COUNTIF(B2:F2, "x")
+No phone after ten | x | x | x |  | x | =COUNTIF(B3:F3, "x")
+Call someone |  | x |  |  | x | =COUNTIF(B4:F4, "x")

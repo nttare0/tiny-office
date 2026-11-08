@@ -1,0 +1,27 @@
+# Calendar (`cal`), Tiny Little Office
+
+Days and times on a month, a year or a schedule, in any time zone. A document is a link: https://tinylittleoffice.com/cal/#doc=<percent-encoded TLO>
+
+A list item per thing: `- 2027-03-01: Launch`, `- 2027-03-01 to 2027-03-03: Offsite`, `- 2027-03-10 09:00-10:30: Retro`. Attributes give a color and a repeat: `{color=green every=week times=6}` (or `until=2027-06-01`). The head may hold a time zone, `zone: America/New_York`; without one the times are read in the reader's own zone. It may say what a color stands for: `green: Sam`. `view: gantt` in the head draws the same items as a schedule: an item nested under another is part of it, `{done=40%}` is how far along it is, `- [x]` that it is done.
+
+Templates: Family calendar, School term, Bills and renewals, Volunteer schedule, Vacation planner, League schedule, Garden calendar, Content schedule, Editorial calendar, Training plan, Project plan, Conference agenda, Festival weekend. Its own files: `.ics`, `.csv`.
+
+## Shapes
+
+- `days` things on days, a calendar: - 2027-03-01: Launch
+- `times` times, when in the day: - 2027-03-10 09:00-10:30: Retro
+- `span` a span of days, a trip, a break: - 2027-03-01 to 2027-03-03: Offsite
+- `repeat` a repeat, every week or year: {every=week times=6}
+- `colors` colors that mean something, whose it is: green: Sam in the head, {color=green} on the line
+- `gantt` a schedule, tasks over weeks: view: gantt, parts nested, {done=40%}
+
+## Example: things on days
+
+```
+- 2026-12-23 to 2027-01-01: Winter break
+- 2027-01-04: Classes start again
+```
+
+As a link: <https://tinylittleoffice.com/cal/#doc=-+2026-12-23+to+2027-01-01%3A+Winter+break%0A-+2027-01-04%3A+Classes+start+again>
+
+Every shape as a document, a link and JSON: https://tinylittleoffice.com/examples/cal.json. The whole description: https://tinylittleoffice.com/llms-full.txt

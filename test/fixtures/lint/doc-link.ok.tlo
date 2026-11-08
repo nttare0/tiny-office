@@ -1,0 +1,23 @@
+---
+app: deck
+title: Badger behavior
+---
+## :paw-print: Badger behavior {.title}
+
+- What a badger does all year
+
+---
+
+## :scale: Badger weights
+
+```sheet
+---
+chart: bar
+---
+Season | Kg:number
+--- | ---
+Spring | 9
+Autumn | 14
+```
+
+> Fattest in autumn, before the winter. Notes like this one may name tinylittleoffice.com freely.
