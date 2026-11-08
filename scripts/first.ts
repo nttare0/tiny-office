@@ -24,7 +24,12 @@ export const text = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;'
  */
 export const agents = (site: string) => `Agents: ${site}llms.txt says how to make a document as a link; a document goes inside another as a fence named by its app.`;
 
-/** The home page's first text: the line for agents, the site's name, the apps' names as links to their pages. */
+/**
+ * The home page's first text: the line for agents, the site's name, the apps' names as links to their pages.
+ * The links stand where the shell's cards do: kit.css draws this as the card grid the shell draws over it (#to-first
+ * reads the .to-apps, .to-app and .to-app-open rules), so nothing here carries a class of its own.
+
+ */
 export const homeFirst = (site: string, apps: Listed[]) =>
   `<p class="sr-only">${text(agents(site))}</p><h1>${SITE_NAME}</h1><ul>${apps.map((a) => `<li><a href="${a.id}/">${text(a.name)}</a></li>`).join('')}</ul>`;
 

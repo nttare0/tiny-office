@@ -253,7 +253,10 @@ test('390×844 with a finger: an app tapped on the home page opens editing, the 
   await coarse(true);
   const shell = await mount('');
   await until(() => !!shell.querySelector('a.to-app-open[href="#/v1/write"]'));
+  // A card asks how to start; Blank page is the app's own page (kit/ui/home.ts to-start).
   await userEvent.click(shell.querySelector<HTMLElement>('a.to-app-open[href="#/v1/write"]')!);
+  await until(() => !!shell.querySelector('to-start dialog[open]'), 'the question never opened');
+  await userEvent.click(shell.querySelector<HTMLElement>('to-start .to-start-blank')!);
   await until(() => !!shell.querySelector('to-write-editor to-text .tx'));
   await until(() => document.activeElement?.classList.contains('tx') === true);
   const chrome = shell.querySelector('to-chrome')!;

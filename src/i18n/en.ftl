@@ -65,11 +65,6 @@ common-forget = Delete
 home-forget-title = Delete { $title }
 # Under an app's documents, the rest folded away: "3 more"
 home-n-more = { $n } more
-# The home page's foot: { $aboard } is the name Aboard, a link to aboard.com, said as it is in every language
-home-aboard-project-made-with-respect = An { $aboard } project. Made with respect in New York City.
-home-beta-version = Beta version
-# The foot's link to the repository on GitHub
-home-email = Email
 home-templates-for-app = Templates for { $app }
 home-app-templates = { $app } Templates
 home-templates-for-app-name = Templates for { $app }: { $name }
@@ -82,9 +77,18 @@ home-n-documents-found = { $n ->
         [one] One document found
        *[other] { $n } documents found
     }
+# The dialog an app's card opens: how a document starts, blank or from a template.
+home-how-would-you-like-to-start = How would you like to start?
+home-start-fresh-with-a-blank = Start fresh with a blank page, or choose a ready-made template.
+home-blank-page = Blank page
+home-use-a-template = Use a template
+# The name of the choice dialog, for a screen reader: the app it starts.
+home-start-noun = Start { $noun }
 
 ## the drawer (hamburger menu)
 
+# The drawer's own name, the heading over its rows (kit/ui/drawer.ts).
+drawer-settings = Settings
 drawer-apps = Apps
 common-close = Close
 # The language select's first option: { $name } is the device's own language, named in itself and never translated ("Default: Français").
@@ -488,6 +492,12 @@ write-horizontal-rule = Horizontal rule
 write-page-break = Page break
 common-ok = OK
 write-this-card = This card
+# Under another document held in this one (a fence): the ways to look at it, and that a preview is not the document itself.
+write-preview-as = Preview as
+write-preview-is-simpler-than-the-document = A preview: the document itself is unchanged, and Edit opens it in its own app.
+write-preview-keeps-raw-formulas = A preview, with formulas as they are written: the document itself is unchanged, and Edit opens it in its own app.
+# A link dropped into the Word Processor that is not a Tiny Little Office document, or cannot be read.
+write-this-link-could-not-be-read = That link is not a Tiny Little Office document, or it could not be read.
 write-open-in-app = Open in { $app }
 write-locked-worked-out-for-you = Locked: calculated
 common-footnotes = Footnotes

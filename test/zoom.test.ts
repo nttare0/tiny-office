@@ -1,7 +1,7 @@
 // The size of everything (src/kit/ui/zoom.ts): clamped to 70%–200%, a pinch kept to the nearest 5%, the stepper moving in
-// tens from wherever a pinch left it, and the nav stopping at 120%. The normal size (100%) draws everything at 1.3,
-// what the stepper called 130% before: the root's --to-doc is BASE × the size (its font size, kit.css), --to-nav the
-// nav's, and nothing drawn outside the page moves.
+// tens from wherever a pinch left it, and the nav stopping at 120%. The normal size (100%) draws everything at 1: the
+// root's --to-doc is BASE × the size (its font size, kit.css), --to-nav the nav's, and nothing drawn outside the page
+// moves. (It was 1.3 once — 100% drew everything at 130% — which made every page 30% larger than its own 100%.)
 import { test, expect, afterEach, vi } from 'vitest';
 import { BASE, NAV_MAX, SIZE_MAX, SIZE_MIN, applySize, clampSize, deviceStart, keepSize, navSize, pinchSize, size, stepFrom, stepSize } from '../src/kit/ui/zoom.ts';
 import { apps } from '../src/kit/core/apps.ts';
@@ -61,26 +61,26 @@ function fakePage() {
   return { props, attrs, done: () => Object.assign(g, was) };
 }
 
-test('the normal size draws everything at 1.3: the root carries --to-doc (BASE × the size) and --to-nav (stopping at 1.2 × BASE), and no zoom', () => {
+test('the normal size draws everything at 1: the root carries --to-doc (BASE × the size) and --to-nav (stopping at 1.2 × BASE), and no zoom', () => {
   const { props, attrs, done } = fakePage();
   try {
-    expect(BASE).toBe(1.3);
+    expect(BASE).toBe(1);
     stepSize(0);
     expect(size()).toBe(1);
-    expect(props.get('--to-doc')).toBe('1.3');
-    expect(props.get('--to-nav')).toBe('1.3');
+    expect(props.get('--to-doc')).toBe('1');
+    expect(props.get('--to-nav')).toBe('1');
     expect(attrs.has('data-large')).toBe(false);
     keepSize(2);
     // Above 100% the root says so, and the menu button is opaque while typing (responsive.css).
     expect(attrs.has('data-large')).toBe(true);
-    expect(props.get('--to-doc')).toBe('2.6');
+    expect(props.get('--to-doc')).toBe('2');
     expect(navSize()).toBe(1.2);
-    expect(props.get('--to-nav')).toBe('1.56');
+    expect(props.get('--to-nav')).toBe('1.2');
     keepSize(0.7);
-    expect(props.get('--to-doc')).toBe('0.91');
-    expect(props.get('--to-nav')).toBe('0.91');
+    expect(props.get('--to-doc')).toBe('0.7');
+    expect(props.get('--to-nav')).toBe('0.7');
     applySize();
-    expect(props.get('--to-doc')).toBe('0.91');
+    expect(props.get('--to-doc')).toBe('0.7');
     // Two plain numbers and nothing else: no zoom, nothing for a length to be divided by.
     expect([...props.keys()].sort()).toEqual(['--to-doc', '--to-nav']);
   } finally {

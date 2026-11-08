@@ -218,12 +218,6 @@ export const TIMED: { file: string; wait: string; n: number; why: string }[] = [
     n: 1,
     why: 'a trip with stops must not ask the device where it is: nothing must happen: an absence has no moment to wait for, so what would come is given a while to come',
   },
-  {
-    file: 'test/browser/home.test.ts',
-    wait: 'await tick(600);',
-    n: 1,
-    why: 'a press at the spot the templates list opened under is no choice for half a second after the last such press (kit/ui/menu.ts OpeningPress): the time is the behaviour, past it the press chooses',
-  },
   { file: 'e2e/anim.spec.ts', wait: 'await page.waitForTimeout(500);', n: 1, why: 'two taps on a shape open its words only when they come within the gap: the tap before is let go past it first' },
   { file: 'e2e/outline-phone.spec.ts', wait: 'await page.waitForTimeout(100);', n: 1, why: 'the phone keyboard modelled going down late (kbLate): the delay is the device being modelled' },
   { file: 'e2e/outline-phone.spec.ts', wait: 'await page.waitForTimeout(400);', n: 1, why: 'the phone keyboard modelled arriving late (kbLate = 400): the delay is the device being modelled' },

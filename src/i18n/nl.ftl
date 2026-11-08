@@ -83,12 +83,6 @@ home-forget-title = { $title } wissen
 # Under an app's documents, the rest folded away: "3 more"
 # en: 84ab0eecfadb6332ee8b1ee5c67852b7df54e66f
 home-n-more = Nog { $n }
-# en: 7f2352058be05faa9a191d7ac6eb2cf0a15b228f
-home-aboard-project-made-with-respect = Een project van { $aboard }. Met respect gemaakt in New York City.
-# en: a26ce4e876668bb8cdbd6db05cc668d436b73ba6
-home-beta-version = Bètaversie
-# en: 84add5b2952787581cb9a8851eef63d1ec75d22b
-home-email = E-mail
 # en: 5b5d9a510b8eb3d8ca42591036a5fb8c0402a674
 home-templates-for-app = Sjablonen voor { $app }
 # en: 5c88e1ec022720d6a2199c408f861dd61bfdbb08
@@ -3295,3 +3289,26 @@ find-not-found = Niet gevonden
 menu-nothing-starts-q = Geen resultaten voor “{ $q }”
 # en: ddf17f8747a6b36489443d6b09c25b429a1ea675
 menu-starting-q = Resultaten voor “{ $q }”
+
+## the home page’s start question, the drawer’s name, and a document held in another (2026-11-08)
+
+# en: 7f49253dfdca847c724d4dc24f060c5a867b4f81
+home-how-would-you-like-to-start = Hoe wilt u beginnen?
+# en: 0c43272832302a588993cbfd1c432335975a32b3
+home-start-fresh-with-a-blank = Begin met een lege pagina of kies een kant-en-klaar sjabloon.
+# en: ba5f16e7950ac45be8b26fbf783e3fbb7945adf3
+home-blank-page = Lege pagina
+# en: 86cf4a81499c94712485102aa23c4e9e9eb175bd
+home-use-a-template = Een sjabloon gebruiken
+# en: 305143f81291b0aec266b15866625d09b92e05a2
+home-start-noun = { $noun } beginnen
+# en: c7f73bb54d928922c3838bb789ee9fb8a5b1eb37
+drawer-settings = Instellingen
+# en: 341e4b273a6ec32249f7bf2d82e1cfbad53d4e49
+write-preview-as = Voorbeeld als
+# en: 5790c48259330db929f13010dc47a72cd196514f
+write-preview-is-simpler-than-the-document = Een voorbeeld: het document zelf blijft ongewijzigd en Bewerken opent het in zijn eigen app.
+# en: 7b4598aaa31887ec8b09c6ae3539fc51019267be
+write-preview-keeps-raw-formulas = Een voorbeeld, met de formules zoals ze geschreven zijn: het document zelf blijft ongewijzigd en Bewerken opent het in zijn eigen app.
+# en: f197c39442fbdac5ee88061ba58902e81013c070
+write-this-link-could-not-be-read = Die link is geen Tiny Little Office-document, of hij kon niet worden gelezen.

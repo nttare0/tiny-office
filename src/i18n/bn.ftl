@@ -54,12 +54,6 @@ common-forget = মুছুন
 home-forget-title = “{ $title }” মুছুন
 # en: 84ab0eecfadb6332ee8b1ee5c67852b7df54e66f
 home-n-more = আরও { $n }টি
-# en: 7f2352058be05faa9a191d7ac6eb2cf0a15b228f
-home-aboard-project-made-with-respect = { $aboard }-এর একটি প্রজেক্ট। নিউ ইয়র্ক সিটিতে যত্ন আর সম্মানের সঙ্গে তৈরি।
-# en: a26ce4e876668bb8cdbd6db05cc668d436b73ba6
-home-beta-version = বিটা ভার্সন
-# en: 84add5b2952787581cb9a8851eef63d1ec75d22b
-home-email = ইমেইল
 # en: 5b5d9a510b8eb3d8ca42591036a5fb8c0402a674
 home-templates-for-app = { $app }-এর টেমপ্লেট
 # en: 5c88e1ec022720d6a2199c408f861dd61bfdbb08
@@ -3174,3 +3168,26 @@ open-opened-name = { $name } খোলা হয়েছে
 open-that-file-is-not-words = ছোট্টমোট্ট অফিস ওই ফাইলটি পড়তে পারে না।
 # en: 1d08903947cc83b648f8ad96b1e23466a2dbed11
 open-that-file-is-too-large = ফাইলটি খুব বড়।
+
+## the home page’s start question, the drawer’s name, and a document held in another (2026-11-08)
+
+# en: 7f49253dfdca847c724d4dc24f060c5a867b4f81
+home-how-would-you-like-to-start = আপনি কীভাবে শুরু করতে চান?
+# en: 0c43272832302a588993cbfd1c432335975a32b3
+home-start-fresh-with-a-blank = একটি ফাঁকা পাতা দিয়ে শুরু করুন, অথবা একটি তৈরি টেমপ্লেট বেছে নিন।
+# en: ba5f16e7950ac45be8b26fbf783e3fbb7945adf3
+home-blank-page = ফাঁকা পাতা
+# en: 86cf4a81499c94712485102aa23c4e9e9eb175bd
+home-use-a-template = একটি টেমপ্লেট ব্যবহার করুন
+# en: 305143f81291b0aec266b15866625d09b92e05a2
+home-start-noun = { $noun } শুরু করুন
+# en: c7f73bb54d928922c3838bb789ee9fb8a5b1eb37
+drawer-settings = সেটিংস
+# en: 341e4b273a6ec32249f7bf2d82e1cfbad53d4e49
+write-preview-as = এই রূপে প্রাকদর্শন
+# en: 5790c48259330db929f13010dc47a72cd196514f
+write-preview-is-simpler-than-the-document = এটি একটি প্রাকদর্শন: নথিটি নিজে অপরিবর্তিত থাকে, এবং সম্পাদনা এটিকে তার নিজের অ্যাপে খোলে।
+# en: 7b4598aaa31887ec8b09c6ae3539fc51019267be
+write-preview-keeps-raw-formulas = এটি একটি প্রাকদর্শন, সূত্রগুলি যেভাবে লেখা আছে সেভাবেই: নথিটি নিজে অপরিবর্তিত থাকে, এবং সম্পাদনা এটিকে তার নিজের অ্যাপে খোলে।
+# en: f197c39442fbdac5ee88061ba58902e81013c070
+write-this-link-could-not-be-read = এই লিঙ্কটি Tiny Little Office নথি নয়, অথবা এটি পড়া যায়নি।

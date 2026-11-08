@@ -31,7 +31,13 @@ drawer-match-device = Como el dispositivo
   await until(() => shell.querySelector('.to-header .to-brand')!.textContent!.trim() === 'Oficinita Diminuta');
   await until(() => document.title === 'Oficinita Diminuta');
   expect(shell.querySelector('.to-app-name')!.textContent).toBe('Procesador de textos');
-  expect(shell.querySelector('.to-templates-btn')!.getAttribute('aria-label')).toBe('Plantillas de Procesador de textos');
+  // A card has no button of its own: what it opens is said in the language too (kit/ui/home.ts to-start).
+  shell.querySelector<HTMLElement>('.to-app-open')!.click();
+  await until(() => !!shell.querySelector('to-start dialog[open]'));
+  expect(shell.querySelector('to-start h2')!.textContent).toBe('¿Cómo quieres empezar?');
+  expect(shell.querySelector('.to-start-blank')!.textContent).toBe('Página en blanco');
+  expect(shell.querySelector('.to-start-templates')!.textContent).toBe('Usar una plantilla');
+  (shell.querySelector('to-start dialog') as HTMLDialogElement).close();
   await setLanguage(null);
   await until(() => document.documentElement.lang === 'en');
   expect(shell.querySelector('.to-app-name')!.textContent).toBe('Word Processor');

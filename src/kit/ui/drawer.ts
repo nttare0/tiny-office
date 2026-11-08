@@ -249,7 +249,7 @@ export class ToDrawer extends LitElement {
     const chosen = chosenLanguage() ?? '';
     return html`<dialog class="to-drawer" aria-label=${t('common-tiny-little-office')} @close=${this.onClose} @toggle=${{ handleEvent: this.onToggle, capture: true }} @click=${(e: Event) => e.target === this.dialog && this.close()}>
       <div class="to-drawer-inner">
-        <!-- The head is the language picker, then (away from home) the mark as the way home beside Close (Paul, 2026-10-12); the name is not said again here (2026-10-10). -->
+        <!-- The head is the language picker, then (away from home) the mark as the way home beside Close (Paul, 2026-10-12); the name is not said again here (2026-10-10). Under it the drawer's own name: it is the settings, and says so. -->
         <header class="to-drawer-head">
           <label class="to-field to-drawer-lang" title=${t('drawer-language')}>
             <select aria-label=${t('drawer-language')} @change=${(e: Event) => void setLanguage((e.target as HTMLSelectElement).value || null)}>
@@ -260,6 +260,7 @@ export class ToDrawer extends LitElement {
           ${this.def ? html`<a class="to-btn to-tool to-drawer-home" href="#/" aria-label=${t('common-home')} title=${t('common-home')} @click=${() => this.close()}>${unsafeSVG(mark(20))}</a>` : nothing}
           <button type="button" class="to-btn to-tool" aria-label=${t('common-close')} title=${t('common-close')} @click=${() => this.close()}>${icon(UI.close)}</button>
         </header>
+        <h2 class="to-drawer-title">${t('drawer-settings')}</h2>
         <section class="to-drawer-section to-drawer-manual">
           <a class="to-btn to-drawer-whatis" href=${manualHash()} @click=${() => this.close()}>${icon(UI.help, 18)}<span>${t('drawer-what-is-this')}</span></a>
         </section>
@@ -276,7 +277,7 @@ export class ToDrawer extends LitElement {
         </div>
         ${
           this.open
-            ? html`<nav class="to-drawer-apps" aria-label=${t('drawer-apps')}>
+            ? html`<nav class="to-drawer-section to-drawer-apps" aria-label=${t('drawer-apps')}>
                 <input class="to-find" type="search" placeholder=${placeholder} aria-label=${placeholder} autocomplete="off" .value=${this.find} @input=${(e: Event) => (this.find = (e.target as HTMLInputElement).value)} @keydown=${(e: KeyboardEvent) => e.key === 'Enter' && !e.isComposing && (e.preventDefault(), this.querySelector<HTMLElement>('.to-drawer-apps .to-found')?.click())} />
                 ${want ? this.renderFound(want, kept) : nothing}
               </nav>

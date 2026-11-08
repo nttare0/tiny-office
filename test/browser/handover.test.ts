@@ -76,15 +76,20 @@ test('a command from the drawer (under a finger, the appâ€™s own: the calendarâ€
   }
 });
 
-test('the templates from the home page are as they were: over the page, the focus back on their button', async () => {
+test('the templates from the home page are as they were: over the page, the focus back on the card that asked', async () => {
   const shell = await mount('');
-  const btn = shell.querySelector<HTMLElement>('to-home to-templates > button')!;
-  btn.focus();
-  btn.click();
+  await until(() => !!shell.querySelector('to-home .to-app-open'));
+  const card = shell.querySelector<HTMLElement>('to-home .to-app-open')!;
+  card.focus();
+  card.click();
+  await until(() => !!shell.querySelector('to-start dialog[open]'));
+  shell.querySelector<HTMLElement>('to-start .to-start-templates')!.click();
   const opened = await only('dialog.to-templates-dialog');
-  expect(btn.getAttribute('aria-expanded')).toBe('true');
+  const question = shell.querySelector<HTMLDialogElement>('to-start dialog')!;
+  expect(question.open, 'the question stayed open under the gallery').toBe(false);
   opened.querySelector<HTMLElement>('.to-listbox-close')!.click();
-  await until(() => document.activeElement === btn && btn.getAttribute('aria-expanded') === 'false');
+  await until(() => !opened.open);
+  await until(() => document.activeElement === card, 'the focus never came back to the card');
   expect(stacked).toEqual([]);
 });
 

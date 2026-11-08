@@ -91,6 +91,21 @@ async function openShort(link: string): Promise<Block | null> {
   }
 }
 
+/**
+ * A link as the fence of the document it holds, wherever it came from: a long link read here, or a short link opened
+ * from the shortener it belongs to (shortParts: nothing else is ever asked). Null for anything else — a page of another
+ * site, a link that is gone, a document that cannot be read — so a caller can say so, and fetch nothing itself.
+ * (A drop of a link into the Word Processor: src/apps/write/editor.ts.)
+ */
+export async function resolveDocLink(link: string): Promise<Block | null> {
+  const s = link.trim();
+  if (!s) return null;
+  const long = asFence(linkToFence(s));
+  if (long) return long;
+  if (!shortParts(s)) return null;
+  return openShort(s);
+}
+
 /** Another Tiny Little Office document, by its link (long or short): its first page is shown small. Resolves the fence that holds it. */
 export function askDocLink(): Promise<Block | null> {
   let url = '';

@@ -43,6 +43,15 @@ test("the hamburger opens the drawer, the home page's drawer has no app rows, Fi
   expect(shell.querySelectorAll('.to-drawer-apps .to-app-head').length).toBe(0);
   // At home there is no way home in the head: the page is home.
   expect(shell.querySelector('.to-drawer-head .to-drawer-home')).toBeNull();
+  // The drawer says what it is (2026-11-08): a heading over its panels, under the head's language and Close.
+  const title = shell.querySelector<HTMLElement>('.to-drawer-title')!;
+  expect(title.textContent).toBe('Settings');
+  expect(title.getBoundingClientRect().top).toBeGreaterThanOrEqual(shell.querySelector('.to-drawer-head')!.getBoundingClientRect().bottom - 1);
+  // Wider than the old 20em drawer, and its rows sit in panels of their own on a muted ground.
+  const inner = shell.querySelector<HTMLElement>('.to-drawer-inner')!;
+  expect(inner.getBoundingClientRect().width).toBeGreaterThan(20 * 16);
+  expect(getComputedStyle(inner).backgroundColor).not.toBe(getComputedStyle(shell.querySelector('.to-drawer-section.to-drawer-save')!).backgroundColor);
+  for (const panel of shell.querySelectorAll<HTMLElement>('.to-drawer-section')) expect(getComputedStyle(panel).borderTopLeftRadius).not.toBe('0px');
   find.value = 'zzz';
   find.dispatchEvent(new Event('input', { bubbles: true }));
   await until(() => shell.querySelectorAll('.to-drawer-apps a').length === 0);

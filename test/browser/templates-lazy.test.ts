@@ -1,7 +1,7 @@
 // An app's templates are a file of their own, loaded when asked for (Paul, 2026-10-11: "Lazy templates is right"):
-// the list shows Blank at once and grows when the rest arrive, with no spinner; a pointer over an app's row asks
-// ahead of the tap; a template chosen opens its own document; and a language chosen asks for them again, since the
-// names follow it.
+// the list shows Blank at once and grows when the rest arrive, with no spinner; a template chosen opens its own
+// document; and a language chosen asks for them again, since the names follow it. The list is the home page's own,
+// handed over to by a card's question (2026-11-08: the cards carry no button of their own).
 import { test, expect, afterEach } from 'vitest';
 import { render, html } from 'lit';
 import { mount, tick, until } from './helpers.ts';
@@ -52,16 +52,24 @@ test('the list shows Blank at once and the rest when they arrive', async () => {
   el.hide();
 });
 
-test('the Spreadsheet’s templates: asked for as a pointer comes over its row, Blank first, and one chosen opens its document', async () => {
+/** The home page's gallery, opened by the card of the app named `name` (its question, then Use a template). */
+async function galleryOf(shell: HTMLElement, name: string) {
+  const card = [...shell.querySelectorAll<HTMLElement>('.to-app')].find((x) => x.querySelector('.to-app-name')!.textContent === name)!;
+  card.querySelector<HTMLElement>('.to-app-open')!.click();
+  await until(() => !!shell.querySelector('to-start dialog[open]'));
+  shell.querySelector<HTMLElement>('to-start .to-start-templates')!.click();
+  await until(() => !!shell.querySelector('to-home dialog.to-templates-dialog[open]'));
+  return shell.querySelector<HTMLElement>('to-home dialog.to-templates-dialog[open]')!;
+}
+
+test('the Spreadsheet’s templates: Blank first, and one chosen opens its document', async () => {
   const shell = await mount('');
   const sheet = appOf('sheet')!;
-  const row = [...shell.querySelectorAll<HTMLElement>('.to-app')].find((x) => x.querySelector('.to-app-name')!.textContent === 'Spreadsheet')!;
-  row.querySelector('.to-app-head')!.dispatchEvent(new PointerEvent('pointerenter'));
-  await until(() => !!templatesOf(sheet));
-  row.querySelector<HTMLButtonElement>('.to-templates-btn')!.click();
+  const row = await galleryOf(shell, 'Spreadsheet');
   const want = sheetTemplates();
   await until(() => names(row).length === 1 + want.length);
   expect(names(row)).toEqual(['Blank', ...want.map((x) => x.name)]);
+  expect(templatesOf(sheet)).toBeDefined();
   row.querySelectorAll<HTMLElement>('[role=option]')[2].click();
   await until(() => location.hash.startsWith('#/v1/sheet/'));
   expect(decodeDoc(location.hash.slice('#/v1/sheet/'.length))).toBe(want[1].doc);
@@ -71,8 +79,7 @@ test('a language chosen while a list is open: the templates are forgotten, asked
   register('es-tpl', 'sheet-budget = Presupuesto\n');
   const shell = await mount('');
   const sheet = appOf('sheet')!;
-  const row = [...shell.querySelectorAll<HTMLElement>('.to-app')].find((x) => x.querySelector('.to-app-name')!.textContent === 'Spreadsheet')!;
-  row.querySelector<HTMLButtonElement>('.to-templates-btn')!.click();
+  const row = await galleryOf(shell, 'Spreadsheet');
   const want = sheetTemplates();
   await until(() => names(row).length === 1 + want.length);
   expect(names(row)).toContain('Budget');

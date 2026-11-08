@@ -1,11 +1,14 @@
 /**
- * <to-home>: the apps, as rows, in the registry's order: each its icon and name (open it blank), a dialog
- * of its templates to the right of its name (Blank first and chosen, or the first template where the app's templates carry its blanks, each drawn small from its own document; choosing one opens the
- * app with that document), and under it the documents of that app kept on this device (kit/share/library.ts),
- * newest first, each preview on the edge of the app's icon (kit.css .to-drive). No copy. (Paul, 2026-10-09: "Small icon and app name, then templates menu. Then documents
- * in that format … Drive is just documents under the icons. No descriptions of apps.") Rows the width of
- * the page, not cards, so it looks on a desktop as it does on a phone (Paul, 2026-10-09: "Don't make apps into cards.
- * Just make them into rows with docs below."). Each document shows its first page small at its left
+ * <to-home>: the apps, as a grid of cards, in the registry's order: each its icon and name and nothing else — no
+ * template button, no Blank, no action of any kind on the card (2026-11-08: "no visible Templates, Blank, or other
+ * action buttons inside the homepage cards"). A card tapped opens a small dialog, "How would you like to start?":
+ * Blank page opens the app's own page, Use a template hands over to the app's template gallery, the same dialog the
+ * app's row had (`<to-templates>`, drawn bare here so it has no button of its own), which reuses the app's own
+ * templates and their previews. A modified click (a new tab, a window) is a link followed as ever: only a plain click
+ * asks. The gallery is not opened before the choice, and neither is anything fetched for it.
+ *
+ * Under a card, the documents of that app kept on this device (kit/share/library.ts), newest first, each preview on
+ * the edge of the app's icon (kit.css .to-drive). Each document shows its first page small at its left
  * (<to-preview>, drawn as it scrolls into sight: "When you list documents under apps, show them with
  * previews"). An app's templates are a file of their own, asked for when its list opens (Blank shown at once, the
  * rest added as they arrive, no spinner) or ahead of the tap, as a pointer comes over its row (`loadTemplates`);
@@ -13,11 +16,11 @@
  * <to-templates> is the drawer's too: there a row's button (`via`) hands over to the drawer's one dialog
  * (`bare`, drawn outside the drawer's own), the drawer closing first (one modal at a time: kit/ui/drawer.ts).
  *
- * Below the apps, the foot, one line: "An Aboard Foundry project. Made with respect in New York City. · Beta version ·
- * GitHub · Email" (Paul, 2026-10-12, verbatim; Aboard Foundry a link to aboard.com, GitHub the repository, Email
- * hello+tlo@aboard.com), then the build's version once /version.json is read (its tag, or its commit); the only words on
- * the page beyond the apps' names. The two sites open in a new tab, unasked,
- * and the mail link opens the mail app: the chrome's own links (kit/ui/link-guard.ts `data-to-chrome`).
+ * The foot that stood below the apps ("An Aboard Foundry project. Made with respect in New York City. · Beta version ·
+ * GitHub · Email", Paul 2026-10-12) is gone, and the build's version with it (2026-11-08: "Remove the entire visible footer
+ * line … including its appended build-version display"). The home page therefore asks for no /version.json: About, in the
+ * drawer, still reads it (kit/ui/drawer.ts), which is where the build and the repository are said. About, the license and
+ * the templates' translations are untouched by this.
  *
  * Above the apps, while Save in browser is on and something is kept, a search box over the library (kit/share/search.ts):
  * under Private there is nothing to search, so nothing says so (Paul, 2026-10-12). Every word of it
@@ -27,7 +30,7 @@
 import { LitElement, html, nothing } from 'lit';
 import { unsafeSVG } from 'lit/directives/unsafe-svg.js';
 import type { AppDef, Template } from '../core/app.ts';
-import { apps, siteRoot } from '../core/apps.ts';
+import { apps } from '../core/apps.ts';
 import { decodeDoc, encodeDoc, isSealed } from '../core/codec.ts';
 import { linesOf, search, type Seg } from '../share/search.ts';
 import { icon, UI } from '../draw/icons.ts';
@@ -40,11 +43,8 @@ import { go, parseHash, routeHash } from '../core/route.ts';
 import { ago, forget, library, type Kept } from '../share/library.ts';
 import { keeping, onPrivacy } from '../share/privacy.ts';
 import { focusBack } from './dialog.ts';
-import { origin } from '../core/network.ts';
-import { repoUrl, running, type Version } from '../core/version.ts';
 
-/** Where a note to the makers goes. */
-/** Where to write: the foot's Email and About's "email us" (kit/ui/drawer.ts). */
+/** Where to write: About's "email us" (kit/ui/drawer.ts). The home page's own foot is gone, but About still writes to it. */
 export const MAIL = 'mailto:hello+tlo@aboard.com';
 
 /** The documents shown under an app before "n more". */
@@ -118,6 +118,8 @@ export class ToTemplates extends LitElement {
   private off = () => {};
   /** The press that opened the list, which an option under it does not take for the first moment (menu.ts). */
   private press = new OpeningPress();
+  /** Whether an option was chosen as it closed: a choice opens a document, which wants the focus for itself. */
+  private picked = false;
 
   constructor() {
     super();
@@ -180,8 +182,13 @@ export class ToTemplates extends LitElement {
     if (this.dialog.open) this.dialog.close();
   }
   private onClose = () => {
+    const picked = this.picked;
+    this.picked = false;
     if (!this.bare) this.button.setAttribute('aria-expanded', 'false');
-    if (document.activeElement === document.body || this.contains(document.activeElement)) void (this.bare ? focusBack(this.from) : this.button.focus());
+    if (!picked && (document.activeElement === document.body || this.contains(document.activeElement))) void (this.bare ? focusBack(this.from) : this.button.focus());
+    // A bare one is the home page's gallery (the card's question hands over to it): the card that asked hears that it
+    // went, unless a document was chosen — that has the focus, and the page it opens is its own.
+    if (this.bare && !picked) this.dispatchEvent(new CustomEvent('to-templates-handover', { bubbles: true, composed: true }));
   };
   /** A click in the dialog, before its option has it: the opening press again is nothing; on the backdrop, the list closes. */
   private onClick = { capture: true, handleEvent: (e: MouseEvent) => !this.press.stops(e) && e.target === this.dialog && this.hide() };
@@ -193,6 +200,7 @@ export class ToTemplates extends LitElement {
   }
   private choose(tpl: Template | null) {
     this.chosen = tpl?.id ?? '';
+    this.picked = true;
     this.hide();
     startEditing();
     go(templateHash(this.app, tpl));
@@ -233,6 +241,85 @@ export class ToTemplates extends LitElement {
 }
 customElements.define('to-templates', ToTemplates);
 
+/**
+ * <to-start>: the question a card asks — "How would you like to start?" Blank page, or Use a template. It is a small
+ * native <dialog>, drawn once per home page and given the app it is asking for; Blank page opens that app's own page,
+ * Use a template closes the question and opens the app's template gallery, the one `<to-templates>` draws bare
+ * (`bare`: no button of its own, drawn outside this dialog so only one modal is open at a time). The gallery's own
+ * close puts the focus back on the card (the `to-templates-handover` event), which had it.
+ */
+class ToStart extends LitElement {
+  static properties = { app: { attribute: false } };
+  /** The app the question is asked for. */
+  declare app: AppDef | null;
+  /** The card that asked: it has the focus again when nothing was chosen. */
+  private from: HTMLElement | null = null;
+  constructor() {
+    super();
+    this.app = null;
+  }
+  createRenderRoot() {
+    return this;
+  }
+  get dialog(): HTMLDialogElement {
+    return this.querySelector<HTMLDialogElement>(':scope > dialog')!;
+  }
+  /** The question, asked for `app`: the card that asked has the focus again when it closes. */
+  show(app: AppDef, from: HTMLElement | null) {
+    this.app = app;
+    this.from = from;
+    void this.updateComplete.then(() => {
+      if (!this.dialog.open) this.dialog.showModal();
+      // A dialog opened from a click has the focus on its first control: Blank page, the plain choice first.
+      this.querySelector<HTMLElement>('.to-start-blank')?.focus({ preventScroll: true });
+    });
+  }
+  hide() {
+    if (this.dialog.open) this.dialog.close();
+  }
+  private onClose = () => {
+    const at = document.activeElement;
+    if (!at || at === document.body || this.contains(at)) focusBack(this.from);
+  };
+  /** Blank page: the app's own page, as the card's link was, editing at once. */
+  private blank() {
+    const app = this.app;
+    if (!app) return;
+    this.hide();
+    startEditing();
+    go(routeHash(app.id));
+  }
+  /** Use a template: the question closes, the app's template gallery opens over the page and reads the focus back here when it goes. */
+  private templates() {
+    const app = this.app;
+    const from = this.from;
+    this.hide();
+    if (!app) return;
+    void this.updateComplete.then(() => {
+      const gallery = document.querySelector<ToTemplates>('to-home to-templates[bare]');
+      if (!gallery) return;
+      gallery.app = app;
+      gallery.addEventListener('to-templates-handover', () => focusBack(from), { once: true });
+      gallery.show();
+    });
+  }
+  render() {
+    return html`<dialog class="to-dialog to-start-dialog" aria-label=${this.app ? t('home-start-noun', { noun: this.app.noun }) : nothing} @close=${this.onClose} @click=${(e: MouseEvent) => e.target === this.dialog && this.hide()}>
+      <div class="to-dialog-inner">
+        <header class="to-dialog-head"><h2>${t('home-how-would-you-like-to-start')}</h2><button type="button" class="to-btn to-tool" aria-label=${t('common-close')} title=${t('common-close')} @click=${() => this.hide()}>${icon(UI.close, 18)}</button></header>
+        <div class="to-dialog-body to-start-body">
+          <p class="to-start-words">${t('home-start-fresh-with-a-blank')}</p>
+          <div class="to-start-choices">
+            <button type="button" class="to-btn primary to-start-blank" @click=${() => this.blank()}>${t('home-blank-page')}</button>
+            <button type="button" class="to-btn to-start-templates" @click=${() => this.templates()}>${t('home-use-a-template')}</button>
+          </div>
+        </div>
+      </div>
+    </dialog>`;
+  }
+}
+customElements.define('to-start', ToStart);
+
 /** A kept document's lines, by its link: decoded once a visit. */
 const linesCache = new Map<string, string[]>();
 function keptLines(k: Kept): string[] {
@@ -252,11 +339,9 @@ function keptLines(k: Kept): string[] {
 const segs = (s: Seg[]) => s.map((x) => (x.hit ? html`<mark>${x.t}</mark>` : x.t));
 
 export class ToHome extends LitElement {
-  static properties = { unfolded: { state: true }, query: { state: true }, version: { state: true } };
+  static properties = { unfolded: { state: true }, query: { state: true } };
   /** What the search box holds. */
   declare query: string;
-  /** The build this site runs, from its /version.json once read (kit/core/version.ts): its tag, or its commit's first seven letters, at the foot's end (Paul, 2026-10-12: "Start putting the version in the footer"). */
-  declare version: Version | null;
   /** The apps whose whole list of documents is shown, past the first five. */
   declare unfolded: Set<string>;
   private offs: (() => void)[] = [];
@@ -267,14 +352,12 @@ export class ToHome extends LitElement {
     super();
     this.unfolded = new Set();
     this.query = '';
-    this.version = null;
   }
   createRenderRoot() {
     return this;
   }
   connectedCallback() {
     super.connectedCallback();
-    void running(siteRoot()).then((v) => (this.version = v));
     window.addEventListener('pageshow', this.redraw);
     document.addEventListener('visibilitychange', this.onVisible);
     this.offs = [onLanguage(this.redraw), onPrivacy(this.redraw), () => window.removeEventListener('pageshow', this.redraw), () => document.removeEventListener('visibilitychange', this.onVisible)];
@@ -320,13 +403,15 @@ export class ToHome extends LitElement {
         })}
       </ul>`;
   }
-  /** Whose project it is and where it was made, the beta, where its source is, and how to write: one line. "Aboard Foundry" and "GitHub" are names, said as they are in every language. */
-  private foot() {
-    const [before, after = ''] = t('home-aboard-project-made-with-respect').split('{aboard}');
-    return html`<footer class="to-home-foot">
-      <p>${before}<a href=${origin('maker')} target="_blank" rel="noopener" data-to-chrome>Aboard Foundry</a>${after} · ${t('home-beta-version')} · <a href=${repoUrl()} target="_blank" rel="noopener" data-to-chrome>GitHub</a> · <a href=${MAIL} data-to-chrome>${t('home-email')}</a>${this.version ? html` · ${this.version.tag || this.version.commit.slice(0, 7)}` : nothing}</p>
-    </footer>`;
-  }
+  /**
+   * A card's link, tapped: the question it asks. A tap meant for a link itself — a key with it (a new tab, a window), or
+   * another button — is a link followed as ever, with nothing asked.
+   */
+  private ask = (e: MouseEvent, app: AppDef) => {
+    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    this.querySelector<ToStart>('to-start')!.show(app, e.currentTarget as HTMLElement | null);
+  };
   render() {
     const kept = library();
     const want = this.query.trim();
@@ -341,10 +426,7 @@ export class ToHome extends LitElement {
       <div class="to-apps" ?hidden=${!!want}>
         ${apps().map(
           (a) => html`<section class="to-app" aria-label=${a.name}>
-            <div class="to-app-head" @pointerenter=${() => void preloadTemplates(a)}>
-              <a class="to-app-open" href=${routeHash(a.id)} @click=${startEditing}>${icon(a.icon, 20)}<span class="to-app-name">${a.name}</span></a>
-              <to-templates .app=${a}></to-templates>
-            </div>
+            <a class="to-app-open" href=${routeHash(a.id)} @click=${(e: MouseEvent) => this.ask(e, a)}>${icon(a.icon, 20)}<span class="to-app-name">${a.name}</span></a>
             ${this.drive(
               a,
               kept.filter((k) => k.app === a.id),
@@ -352,7 +434,8 @@ export class ToHome extends LitElement {
           </section>`,
         )}
       </div>
-      ${this.foot()}
+      <to-start></to-start>
+      <to-templates bare></to-templates>
     </div>`;
   }
 }

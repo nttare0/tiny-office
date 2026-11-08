@@ -19,10 +19,12 @@
  * bar, the link box) is placed by them as they are. Not the root's CSS `zoom`: under it every length is a pixel that
  * only the zoom moves, each thing placed by hand must divide by it, and the nav needs a second zoom to stop at its limit.
  *
- * The normal size, 100%, draws everything at BASE (1.3): the lengths in the stylesheet were too small to start from
- * (Paul, 2026-10-10, on his iPhone: "Start at what we now call 130%"). The stepper and the pill say the size alone, so
- * 100% is normal. Nothing drawn outside the page (print, the PDF, the PNG, the thumbnails, the cards) is in rem; a page
- * printed from the screen has both scales put back to 1 (kit.css).
+ * The normal size, 100%, draws everything at BASE (1): a rem is the browser's own 16px (or whatever larger type the
+ * person has set), so the stepper's 100% is a page at the size it was written. It was 1.3 once: the stylesheet's lengths
+ * were too small to start from, so 100% drew everything at 130% and the nominal size was the enlarged one (Paul,
+ * 2026-10-10: "Start at what we now call 130%"; corrected 2026-11-08: the baseline is 1, and 100% is 16px). No stored
+ * size is rewritten: a size kept while the baseline was 1.3 is still the size kept, and the stepper's Normal size
+ * (kit/core/keys.ts NORMAL_SIZE) is how a person sets it back to 100%.
  *
  * The nav has a natural limit: the bar, the header, the drawer, the dialogs, the context bar, the menus and the pills
  * grow with the size up to 120% (NAV_MAX) and no further, while the words, the cards and the pictures go on to 200%.
@@ -30,8 +32,8 @@
 import { store } from '../core/store.ts';
 
 const KEY = 'tinyoffice.size';
-/** What the normal size draws at: at 100% a rem (and the nav's em) is this many times 16px. */
-export const BASE = 1.3;
+/** What the normal size draws at: at 100% a rem (and the nav's em) is this many times the browser's own 16px — one, so 100% is a page as it was written. */
+export const BASE = 1;
 export const SIZE_MIN = 0.7;
 export const SIZE_MAX = 2;
 /** The most the nav grows to: past it a larger size enlarges the document alone. */

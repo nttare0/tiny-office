@@ -184,10 +184,18 @@ async function allFit(nav: number) {
   expect(more.right).toBeLessThanOrEqual(edge.right + 0.5);
   expect(drawer.querySelector('.to-size-now')!.textContent).toBe(`${Math.round(size() * 100)}%`);
   drawer.close();
-  // The templates list of an app's row fits the screen.
-  home.querySelector<HTMLButtonElement>('.to-templates-btn')!.click();
-  const list = home.querySelector<HTMLElement>('.to-listbox')!;
-  await until(() => !!list.closest('dialog')?.open);
+  // A card's question, and the templates list it hands over to, both fit the screen.
+  home.querySelector<HTMLElement>('.to-app-open')!.click();
+  await until(() => !!home.querySelector('to-start dialog[open]'));
+  await settled();
+  const question = home.querySelector<HTMLDialogElement>('to-start dialog[open]')!.getBoundingClientRect();
+  expect(question.left).toBeGreaterThanOrEqual(-0.5);
+  expect(question.right).toBeLessThanOrEqual(innerWidth + 0.5);
+  expect(question.bottom).toBeLessThanOrEqual(innerHeight + 0.5);
+  home.querySelector<HTMLElement>('to-start .to-start-templates')!.click();
+  await until(() => !!home.querySelector('to-home dialog.to-templates-dialog[open]'));
+  const list = home.querySelector<HTMLElement>('to-home dialog.to-templates-dialog[open] .to-listbox')!;
+  await until(() => list.querySelectorAll('[role=option]').length > 1);
   await settled();
   const lr = list.getBoundingClientRect();
   expect(lr.left).toBeGreaterThanOrEqual(-0.5);

@@ -51,21 +51,33 @@ function unstamped(text: string): string {
 /** What a new document of Write is called today: "New Document 2026-10-09 #1". */
 const fresh = (n = 1) => `New Document ${localDay()} #${n}`;
 
-test('the home page lists the apps as rows, each with its templates', async () => {
+/** Open the app's template gallery the way a card does: the card tapped, then Use a template. */
+async function gallery(shell: HTMLElement, app: string) {
+  const card = [...shell.querySelectorAll<HTMLElement>('.to-app')].find((x) => x.querySelector('.to-app-name')!.textContent === app)!;
+  (card.querySelector('.to-app-open') as HTMLElement).click();
+  await until(() => !!shell.querySelector('to-start dialog[open]'), 'the question never opened');
+  shell.querySelector<HTMLElement>('to-start dialog[open] .to-start-templates')!.click();
+  await until(() => !!shell.querySelector('to-home dialog.to-templates-dialog[open]'), 'the gallery never opened');
+  return shell.querySelector<HTMLDialogElement>('to-home dialog.to-templates-dialog[open]')!;
+}
+
+test('the home page is a grid of cards, each a link to its app and nothing else, the gallery behind the card’s question', async () => {
   const shell = await mount('');
   const tile = shell.querySelector('.to-app')!;
   expect(tile.querySelector('.to-app-name')!.textContent).toBe('Word Processor');
   expect(tile.querySelector<HTMLAnchorElement>('.to-app-open')!.getAttribute('href')).toBe('#/v1/write');
-  const picker = tile.querySelector<HTMLButtonElement>('.to-templates-btn')!;
-  // The button is the affordance alone, to the right of the name: no "Blank" written on every tile.
-  expect(picker.textContent!.trim()).toBe('');
-  expect(picker.getAttribute('aria-label')).toBe('Templates for Word Processor');
-  expect(tile.querySelector('.to-app-head')!.contains(picker)).toBe(true);
-  expect(picker.getBoundingClientRect().left).toBeGreaterThan(tile.querySelector('.to-app-open')!.getBoundingClientRect().right - 1);
-  picker.click();
+  // No Templates button on the card, and no Blank written on it.
+  expect(tile.querySelector('button')).toBeNull();
+  expect(tile.querySelector('.to-app-open')!.textContent!.trim()).toBe('Word Processor');
+  // The gallery is the home page's own, bare, and not open before the card asks.
+  const bare = shell.querySelector<HTMLElement>('to-home to-templates')!;
+  expect(bare.hasAttribute('bare')).toBe(true);
+  expect(bare.querySelector(':scope > button')).toBeNull();
+  expect(shell.querySelector('dialog.to-templates-dialog[open]')).toBeNull();
   // Blank at once; the templates, a file of their own, when they arrive.
-  await until(() => tile.querySelectorAll('[role=option] svg').length >= 26);
-  const options = [...tile.querySelectorAll('[role=option]')];
+  const dialog = await gallery(shell, 'Word Processor');
+  await until(() => dialog.querySelectorAll('[role=option] svg').length >= 26);
+  const options = [...dialog.querySelectorAll('[role=option]')];
   const names = options.map((o) => o.querySelector('.to-option-words span')!.textContent);
   expect(names.slice(0, 5)).toEqual(['Blank', 'A letter', 'Cover letter', 'Memo', 'Meeting notes']);
   expect(names.length).toBeGreaterThanOrEqual(26);
@@ -78,9 +90,7 @@ test('the home page lists the apps as rows, each with its templates', async () =
 
 test('the Diagram Maker lists a blank page a kind and no Blank of its own, its first kind chosen; the Word Processor still starts with Blank', async () => {
   const shell = await mount('');
-  const tile = [...shell.querySelectorAll<HTMLElement>('.to-app')].find((x) => x.querySelector('.to-app-open .to-app-name')!.textContent === 'Diagram Maker')!;
-  expect(tile.querySelector<HTMLAnchorElement>('.to-app-open')!.getAttribute('href')).toBe('#/v1/diagram');
-  tile.querySelector<HTMLButtonElement>('.to-templates-btn')!.click();
+  const tile = await gallery(shell, 'Diagram Maker');
   await until(() => !!tile.querySelector('[role=option] svg'));
   const options = [...tile.querySelectorAll('[role=option]')];
   const names = options.map((o) => o.querySelector('.to-option-words span')!.textContent!);
@@ -94,8 +104,7 @@ test('the Diagram Maker lists a blank page a kind and no Blank of its own, its f
   expect(decodeDoc(location.hash.slice('#/v1/diagram/'.length))).toContain('kind: mind');
   // The Word Processor, beside it, keeps its Blank first.
   const home = await mount('');
-  const write = home.querySelector<HTMLElement>('.to-app')!;
-  write.querySelector<HTMLButtonElement>('.to-templates-btn')!.click();
+  const write = await gallery(home, 'Word Processor');
   await until(() => !!write.querySelector('[role=option] svg'));
   expect(write.querySelector('[role=option] .to-option-words span')!.textContent).toBe('Blank');
 });
@@ -117,16 +126,16 @@ test('the home page has no copy: every app, in order, its icon, its name and its
   const h1 = shell.querySelector('to-home h1')!;
   expect(h1.textContent).toBe('Tiny Little Office');
   expect(h1.classList.contains('sr-only')).toBe(true);
-  // (A templates dialog's own heading is not the page's copy, and the foot, who made it and where its source is, comes
-  // after everything: test/browser/home.test.ts.)
-  expect(shell.querySelector('to-home p:not(.to-home-foot p), to-home h2:not(.to-dialog h2), .to-app-open small')).toBeNull();
+  // (A templates dialog's own heading is not the page's copy: the cards' question is a dialog's, test/browser/home.test.ts.)
+  expect(shell.querySelector('to-home p:not(.to-start-words), to-home h2:not(.to-dialog h2), .to-app-open small')).toBeNull();
   for (const a of apps()) expect(shell.textContent).not.toContain(a.blurb);
   const tiles = [...shell.querySelectorAll('.to-app')];
   expect(tiles.map((t) => t.querySelector('.to-app-open .to-app-name')!.textContent)).toEqual(apps().map((a) => a.name));
   for (const tile of tiles) {
     expect(tile.querySelector('.to-app-open svg')!.getAttribute('width')).toBe('20');
     expect(tile.querySelector('.to-app-open')!.textContent!.trim()).toBe(tile.querySelector('.to-app-name')!.textContent);
-    expect(tile.querySelector('to-templates .to-templates-btn')).not.toBeNull();
+    // Nothing else on the card: no Templates, no Blank (2026-11-08).
+    expect(tile.querySelectorAll('button')).toHaveLength(0);
   }
 });
 
@@ -218,7 +227,7 @@ test('at 390px: one column, nothing wider than the screen, every tap target 44px
       expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(document.documentElement.clientWidth);
       const lefts = new Set([...shell.querySelectorAll('.to-app')].map((t) => Math.round(t.getBoundingClientRect().left)));
       expect(lefts.size).toBe(1);
-      for (const el of shell.querySelectorAll<HTMLElement>('.to-app-open, .to-templates-btn, .to-drive-open, .to-drive button')) {
+      for (const el of shell.querySelectorAll<HTMLElement>('.to-app-open, .to-drive-open, .to-drive button')) {
         const r = el.getBoundingClientRect();
         expect(r.height).toBeGreaterThanOrEqual(44);
         expect(r.right).toBeLessThanOrEqual(390);
@@ -488,10 +497,10 @@ test('a Display Link at 390px: the pages fit the screen', async () => {
   }
 });
 
-test('home rows at 1100 and at 390: one column of full-width rows, the same shape, no cards', () =>
+test('home cards at 1100 and at 390: a card is a light surface with a hairline and a corner at both widths, in one column on a phone', () =>
   saved(async () => {
     keep({ id: 'x', app: 'write', title: 'Kept here', hash: '#/v1/write/yx', at: Date.now() });
-    const shapes: { lefts: number; widths: number[]; border: string; shadow: string }[] = [];
+    const shapes: { lefts: number; tops: number; border: string; radius: string; shadow: boolean }[] = [];
     for (const [w, h] of [
       [1100, 800],
       [390, 844],
@@ -500,36 +509,46 @@ test('home rows at 1100 and at 390: one column of full-width rows, the same shap
       const shell = await mount('');
       await tick(50);
       expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(document.documentElement.clientWidth);
-      const rows = [...shell.querySelectorAll<HTMLElement>('.to-app')];
-      const main = shell.querySelector('.to-home')!.getBoundingClientRect();
-      for (const r of rows) expect(Math.round(r.getBoundingClientRect().width)).toBe(Math.round(main.width));
-      const css = getComputedStyle(rows[0]);
-      shapes.push({ lefts: new Set(rows.map((r) => Math.round(r.getBoundingClientRect().left))).size, widths: [], border: css.borderTopWidth + css.borderLeftWidth, shadow: css.boxShadow });
-      // The documents sit under their app, a preview's edge on its icon's (Paul, 2026-10-12: "They're indented very much
-      // to the right"; home.test.ts measures the rest).
-      const preview = rows[0].querySelector('.to-drive-open to-preview')!.getBoundingClientRect();
-      expect(Math.abs(preview.left - rows[0].querySelector('.to-app-open > .to-icon')!.getBoundingClientRect().left)).toBeLessThan(1);
-      // A thin rule between rows: a pixel, or the one device pixel the browser snaps it to under the size of everything.
-      expect(parseFloat(css.borderBottomWidth)).toBeGreaterThan(0.5);
-      expect(parseFloat(css.borderBottomWidth)).toBeLessThanOrEqual(1);
+      const cards = [...shell.querySelectorAll<HTMLElement>('.to-app-open')];
+      const css = getComputedStyle(cards[0]);
+      shapes.push({
+        lefts: new Set(cards.map((r) => Math.round(r.getBoundingClientRect().left))).size,
+        tops: new Set(cards.map((r) => Math.round(r.getBoundingClientRect().top))).size,
+        border: css.borderTopWidth + css.borderLeftWidth,
+        radius: css.borderRadius,
+        shadow: css.boxShadow !== 'none',
+      });
+      // The documents keep their own alignment under the card (home.test.ts measures it).
+      const preview = shell.querySelector('.to-drive-open to-preview')!.getBoundingClientRect();
+      const card = shell.querySelector('.to-app-open')!.getBoundingClientRect();
+      expect(preview.left).toBeGreaterThanOrEqual(card.left - 1);
+      expect(preview.right).toBeLessThanOrEqual(card.right + 1);
     }
-    expect(shapes[0]).toEqual(shapes[1]);
-    expect(shapes[0]).toEqual({ lefts: 1, widths: [], border: '0px0px', shadow: 'none' });
+    // Both widths: a card is drawn the same way — a hairline, a corner, a shadow — and a phone is one column of them.
+    expect(shapes[0].border).toBe(shapes[1].border);
+    expect(shapes[0].radius).toBe(shapes[1].radius);
+    expect(shapes[0].shadow && shapes[1].shadow).toBe(true);
+    expect(parseFloat(shapes[0].border)).toBeGreaterThan(0);
+    expect(shapes[0].lefts).toBeGreaterThan(1);
+    expect(shapes[1].lefts).toBe(1);
     await page.viewport(1100, 800);
   }));
 
 test('the templates list has a Close at its top that dismisses it', async () => {
   const shell = await mount('');
-  const tile = shell.querySelector('.to-app, .to-tile')!;
-  const picker = tile.querySelector<HTMLButtonElement>('.to-templates-btn')!;
-  picker.click();
-  await until(() => !!tile.querySelector('dialog[open] .to-listbox'));
-  const close = tile.querySelector<HTMLButtonElement>('.to-listbox-close')!;
+  // The gallery is the home page's (a card's question hands over to it), not a button of its own.
+  await until(() => !!shell.querySelector('.to-app-open'));
+  shell.querySelector<HTMLElement>('.to-app-open')!.click();
+  await until(() => !!shell.querySelector('to-start dialog[open]'));
+  shell.querySelector<HTMLElement>('to-start .to-start-templates')!.click();
+  await until(() => !!shell.querySelector('to-home dialog.to-templates-dialog[open] .to-listbox'));
+  const gallery = shell.querySelector<HTMLElement>('to-home dialog.to-templates-dialog[open]')!;
+  const close = gallery.querySelector<HTMLButtonElement>('.to-listbox-close')!;
   expect(close.getAttribute('aria-label')).toBe('Close');
   // The head is the dialog's, above the list, which scrolls under it.
-  expect(tile.querySelector('.to-listbox-head')!.getBoundingClientRect().bottom).toBeLessThanOrEqual(tile.querySelector('.to-listbox')!.getBoundingClientRect().top + 1);
+  expect(gallery.querySelector('.to-listbox-head')!.getBoundingClientRect().bottom).toBeLessThanOrEqual(gallery.querySelector('.to-listbox')!.getBoundingClientRect().top + 1);
   close.click();
-  await until(() => !tile.querySelector('dialog[open] .to-listbox'));
+  await until(() => !shell.querySelector('to-home dialog.to-templates-dialog[open] .to-listbox'));
 });
 
 test('§1 a document opens with the focus where a person starts: a new one, an opened one, from home and from the address; never the title box or the body', async () => {

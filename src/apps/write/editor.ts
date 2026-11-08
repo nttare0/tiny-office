@@ -34,10 +34,12 @@ import { copyData, pasteFrom, writeClip } from '../../kit/text/clipboard.ts';
 import { SEP, type ContextEntry, type ToContext } from '../../kit/ui/context.ts';
 import { editFence, editTable, makeDoc, newTable } from '../../kit/ui/doc-dialog.ts';
 import { DocElement, firstAt, type Entry } from '../../kit/core/element.ts';
-import { UI } from '../../kit/draw/icons.ts';
+import { icon, UI } from '../../kit/draw/icons.ts';
 import { language, t } from '../../kit/core/i18n.ts';
 import { noteIndex, noteMarks, type ToNotes } from '../../kit/draw/notes.ts';
-import { askDocLink } from '../../kit/ui/insert-dialogs.ts';
+import { askDocLink, resolveDocLink } from '../../kit/ui/insert-dialogs.ts';
+import { previewAs, VIEWS, type FenceView, type ViewId } from './fence-views.ts';
+import { toast } from '../../kit/core/say.ts';
 import { blockLength, caret, insertBlocks, isWords, type Sel } from '../../kit/text/textops.ts';
 import type { NoteAt, TextOps, ToText } from '../../kit/text/text.ts';
 import {
@@ -99,6 +101,21 @@ interface Clip {
 }
 /** How long a burst of typing stays one step (DocElement's own). */
 const BURST = 700;
+/** How long after a dropped link has landed the same link dropped again is the same drop, and puts nothing in. */
+const SETTLE = 1500;
+
+/** What a drag carries: a link — the URI list first, then the plain text — or null when it carries none. */
+export function linkOf(data: DataTransfer | null): string | null {
+  if (!data) return null;
+  const uri = data
+    .getData('text/uri-list')
+    ?.split('\n')
+    .find((l) => l.trim() && !l.startsWith('#'));
+  const text = data.getData('text/plain');
+  const link = (uri || text || '').trim();
+  // A drag of a file, a picture or words is not a link, and the browser keeps it.
+  return /^https?:\/\/\S+$/.test(link) ? link : null;
+}
 
 export class ToWriteEditor extends DocElement<Doc> {
   static properties: PropertyDeclarations = { ...DocElement.properties, cardAt: { state: true } };
@@ -126,6 +143,10 @@ export class ToWriteEditor extends DocElement<Doc> {
     this.addEventListener('focusin', this.onFocusIn);
     this.addEventListener('focusout', this.onFocusOut);
     for (const type of ['copy', 'cut', 'paste']) document.addEventListener(type, this.onClipboard as EventListener, true);
+    // A document's link dragged in (or a URL dropped) becomes the document, in a fence (below).
+    this.addEventListener('dragover', this.onDragOver);
+    this.addEventListener('dragleave', this.onDragLeave);
+    this.addEventListener('drop', this.onDrop);
   }
   disconnectedCallback() {
     super.disconnectedCallback();
@@ -134,6 +155,9 @@ export class ToWriteEditor extends DocElement<Doc> {
     this.removeEventListener('focusin', this.onFocusIn);
     this.removeEventListener('focusout', this.onFocusOut);
     for (const type of ['copy', 'cut', 'paste']) document.removeEventListener(type, this.onClipboard as EventListener, true);
+    this.removeEventListener('dragover', this.onDragOver);
+    this.removeEventListener('dragleave', this.onDragLeave);
+    this.removeEventListener('drop', this.onDrop);
   }
   get text(): ToText {
     return this.querySelector<ToText>('to-text.write-text')!;
@@ -224,6 +248,86 @@ export class ToWriteEditor extends DocElement<Doc> {
     this.change([...prefix, ...e.ops], { before: at, after: e.sel });
     void this.drawn().then(() => (this.text.sel = e.sel));
   }
+  /* ---------- a link dragged in ---------- */
+
+  /**
+   * The views chosen for the fences drawn here, by their block. In memory and only here: a preview is a way of looking at
+   * a document, never a change to it, so it is not serialized into the document, the link or anything else, and a reload
+   * opens every fence on its own app again (fence-views.ts).
+   */
+  private views = new WeakMap<Block, FenceView>();
+  /** A drag over the editor that may be a document's link: what the browser is told, and whether it is over the words. */
+  private dragOver = false;
+
+  /** A link being dragged over the editor: only a recognized one says it can be dropped here; anything else is left to the browser. */
+  private onDragOver = (e: DragEvent) => {
+    if (!linkOf(e.dataTransfer)) return;
+    e.preventDefault();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+    if (!this.dragOver) {
+      this.dragOver = true;
+      this.toggleAttribute('data-drop', true);
+    }
+  };
+  private onDragLeave = (e: DragEvent) => {
+    // Moving between the editor's own children is not leaving it.
+    if (e.relatedTarget && this.contains(e.relatedTarget as Node)) return;
+    this.endDrag();
+  };
+  private endDrag() {
+    if (!this.dragOver) return;
+    this.dragOver = false;
+    this.toggleAttribute('data-drop', false);
+  }
+  /**
+   * The links being read right now, as the fences they became, and the same text already in the document for a few
+   * seconds after it landed: a drag read twice (a browser sending dragover and drop, a finger lifted twice) puts one
+   * document in, not two (2026-11-08: "prevents duplicate insertion for recognized drops").
+   */
+  private dropping = new Map<string, Promise<Block | null>>();
+  private landed = new Map<string, { fence: string; at: number }>();
+  /** A link dropped: its document put in as a fence, at the block it was dropped in, else at the caret. A link that is not one, or cannot be read, is left to the browser and said so. */
+  private onDrop = async (e: DragEvent) => {
+    const link = linkOf(e.dataTransfer);
+    if (!link) return;
+    this.endDrag();
+    e.preventDefault();
+    const at = this.dropAt(e as MouseEvent);
+    // The same link read again while the first is on its way waits for it, and one read a moment ago is already in.
+    let read = this.dropping.get(link);
+    if (!read) {
+      read = resolveDocLink(link);
+      this.dropping.set(link, read);
+      void read.finally(() => this.dropping.delete(link));
+    }
+    const fence = await read;
+    if (!fence) {
+      toast(t('write-this-link-could-not-be-read'));
+      return;
+    }
+    // (A document link always reads as a fence; anything else has no body to compare.)
+    const key = fence.k === 'fence' ? `${fence.lang}\n${fence.body}` : JSON.stringify(fence);
+    const just = this.landed.get(link);
+    if (just && just.fence === key && Date.now() - just.at < SETTLE) return;
+    this.landed.set(link, { fence: key, at: Date.now() });
+    this.insertBlock(fence, at);
+  };
+  /** Where a drop lands: the text block it was dropped in, before it, else the caret. */
+  private dropAt(e: MouseEvent): Sel {
+    const target = e.target as HTMLElement | null;
+    const card = target?.closest('.tx-card');
+    if (card && this.text.tx.contains(card)) {
+      const at = this.text.blockEls().indexOf(card as HTMLElement);
+      if (at >= 0) return caret(at, 0);
+    }
+    const block = target?.closest('p, li, h1, h2, h3, h4, h5, h6, blockquote');
+    if (block && this.text.tx.contains(block)) {
+      const at = this.text.blockEls().indexOf(block as HTMLElement);
+      if (at >= 0) return caret(at, 0);
+    }
+    return this.where();
+  }
+
   /** Insert ▾'s Tiny Little Office Doc, asked for in the kit's dialog, then put in where the caret was. */
   async insertDocument() {
     const at = this.where();
@@ -317,18 +421,59 @@ export class ToWriteEditor extends DocElement<Doc> {
     // A document locked with a password: the locked card, which a tap opens for this visit (kit/ui/locked-doc.ts).
     if (b.k === 'fence' && b.lang === LOCKED_LANG) return html`<figure class="write-doc"><to-locked-doc caption .ref=${b.body}></to-locked-doc></figure>`;
     if (b.k === 'fence' && b.lang) {
-      const def = lookup.appOf(b.lang);
-      const page = def?.view(b.body, { small: true })[0];
-      const name = fenceTitle(b.body) || def?.name || b.lang;
-      return html`<figure class="write-doc">
-        ${page ? html`<svg viewBox="0 0 ${page.w} ${page.h}" role="img" aria-label=${name}>${unsafeSVG(page.svg)}</svg>` : html`<pre>${b.body.split('\n').slice(0, 6).join('\n')}</pre>`}
-        <figcaption><b>${name}</b><small>${def?.name ?? b.lang}</small></figcaption>
-      </figure>`;
+      const view = this.views.get(b) ?? 'source';
+      return this.fenceCard(b, at, view);
     }
     if (isRule(b)) return html`<div class="write-rule"><hr aria-label=${t('write-horizontal-rule')} /></div>`;
     if (b.k === 'hr') return html`<div class="write-break" role="separator" aria-label=${t('write-page-break')}><span>${t('write-page-break')}</span></div>`;
     return null;
   };
+  /**
+   * Another document held here: its first page small, its name, and under it the ways to look at it — Edit opens it in
+   * its own app in the dialog (kit/ui/doc-dialog.ts editFence, which writes accepted edits back into this document as one
+   * undoable step), and where there is another way to look at it, a "Preview as" selector: the Outliner, the Spreadsheet,
+   * the Presentation, or the document's own app again. A preview is a projection of the source's own words, drawn in this
+   * card alone: the fence's language and body are not touched, the choice is not saved, and Edit always opens the source
+   * app (fence-views.ts).
+   */
+  private fenceCard(b: Extract<Block, { k: 'fence' }>, at: number, view: FenceView): TemplateResult {
+    const def = lookup.appOf(b.lang);
+    const previewing = view !== 'source' && !!def;
+    const projection = previewing ? previewAs(b.lang, b.body, view) : null;
+    const shown = projection?.text ?? b.body;
+    const shownApp = projection ? (lookup.appOf(view) ?? def) : def;
+    const page = shownApp?.view(shown, { small: true })[0];
+    const name = fenceTitle(b.body) || def?.name || b.lang;
+    const note = projection?.note ?? '';
+    // The other ways to look at it, always with the document's own app to come back to.
+    const offers: ViewId[] = def ? VIEWS.filter((v) => v !== b.lang) : [];
+    const title = this.editLabel(at) || t('common-edit');
+    return html`<figure class="write-doc" data-view=${view}>
+      ${page ? html`<svg viewBox="0 0 ${page.w} ${page.h}" role="img" aria-label=${view === 'source' ? name : `${name} · ${shownApp?.name ?? view}`}>${unsafeSVG(page.svg)}</svg>` : html`<pre>${shown.split('\n').slice(0, 6).join('\n')}</pre>`}
+      <figcaption><b>${name}</b><small>${def?.name ?? b.lang}</small></figcaption>
+      <div class="write-doc-controls">
+        <button type="button" class="to-btn write-doc-edit" title=${title} @click=${() => void this.editCard(at)}>${icon(UI.pen, 16)}<span>${title}</span></button>
+        ${
+          offers.length
+            ? html`<div class="write-doc-views" role="group" aria-label=${t('write-preview-as')}>
+                <span class="write-doc-views-label" aria-hidden="true">${t('write-preview-as')}</span>
+                ${offers.map(
+                  (v) =>
+                    html`<button type="button" class="to-btn write-doc-view" aria-pressed=${String(view === v)} title=${lookup.appOf(v)!.name} @click=${() => this.setView(b, v)}>${lookup.appOf(v)!.name}</button>`,
+                )}
+                <button type="button" class="to-btn write-doc-view" aria-pressed=${String(view === 'source')} title=${def!.name} @click=${() => this.setView(b, 'source')}>${def!.name}</button>
+              </div>`
+            : nothing
+        }
+      </div>
+      ${note ? html`<p class="write-doc-note">${note === 'formulas' ? t('write-preview-keeps-raw-formulas') : t('write-preview-is-simpler-than-the-document')}</p>` : nothing}
+    </figure>`;
+  }
+  /** A preview chosen for the fence at `b`: drawn at once, kept only while this page holds the block. */
+  private setView(b: Block, view: FenceView) {
+    this.views.set(b, view);
+    this.requestUpdate();
+  }
   private tableEl(at: number): ToWriteTable | null {
     return this.text?.blockEls()[at]?.querySelector<ToWriteTable>('to-write-table') ?? null;
   }

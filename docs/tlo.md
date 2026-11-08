@@ -82,6 +82,11 @@ The shell's keys are `title`, `by` and `created` (and `app` in a `.tlo` file). A
 
 - ```` ```sheet ````, ```` ```draw ````, ```` ```trip ```` and every other app id: another document, drawn small
   by its app where it sits. Under an outline item it says its depth: ```` ```sheet {depth=2} ````.
+  In the Word Processor a fence is an editable local copy of the linked document, not a live reference: changing the
+  document the link points at does not change the copy here. A link dragged into the editor becomes a fence, and Edit
+  opens it in its own app (src/apps/write/editor.ts). Where the fence holds an outline, a sheet or a presentation, the
+  card also offers a *Preview as* those three: a projection drawn in the card alone, which changes neither the fence's
+  `lang` nor its `body` and is not saved anywhere (src/apps/write/fence-views.ts).
 - ```` ```qr ```` with nothing in it: the QR code of this document's own link, drawn afresh as the document
   changes; with an address in it, that address's code (Insert ▾ → QR code of this document).
 - ```` ```locked ```` holding a link's fragment, `#/v1/write/E…`: a document locked with a password, kept sealed. It is
