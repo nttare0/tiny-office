@@ -522,6 +522,8 @@ common-plan = 계획
 # en: 9985434cd07212b8dac01f8e015a1fa8adac9a99
 common-chosen-tasks = 선택한 할 일
 # A link that opens the document (kit/ui/compare.ts).
+# en: e2d20f3a5be2c2586e985d7035d4c1e9f0523ef2
+common-open-a-file = 파일 열기…
 # en: cf9b77061f7b3126b49d50a6fa68f7ca8c26b7a3
 common-open = 열기
 # en: 7bb0ddf9221c03b806b03c209e8366000124aa15

@@ -64,7 +64,7 @@ import { trustButton, type ToPrivacy } from '../ui/privacy-dialog.ts';
 import { openCopy, siteDir, type ToShare } from '../ui/share-dialog.ts';
 import { firstWords, Keeper, library, newName, type Kept } from '../share/library.ts';
 import { pageSvg } from '../draw/draw.ts';
-import { opensDropped, unplain } from '../file/open.ts';
+import { openPicked, opensDropped, unplain } from '../file/open.ts';
 import { parseCompare, type Side } from '../ui/compare.ts';
 import { toast } from './say.ts';
 import { installLinkGuard } from '../ui/link-guard.ts';
@@ -76,7 +76,7 @@ import { textHtml } from '../text/text-view.ts';
 import type { ToDialog } from '../ui/dialog.ts';
 import type { Offer, ToDrawer } from '../ui/drawer.ts';
 import { reveal } from '../ui/scroll.ts';
-import type { ToMenu } from '../ui/menu.ts';
+import type { MenuItem, ToMenu } from '../ui/menu.ts';
 import type { ToFind } from '../ui/find.ts';
 import { KIT_COMMANDS, SEARCH, pageKey, renderShortcuts, type Page } from './keys.ts';
 import { inScope, live, register } from './commands.ts';
@@ -811,11 +811,20 @@ export class ToShell extends LitElement {
     (inDoc ?? this.querySelector<HTMLElement>('.to-main'))?.focus();
   };
 
+  /**
+   * The Download table with the other half of a download at its head: Open a file…, a file of the device opened as a
+   * dropped one is (kit/file/open.ts). It is put here rather than in kit/file/exports.ts because the API imports that
+   * module for its formats (src/api.ts `file`), and a browser picker has no place in a program's build: the API's
+   * budget holds that shape (budgets.json).
+   */
+  private withOpen(def: AppDef, items: MenuItem[]): MenuItem[] {
+    return [{ label: t('common-open-a-file'), icon: UI.folder, does: () => void openPicked(def.id) }, ...items];
+  }
   render() {
     if (this.wording) return nothing;
     const def = this.def;
     const plain = def && !this.unreadable && (this.embed || (this.display && !this.sealed));
-    const downloads = def && !this.sealed && !plain ? exportItems(def, this.current) : null;
+    const downloads = def && !this.sealed && !plain ? this.withOpen(def, exportItems(def, this.current)) : null;
     const editing = !!def && !this.sealed && !this.unreadable && !!this.tag && !this.comparing;
     const page = plain
       ? this.renderPlain(def)

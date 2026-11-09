@@ -364,7 +364,9 @@ common-move-right = Move right
 # The group heading the Calendar and the Trip Planner sit under on the home page.
 common-plan = Plan
 common-chosen-tasks = Selected tasks
+common-open-a-file = Open a file…
 # A link that opens the document (kit/ui/compare.ts).
+# en: cf9b77061f7b3126b49d50a6fa68f7ca8c26b7a3
 common-open = Open
 common-task = Task
 common-tasks = Tasks
