@@ -71,6 +71,51 @@ export async function openFile(file: File, fallback: string): Promise<boolean> {
   return true;
 }
 
+/**
+ * A file chosen from the device, opened as a dropped one is: the browser's own picker where there is one
+ * (showOpenFilePicker), else a hidden <input type="file"> (every phone, and Safari and Firefox). The document goes
+ * into a link and the link is followed: the file is read here and nowhere else, and nothing of it is kept unless the
+ * device is Saved. Cancelling asks nothing and opens nothing.
+ */
+export async function openPicked(fallback: string): Promise<boolean> {
+  const picker = (
+    window as Window & { showOpenFilePicker?: (o: { multiple?: boolean; types?: { description: string; accept: Record<string, string[]> }[] }) => Promise<{ getFile(): Promise<File> }[]> }
+  ).showOpenFilePicker;
+  if (picker && window.isSecureContext) {
+    try {
+      const [handle] = await picker.call(window, { multiple: false, types: OPEN_TYPES });
+      const file = await handle?.getFile();
+      return file ? openFile(file, fallback) : false;
+    } catch (err) {
+      // The person closed the picker: that is an answer, not a failure. Anything else falls through to the input.
+      if (err instanceof DOMException && err.name === 'AbortError') return false;
+    }
+  }
+  const file = await chosen();
+  return file ? openFile(file, fallback) : false;
+}
+
+/** What the picker offers first: a document, words, or a zip of them (anything else is still choosable). */
+const OPEN_TYPES = [{ description: 'Tiny Little Office', accept: { 'text/plain': ['.tlo', '.md', '.markdown', '.txt'], 'application/json': ['.json'], 'application/zip': ['.zip'] } }];
+
+/** The hidden input, for the browsers and phones with no showOpenFilePicker. */
+function chosen(): Promise<File | null> {
+  return new Promise((resolve) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.tlo,.md,.markdown,.txt,.json,.zip,text/plain,application/json,application/zip';
+    input.hidden = true;
+    const done = (file: File | null) => {
+      input.remove();
+      resolve(file);
+    };
+    input.addEventListener('change', () => done(input.files?.[0] ?? null));
+    // A cancelled dialog fires no change in most browsers; the element is left to be collected with the page.
+    document.body.append(input);
+    input.click();
+  });
+}
+
 /** A file dropped anywhere on the page opens (the shell's): `before` makes the link current first, `app` is the app open now. Returns the undo. */
 export function opensDropped(before: () => void, app: () => string): () => void {
   const over = (e: DragEvent) => {

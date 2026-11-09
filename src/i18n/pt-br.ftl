@@ -576,6 +576,8 @@ common-plan = Planejamento
 # en: 9985434cd07212b8dac01f8e015a1fa8adac9a99
 common-chosen-tasks = Tarefas selecionadas
 # A link that opens the document (kit/ui/compare.ts).
+# en: e2d20f3a5be2c2586e985d7035d4c1e9f0523ef2
+common-open-a-file = Abrir um arquivo…
 # en: cf9b77061f7b3126b49d50a6fa68f7ca8c26b7a3
 common-open = Abrir
 # en: 7bb0ddf9221c03b806b03c209e8366000124aa15

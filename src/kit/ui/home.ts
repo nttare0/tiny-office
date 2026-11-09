@@ -169,8 +169,10 @@ export class ToTemplates extends LitElement {
     const at = document.activeElement;
     this.from = at instanceof HTMLElement && at !== document.body ? at : null;
     void this.updateComplete.then(() => {
-      if (this.dialog.open) return;
-      this.dialog.showModal();
+      // A bare one drawn before its app (nothing, see render) has no dialog yet: it is drawn with this update.
+      const dialog = this.querySelector<HTMLDialogElement>(':scope > dialog');
+      if (!dialog || dialog.open) return;
+      dialog.showModal();
       this.press.open();
       if (!this.bare) this.button.setAttribute('aria-expanded', 'true');
       // Opened by a key, the chosen template has the focus; by a pointer (or before a list with no Blank has arrived), the list itself, and the first arrow goes in.
@@ -196,7 +198,7 @@ export class ToTemplates extends LitElement {
   private onKey = (e: KeyboardEvent) => menuKey(e, this.listbox, this.options(), () => this.hide());
   /** The id of the option shown chosen: '' is Blank, or the first template where the list has no Blank. */
   private get current(): string {
-    return this.chosen || (this.app.blankInTemplates ? (this.list?.[0]?.id ?? '') : '');
+    return this.chosen || (this.app?.blankInTemplates ? (this.list?.[0]?.id ?? '') : '');
   }
   private choose(tpl: Template | null) {
     this.chosen = tpl?.id ?? '';
@@ -215,6 +217,10 @@ export class ToTemplates extends LitElement {
     </div>`;
   }
   render() {
+    // A bare one waits on the home page until a card's question gives it an app: drawn before that, it is nothing at
+    // all — a render that threw here (it read `this.app.name`) left Lit's update rejected, and the `show()` that
+    // followed never ran, which is a card whose "Use a template" opened no gallery.
+    if (!this.app) return nothing;
     const chosen = this.list?.find((x) => x.id === this.chosen);
     // The button is the small arrow alone, no icon and no words (Paul, 2026-10-09: "don't use the word Blank over and over"; 2026-10-10: "just the small arrow to the right"); its name says what it holds.
     const button = html`<button type="button" class="to-btn to-tool to-templates-btn" aria-haspopup="dialog" aria-expanded="false" aria-label=${chosen ? t('home-templates-for-app-name', { app: this.app.name, name: chosen.name }) : t('home-templates-for-app', { app: this.app.name })} title=${t('common-templates')} @click=${() => (this.via ? this.via(this.app) : this.show())}>
