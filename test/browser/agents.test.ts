@@ -116,7 +116,7 @@ test('a .tlo dropped on the page opens as its own app and title; a .md dropped o
   const bad = new DataTransfer();
   bad.items.add(new File([new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0, 1, 2])], 'cat.png', { type: 'image/png' }));
   shell.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: bad }));
-  await until(() => said() === 'Tiny Little Office can’t read that file.');
+  await until(() => said() === 'tiny office can’t read that file.');
   expect(location.hash).toBe(before);
 });
 
@@ -157,7 +157,7 @@ test('Compare: two links side by side, what the second changed marked, Swap, a l
   second.value = 'https://example.com/';
   second.dispatchEvent(new Event('change'));
   await tick(30);
-  expect(second.validationMessage).toBe('Not a link to a Tiny Little Office document');
+  expect(second.validationMessage).toBe('Not a link to a tiny office document');
   expect(location.hash).toBe(`#/compare/write/${b}/write/${a}`);
 });
 

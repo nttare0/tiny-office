@@ -22,6 +22,6 @@ test('the .json a document downloads as opens as that document, in its app', asy
 test('a .json that is not a document is said so, and nothing opens', async () => {
   await mount('');
   dropFile(new File(['{"head":{},"blocks":[{"k":"shape"}]}'], 'other.json', { type: 'application/json' }));
-  await until(() => said() === 'Tiny Little Office can’t read that file.');
+  await until(() => said() === 'tiny office can’t read that file.');
   expect(location.hash).toBe('');
 });

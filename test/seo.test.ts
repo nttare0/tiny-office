@@ -71,7 +71,7 @@ test('every page carries one WebApplication in JSON-LD: its name, its line, its 
     license: 'https://opensource.org/license/mit',
     isAccessibleForFree: true,
   };
-  expect(ldBlocks(read('index.html'))).toEqual([{ ...common, name: 'Tiny Little Office', description, url: SITE }]);
+  expect(ldBlocks(read('index.html'))).toEqual([{ ...common, name: 'tiny office', description, url: SITE }]);
   for (const a of apps()) expect(ldBlocks(read(`${a.id}/index.html`)), a.id).toEqual([{ ...common, name: a.name, description: a.blurb, url: `${SITE}${a.id}/` }]);
   // The embed page is not indexed (noindex) and says nothing of the kind.
   expect(ldBlocks(read('embed/index.html'))).toEqual([]);
@@ -81,7 +81,7 @@ test('every page carries one WebApplication in JSON-LD: its name, its line, its 
 test('the static HTML says what the rendered page shows: the apps’ names on the home page; on an app’s page its name, its line and its templates’ names', () => {
   build(SITE);
   const home = firstHeader(read('index.html'));
-  for (const a of apps()) expect(home).toContain(`<a href="${a.id}/">${a.name}</a>`);
+  for (const a of apps()) expect(home).toContain(`<a href="${a.id}/"><span>${a.name}</span></a>`);
   // The agents' line comes first, before the site's name and the apps', naming the guide and the fence.
   expect(home).toMatch(
     /^<header id="to-first"><p class="sr-only">Agents: https:\/\/office\.example\.org\/llms\.txt says how to make a document as a link; a document goes inside another as a fence named by its app\.<\/p><h1>/,
@@ -135,7 +135,7 @@ test('every page a link opens carries each tag a preview card replaces exactly o
   build(SITE);
   for (const p of ['index.html', ...apps().map((a) => `${a.id}/index.html`)]) for (const tag of CARD_TAGS) expect(tagCount(read(p), tag), `${p} ${tag}`).toBe(1);
   const sheet = read('sheet/index.html');
-  expect(sheet).toContain('<meta name="twitter:title" content="Spreadsheet · Tiny Little Office" />');
+  expect(sheet).toContain('<meta name="twitter:title" content="Spreadsheet · tiny office" />');
   expect(checkSeo(dist, list)).toEqual([]);
   // A tag said twice, or not at all, is what the check finds, so a deploy refuses it (scripts/check-build.ts).
   writeFileSync(join(dist, 'sheet/index.html'), sheet.replace('</head>', '<meta name="twitter:title" content="again" />\n</head>').replace(/<meta property="og:image:alt"[^>]*>/, ''));

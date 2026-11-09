@@ -121,13 +121,14 @@ test('the way home, followed from the keys, leaves the focus in the page’s col
   expect(document.activeElement).toBe(shell.querySelector('main.to-main'));
 });
 
-test('the home page has no copy: every app, in order, its icon, its name and its templates; no lede, no blurbs, no headings but the hidden one', async () => {
+test('the home page shows every app in order, followed by a saved documents section', async () => {
   const shell = await mount('');
   const h1 = shell.querySelector('to-home h1')!;
-  expect(h1.textContent).toBe('Tiny Little Office');
+  expect(h1.textContent).toBe('tiny office');
   expect(h1.classList.contains('sr-only')).toBe(true);
-  // (A templates dialog's own heading is not the page's copy: the cards' question is a dialog's, test/browser/home.test.ts.)
-  expect(shell.querySelector('to-home p:not(.to-start-words), to-home h2:not(.to-dialog h2), .to-app-open small')).toBeNull();
+  expect(shell.querySelector('.to-library h2')!.textContent).toBe('Saved documents');
+  expect(shell.querySelector('.to-library-empty')!.textContent).toContain('Save in browser');
+  expect(shell.querySelector('.to-app-open small')).toBeNull();
   for (const a of apps()) expect(shell.textContent).not.toContain(a.blurb);
   const tiles = [...shell.querySelectorAll('.to-app')];
   expect(tiles.map((t) => t.querySelector('.to-app-open .to-app-name')!.textContent)).toEqual(apps().map((a) => a.name));
@@ -140,7 +141,7 @@ test('the home page has no copy: every app, in order, its icon, its name and its
 });
 
 test('the page’s first text, there before any script (index.html, scripts/seo.ts), goes as the shell starts: the shell draws what it said', async () => {
-  document.body.innerHTML = '<header id="to-first"><h1>Tiny Little Office</h1><ul><li><a href="write/">Word Processor</a></li></ul></header>';
+  document.body.innerHTML = '<header id="to-first"><h1>tiny office</h1><ul><li><a href="write/">Word Processor</a></li></ul></header>';
   history.replaceState(null, '', location.pathname);
   const shell = document.createElement('to-shell') as ToShell;
   document.body.append(shell);
@@ -177,11 +178,11 @@ test('under Saved a document typed in Write is kept, listed under Write, opened 
     expect(history.state).toEqual({ kept: first.id });
     // The home page lists it under Write, with its time.
     shell = await mount('');
-    const write = shell.querySelector('.to-app')!;
-    const rows = write.querySelectorAll('.to-drive li');
+    const saved = shell.querySelector('.to-library')!;
+    const rows = saved.querySelectorAll('.to-drive li');
     expect(rows).toHaveLength(1);
     expect(rows[0].querySelector('.to-drive-words > span')!.textContent).toBe(fresh());
-    expect(rows[0].querySelector('.to-drive-words small')!.textContent).toBe('now');
+    expect(rows[0].querySelector('.to-drive-words small')!.textContent).toBe('Word Processor · now');
     expect(shell.querySelectorAll('.to-drive')).toHaveLength(1);
     // Opened from there, it is the document; a second edit is the same entry.
     rows[0].querySelector<HTMLAnchorElement>('.to-drive-open')!.click();
@@ -206,9 +207,9 @@ test('more than five documents under an app: five, then "n more" unfolds the res
   saved(async () => {
     for (let i = 0; i < 8; i++) keep({ id: `d${i}`, app: 'write', title: i ? `Doc ${i}` : '', hash: `#/v1/write/y${i}`, at: Date.now() - i * 3600e3 });
     const shell = await mount('');
-    const write = shell.querySelector('.to-app')!;
+    const write = shell.querySelector('.to-library')!;
     expect([...write.querySelectorAll('.to-drive-words > span')].map((s) => s.textContent)).toEqual(['Untitled', 'Doc 1', 'Doc 2', 'Doc 3', 'Doc 4']);
-    expect(write.querySelectorAll('.to-drive-words small')[2].textContent).toBe('2 hours ago');
+    expect(write.querySelectorAll('.to-drive-words small')[2].textContent).toBe('Word Processor · 2 hours ago');
     const more = write.querySelector<HTMLButtonElement>('.to-drive-more')!;
     expect(more.textContent).toBe('3 more');
     more.click();
@@ -242,7 +243,7 @@ test('a link opens its app, and every edit goes into the link', async () => {
   const shell = await mount('#/v1/write');
   await until(() => !!shell.querySelector('to-write-editor to-text .tx'));
   // A new document is named at once: shown in the title box and the tab, written nowhere until a change.
-  expect(document.title).toBe(`${fresh()} · Tiny Little Office`);
+  expect(document.title).toBe(`${fresh()} · tiny office`);
   expect(shell.querySelector<HTMLInputElement>('.to-title')!.value).toBe(fresh());
   expect(location.hash).toBe('#/v1/write');
   expect(shell.querySelector('.to-here')!.getAttribute('aria-label')).toBe('Home');
@@ -267,7 +268,7 @@ test('a link opens its app, and every edit goes into the link', async () => {
   title.dispatchEvent(new Event('change', { bubbles: true }));
   await shell.updateComplete;
   expect(unstamped(decodeDoc(location.hash.split('/')[3]))).toBe('---\ntitle: A note\n---\nHello, link.\n');
-  expect(document.title).toBe('A note · Tiny Little Office');
+  expect(document.title).toBe('A note · tiny office');
   // The same link, opened again, is the same document.
   const again = await mount(location.hash);
   await until(() => !!again.querySelector('to-text .tx p'));
@@ -442,7 +443,7 @@ test('a document that arrives with no name is "Untitled"; a new one is numbered 
   saved(async () => {
     let shell = await mount(`#/v1/write/${encodeDoc('Old words\n')}`);
     await until(() => !!shell.querySelector('to-write-editor to-text .tx p'));
-    expect(document.title).toBe('Untitled document · Tiny Little Office');
+    expect(document.title).toBe('Untitled document · tiny office');
     expect(shell.querySelector<HTMLInputElement>('.to-title')!.value).toBe('');
     expect(shell.querySelector<HTMLInputElement>('.to-title')!.placeholder).toBe('Untitled document');
     keep({ id: 'a', app: 'write', title: fresh(1), hash: '#/v1/write/ya', at: Date.now() });
@@ -472,7 +473,7 @@ test('the Link and the Display Link; the Display Link shows the pages, no editor
   expect(display.querySelector('.to-header, to-bar, to-write-editor, to-drawer')).toBeNull();
   expect(display.querySelector('.to-display-title')!.textContent).toBe('Notes');
   expect(display.querySelector('.to-display')!.textContent).toContain('First words.');
-  expect(document.title).toBe('Notes · Tiny Little Office');
+  expect(document.title).toBe('Notes · tiny office');
   const edit = display.querySelector<HTMLAnchorElement>('.to-display-edit')!;
   expect(edit.getAttribute('href')).toBe(`#/v1/write/${payload}`);
   edit.click();
@@ -518,11 +519,10 @@ test('home cards at 1100 and at 390: a card is a light surface with a hairline a
         radius: css.borderRadius,
         shadow: css.boxShadow !== 'none',
       });
-      // The documents keep their own alignment under the card (home.test.ts measures it).
-      const preview = shell.querySelector('.to-drive-open to-preview')!.getBoundingClientRect();
-      const card = shell.querySelector('.to-app-open')!.getBoundingClientRect();
-      expect(preview.left).toBeGreaterThanOrEqual(card.left - 1);
-      expect(preview.right).toBeLessThanOrEqual(card.right + 1);
+      // The saved library has its own panel below the app grid.
+      const library = shell.querySelector('.to-library')!.getBoundingClientRect();
+      const grid = shell.querySelector('.to-apps')!.getBoundingClientRect();
+      expect(library.top).toBeGreaterThan(grid.bottom);
     }
     // Both widths: a card is drawn the same way — a hairline, a corner, a shadow — and a phone is one column of them.
     expect(shapes[0].border).toBe(shapes[1].border);

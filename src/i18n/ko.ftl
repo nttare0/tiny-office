@@ -69,8 +69,6 @@ home-blank = 빈 문서
 common-templates = 템플릿
 # The button under an app's tile, naming the template list: "Start Text from"
 # The list of an app's documents kept on this device, under its tile: "Write documents"
-# en: c647789831582ba7f4b6aad72ea6f425b98aad6f
-home-app-documents = { $app } 문서
 # en: f6fdbe48dc54dd86f63097a03bd24094dedd713a
 common-forget = 삭제
 # The button that forgets one kept document: "Forget Launch notes"
@@ -133,12 +131,13 @@ drawer-dark = 다크
 # en: 6b21fb791ac05170893860c248401cd24a59b732
 drawer-about = 정보
 # The name itself is translated too (Paul, 2026-10-10): each language says it in its own words.
-# en: 515e0d24040d094379cfdc94e3c6c2f63a26f1f6
-common-tiny-little-office = 아주 작은 오피스
-# en: 399d4aacd52f76ac8090ce08a31e550e2123645d
-drawer-about-tiny-little-office = 아주 작은 오피스 정보
-# en: 6218d1c0ab69084ed45fb0f022b95f382310184a
-drawer-tiny-little-office-is-experiment = 아주 작은 오피스는 뉴욕의 디지털·AI 전략 및 소프트웨어 개발 회사인 { $aboard }의 실험적 프로젝트입니다.
+# same
+# en: 583d77f71f2d846a236165a8e7b7e0db4ec6312e
+common-tiny-little-office = tiny office
+# en: 75c88384fed7f2da8325a7a95dfa84a4e5b1a675
+drawer-about-tiny-little-office = tiny office 정보
+# en: 79408f4240869d625cd0091c444f27f4d69aefef
+drawer-tiny-little-office-is-experiment = tiny office는 뉴욕의 디지털·AI 전략 및 소프트웨어 개발 회사인 { $aboard }의 실험적 프로젝트입니다.
 # en: 04a1291dcc6e5d304f04516685710a331963f630
 drawer-to-reach-out-with-questions = 궁금한 점이 있으면 { $email }.
 # en: 522edc71559293b5713cff3f13c2dbafd37a56a3
@@ -165,19 +164,19 @@ drawer-nothing-by-that-name = 결과 없음
 drawer-add-to-home-screen = 홈 화면에 추가
 # en: 9b3cbed5c490c07473546a88768ba29b787e9e52
 drawer-size-of-everything = 확대/축소
-# en: 943c5ac9fa7766d7c1ebecbc95c4e0d27b4ef9d4
-drawer-to-add-tiny-little-office = 아주 작은 오피스를 홈 화면에 추가하려면 공유를 누른 다음 ‘홈 화면에 추가’를 누르세요.
+# en: 465d75cc3d56b1d2083660937c96b07e629ab2de
+drawer-to-add-tiny-little-office = tiny office를 홈 화면에 추가하려면 공유를 누른 다음 ‘홈 화면에 추가’를 누르세요.
 
 ## links that leave the site (kit/ui/link-guard.ts)
 
 # The menu button's tooltip: the Office mark is the menu.
-# en: 4a48e81d0d023913c2155eb30954f58853a5591d
-leave-tiny-little-office-menu = 아주 작은 오피스 메뉴
+# en: eaf6b2359502e97b2edccfc417f0e863fd11011d
+leave-tiny-little-office-menu = tiny office 메뉴
 # The question before a link that leaves the site: "You are leaving Tiny Little Office for" over the site's name, large.
 # en: 92ad7c004fe14dea34666631ff31b016eb39ee40
 leave-do-you-trust-this-link = 이 링크를 신뢰하시나요?
-# en: 8d85feca3f164857fc84014a8f2ed5cc4846d4c9
-leave-you-are-leaving-tiny-little = 아주 작은 오피스를 떠나 다음 사이트로 이동합니다
+# en: 370f6d3e47c9a5c43be1628613d856f75a527af5
+leave-you-are-leaving-tiny-little = tiny office를 떠나 다음 사이트로 이동합니다
 # en: 50ef68d5c205237951dae42aa775a66480171c46
 leave-this-link-writes-email-to = 이 링크로 다음 주소에 이메일을 보냅니다
 # en: 102dce223fdc2f3bbdda71f28108e2a6fdf21710
@@ -575,8 +574,8 @@ download-data-json = 데이터 (JSON)
 download-downloaded-name = 다운로드 완료: { $name }
 # en: 01125e1be1f56cdaa47c6314a158e1219af819b3
 download-failed = 다운로드하지 못했습니다
-# en: e7f6a6728b280414756d238ae70084720018ba47
-common-open-in-tiny-little-office = 아주 작은 오피스에서 열기
+# en: 985d4c41146ab250eb5cad39c0019f54f287c731
+common-open-in-tiny-little-office = tiny office에서 열기
 # Under a document cut off at a slide's foot: a link that opens it whole, in its own app.
 # en: c510d6c04c0951500c8e43f623e9f8886c378aec
 download-see-more = 더 보기
@@ -890,18 +889,18 @@ write-name-this-column = 이 열 이름 지정
 
 ## Insert's dialog (kit/ui/insert-dialogs.ts): Tiny Little Office Doc
 
-# en: d5674bb4dcb8c5fe378eb9cd0bb9d1849ed37581
-insert-tiny-little-office-link = 아주 작은 오피스 링크
+# en: a97beee4da5784616730d55cffa45a843fda1fd3
+insert-tiny-little-office-link = tiny office 링크
 # en: cdea71ff947c2b49dd7d7ea146fd3efeb9fa5677
 insert-opening-short-link = 짧은 링크를 여는 중…
-# en: 9d2d34c4b04d8410e0025beb7899a31d1bc57c04
-insert-paste-link-of-another-tiny = 다른 아주 작은 오피스 문서의 링크를 붙여넣으세요. 긴 링크와 짧은 링크 모두 됩니다. 첫 페이지가 여기에 표시됩니다.
-# en: 7e4861cdc8de2c0c4cf87ca37c9130a92051b5b0
-insert-this-is-not-tiny-little = 아주 작은 오피스 링크가 아니거나 만료되었습니다.
-# en: 1eb05dc15f4e90a6a61c46b111812e974555cd81
-insert-tiny-little-office-doc = 아주 작은 오피스 문서
-# en: 7bb236efe4e244196e506d65542626cfe368bb09
-common-tiny-little-office-doc-ellipsis = 아주 작은 오피스 문서…
+# en: 7df3672bf02dca90ed5a0b290985679a49ca4341
+insert-paste-link-of-another-tiny = 다른 tiny office 문서의 링크를 붙여넣으세요. 긴 링크와 짧은 링크 모두 됩니다. 첫 페이지가 여기에 표시됩니다.
+# en: bc2da51d84a11a35800f1fda007539a543ba2c80
+insert-this-is-not-tiny-little = tiny office 링크가 아니거나 만료되었습니다.
+# en: 0bc7f64e8bf252e78b758bd5310ab6ff9d953ff0
+insert-tiny-little-office-doc = tiny office 문서
+# en: 9f8e6e6789be96b126d7a544dc8c14d7890ccc4e
+common-tiny-little-office-doc-ellipsis = tiny office 문서…
 # Insert ▾'s group of the apps a new document can be made in, inside this one.
 # en: f9f93f3f14cfa3eea1bfcfee97ae22cd15b25e0d
 common-new-document = 새 문서
@@ -3087,8 +3086,8 @@ compare-changes = 변경 사항
 compare-compare = 비교
 # en: 24512a18bc6d2c27213ad28b26ce9271d94175af
 compare-no-difference = 차이 없음
-# en: 8f0fb2d2ece91d9de4ed64f23a12b475c3e18970
-compare-not-link-to-tiny-little = 아주 작은 오피스 문서 링크가 아닙니다
+# en: 1282a438873abd50f0053ba629d0fb3b18dc7247
+compare-not-link-to-tiny-little = tiny office 문서 링크가 아닙니다
 # en: e82be1221a13b593fd3fd58ffe24f3c3ba58f783
 compare-paste-second-link-to-see = 두 번째 링크를 붙여넣으면 바뀐 내용을 볼 수 있습니다.
 # en: 442aef6fc360061295985657c4489b3c4d360cc3
@@ -3122,8 +3121,8 @@ compare-n-put-in = { $n ->
 
 # en: c99db7abba3f7227854d93a163ad3494de4e1571
 open-opened-name = 열었습니다: { $name }
-# en: f917dee4211bd4af58db8efec79e354e1ffb4912
-open-that-file-is-not-words = 아주 작은 오피스에서 읽을 수 없는 파일입니다.
+# en: 88aea8831d2018f50b24741aa203dadc57805e47
+open-that-file-is-not-words = tiny office에서 읽을 수 없는 파일입니다.
 # en: 1d08903947cc83b648f8ad96b1e23466a2dbed11
 open-that-file-is-too-large = 파일이 너무 큽니다.
 # en: 8f432852569edbf7610713a6554e7a61396327d5
@@ -3198,5 +3197,25 @@ write-preview-as = 미리보기
 write-preview-is-simpler-than-the-document = 미리보기입니다. 문서 자체는 바뀌지 않으며, 편집을 누르면 해당 앱에서 열립니다.
 # en: 7b4598aaa31887ec8b09c6ae3539fc51019267be
 write-preview-keeps-raw-formulas = 미리보기이며 수식은 쓰인 그대로 보입니다. 문서 자체는 바뀌지 않으며, 편집을 누르면 해당 앱에서 열립니다.
-# en: f197c39442fbdac5ee88061ba58902e81013c070
-write-this-link-could-not-be-read = 이 링크는 Tiny Little Office 문서가 아니거나 읽을 수 없습니다.
+# en: 61a47f106fe5fa72bbd2094bd84b6ca7843acb6c
+write-this-link-could-not-be-read = 이 링크는 tiny office 문서가 아니거나 읽을 수 없습니다.
+
+## Google Drive connection (not available yet)
+
+# en: 8f3509b64e0ea82c53329cb49a7756bd1ced3566
+drawer-connections = 연결
+# en: 4a12c0a38a37f47916b8037a02c48bfd0e511dab
+drawer-connect-google-drive = Google Drive 연결
+# en: b1bedcfb599ba7a22e3a6cca61920dac4da55f46
+drawer-google-drive-unavailable = Google Drive 백업은 아직 사용할 수 없습니다. 문서는 Google Drive로 전송되지 않습니다.
+
+## Saved documents
+
+# en: d0d345f50784d6824741e549ee71454543c78be3
+home-saved-documents = 저장된 문서
+# en: 1f3373ce03a346bdee93171c4bb8f4e2c86b2580
+home-saved-description = 이 기기에 저장된 문서입니다.
+# en: 6413428b392bec57ed1ee47b8037b4fb575f77bf
+home-saved-empty = 저장한 문서가 여기에 표시됩니다.
+# en: d3eb87bb0712c0bcadf289763a38e3daf615f2b8
+home-saved-private = 이 기기에 문서를 보관하려면 설정에서 브라우저에 저장을 켜세요.

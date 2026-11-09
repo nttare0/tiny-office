@@ -48,7 +48,7 @@ test('home loads, the Word Processor opens, nothing throws, axe passes', async (
   await expect(page.locator('.to-title')).toHaveValue(/^New Document \d{4}-\d{2}-\d{2} #1$/);
   await page.locator('.to-title').fill('Hello');
   await page.locator('.to-title').press('Enter');
-  await expect(page).toHaveTitle('Hello · Tiny Little Office');
+  await expect(page).toHaveTitle('Hello · tiny office');
   expect(await overflow(page)).toBeLessThanOrEqual(0);
   await shot(page, 'write');
   expect((await axe(page)).violations).toEqual([]);
@@ -245,7 +245,7 @@ test('over a slow line the page before the app is the page the app draws, and no
             };
             w.before = {
               at: Math.round(performance.now()),
-              words: [rect(first.querySelector('h1')!, 'title'), ...(lineAt ? [lineAt] : [...first.querySelectorAll('li > a')].map((a) => rect(a, a.textContent!)))],
+              words: [rect(first.querySelector('h1')!, 'title'), ...(lineAt ? [lineAt] : [...first.querySelectorAll('li > a > span')].map((a) => rect(a, a.textContent!)))],
               loading: [...document.fonts].filter((f) => f.status === 'loading').map((f) => `${f.family} ${f.weight} ${f.style}`),
             };
           }

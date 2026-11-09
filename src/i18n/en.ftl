@@ -59,7 +59,6 @@ home-blank = Blank
 common-templates = Templates
 # The button under an app's tile, naming the template list: "Start Text from"
 # The list of an app's documents kept on this device, under its tile: "Write documents"
-home-app-documents = { $app } documents
 common-forget = Delete
 # The button that forgets one kept document: "Forget Launch notes"
 home-forget-title = Delete { $title }
@@ -71,6 +70,10 @@ home-templates-for-app-name = Templates for { $app }: { $name }
 # Offline, where the templates' file was never kept by the service worker (kit/ui/home.ts).
 home-templates-are-not-saved-in = The templates are not saved in this browser yet. Connect to the internet to see them.
 home-documents-found = Documents found
+home-saved-documents = Saved documents
+home-saved-description = Documents saved on this device.
+home-saved-empty = Your saved documents will appear here.
+home-saved-private = Turn on Save in browser in Settings to keep documents on this device.
 home-no-document-here-has-those = No documents match
 home-search-your-documents = Search your documents
 home-n-documents-found = { $n ->
@@ -89,6 +92,9 @@ home-start-noun = Start { $noun }
 
 # The drawer's own name, the heading over its rows (kit/ui/drawer.ts).
 drawer-settings = Settings
+drawer-connections = Connections
+drawer-connect-google-drive = Connect Google Drive
+drawer-google-drive-unavailable = Google Drive backup is not available yet. No documents are sent to Google Drive.
 drawer-apps = Apps
 common-close = Close
 # The language select's first option: { $name } is the device's own language, named in itself and never translated ("Default: Français").
@@ -109,10 +115,10 @@ drawer-light = Light
 drawer-dark = Dark
 drawer-about = About
 # The name itself is translated too (Paul, 2026-10-10): each language says it in its own words.
-common-tiny-little-office = Tiny Little Office
-drawer-about-tiny-little-office = About Tiny Little Office
+common-tiny-little-office = tiny office
+drawer-about-tiny-little-office = About tiny office
 # About's words (Paul, 2026-10-13, verbatim): { $aboard } is the name Aboard, a link to aboard.com; { $email } is "email us", a link that writes to hello+tlo@aboard.com; { $github } is "GitHub repository", a link to the repository's issues. "GitHub" is a name, said as it is in every language.
-drawer-tiny-little-office-is-experiment = Tiny Little Office is an experiment by { $aboard }, a digital and AI strategy and software development firm in New York City.
+drawer-tiny-little-office-is-experiment = tiny office is an experiment by { $aboard }, a digital and AI strategy and software development firm in New York City.
 drawer-to-reach-out-with-questions = To reach out with questions, { $email }.
 drawer-email-us = email us
 drawer-if-you-find-bugs-please = If you find bugs, please file them in our { $github }.
@@ -127,15 +133,15 @@ drawer-commands = Commands
 drawer-nothing-by-that-name = No results
 drawer-add-to-home-screen = Add to home screen
 drawer-size-of-everything = Zoom
-drawer-to-add-tiny-little-office = To add Tiny Little Office to the home screen: Share, then Add to Home Screen.
+drawer-to-add-tiny-little-office = To add tiny office to the home screen: Share, then Add to Home Screen.
 
 ## links that leave the site (kit/ui/link-guard.ts)
 
 # The menu button's tooltip: the Office mark is the menu.
-leave-tiny-little-office-menu = Tiny Little Office menu
-# The question before a link that leaves the site: "You are leaving Tiny Little Office for" over the site's name, large.
+leave-tiny-little-office-menu = tiny office menu
+# The question before a link that leaves the site: "You are leaving tiny office for" over the site's name, large.
 leave-do-you-trust-this-link = Do you trust this link?
-leave-you-are-leaving-tiny-little = You are leaving Tiny Little Office for
+leave-you-are-leaving-tiny-little = You are leaving tiny office for
 leave-this-link-writes-email-to = This link writes an email to
 leave-this-link-calls = This link calls
 leave-not-secure-address-what-you = Not a secure (HTTPS) address. Anything you send could be read in transit.
@@ -394,7 +400,7 @@ download-text-tlo = Text (TLO)
 download-data-json = Data (JSON)
 download-downloaded-name = Downloaded { $name }
 download-failed = Download failed
-common-open-in-tiny-little-office = Open in Tiny Little Office
+common-open-in-tiny-little-office = Open in tiny office
 # Under a document cut off at a slide's foot: a link that opens it whole, in its own app.
 download-see-more = See more
 
@@ -498,8 +504,8 @@ write-this-card = This card
 write-preview-as = Preview as
 write-preview-is-simpler-than-the-document = A preview: the document itself is unchanged, and Edit opens it in its own app.
 write-preview-keeps-raw-formulas = A preview, with formulas as they are written: the document itself is unchanged, and Edit opens it in its own app.
-# A link dropped into the Word Processor that is not a Tiny Little Office document, or cannot be read.
-write-this-link-could-not-be-read = That link is not a Tiny Little Office document, or it could not be read.
+# A link dropped into the Word Processor that is not a tiny office document, or cannot be read.
+write-this-link-could-not-be-read = That link is not a tiny office document, or it could not be read.
 write-open-in-app = Open in { $app }
 write-locked-worked-out-for-you = Locked: calculated
 common-footnotes = Footnotes
@@ -578,14 +584,14 @@ write-a4 = A4
 write-letter = Letter
 write-name-this-column = Name this column
 
-## Insert's dialog (kit/ui/insert-dialogs.ts): Tiny Little Office Doc
+## Insert's dialog (kit/ui/insert-dialogs.ts): tiny office Doc
 
-insert-tiny-little-office-link = A Tiny Little Office link
+insert-tiny-little-office-link = A tiny office link
 insert-opening-short-link = Opening the short link…
-insert-paste-link-of-another-tiny = Paste the link of another Tiny Little Office document, long or short: its first page shows here.
-insert-this-is-not-tiny-little = This is not a Tiny Little Office link, or it has expired.
-insert-tiny-little-office-doc = Tiny Little Office Doc
-common-tiny-little-office-doc-ellipsis = Tiny Little Office Doc…
+insert-paste-link-of-another-tiny = Paste the link of another tiny office document, long or short: its first page shows here.
+insert-this-is-not-tiny-little = This is not a tiny office link, or it has expired.
+insert-tiny-little-office-doc = tiny office Doc
+common-tiny-little-office-doc-ellipsis = tiny office Doc…
 # Insert ▾'s group of the apps a new document can be made in, inside this one.
 common-new-document = A new document
 
@@ -1745,7 +1751,7 @@ calc-chosen-lines = Selected lines
 compare-changes = Changes
 compare-compare = Compare
 compare-no-difference = No difference
-compare-not-link-to-tiny-little = Not a link to a Tiny Little Office document
+compare-not-link-to-tiny-little = Not a link to a tiny office document
 compare-paste-second-link-to-see = Paste a second link to see what changed.
 compare-paste-link-to-document-as = Paste the link to the document as it is now
 compare-paste-link-to-document-as-it-was = Paste the link to the document as it was
@@ -1768,7 +1774,7 @@ compare-n-put-in = { $n ->
 ## files and zips dropped on the page (kit/file/open.ts)
 
 open-opened-name = Opened { $name }
-open-that-file-is-not-words = Tiny Little Office can’t read that file.
+open-that-file-is-not-words = tiny office can’t read that file.
 open-that-file-is-too-large = That file is too large.
 open-keep-them-on-this-device = Save them to this device
 open-nothing-is-saved-on-this = Nothing is saved on this device. Save them here, or open one.

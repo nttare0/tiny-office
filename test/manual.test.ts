@@ -19,7 +19,7 @@ test('the manual is the deck in src/kit/ui/manual.tlo, whole, opened in the Pres
   expect(route.view).toBe('');
   expect(decodeDoc(route.payload)).toBe(text);
   const def = appOf('deck')!;
-  expect(def.title(text)).toBe('Introducing Tiny Little Office');
+  expect(def.title(text)).toBe('Introducing tiny office');
   // A slide for what it is, how it is made, each app, the languages: more than a dozen, and the closing code.
   expect(def.view(text, { still: true }).length).toBeGreaterThan(12);
   // Built once: the same link each time it is asked for.

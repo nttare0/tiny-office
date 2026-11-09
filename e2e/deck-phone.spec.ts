@@ -145,7 +145,7 @@ test('deck: on a phone, a tap on a thumbnail chooses the slide with its bar insi
   expect(await page.evaluate(() => window.visualViewport?.scale ?? 1)).toBe(1);
 });
 
-test("deck: on a phone, a drawing from Insert ▾ is made in a dialog that fills the screen, with Done reachable by finger; Tiny Little Office Doc's field and OK are one row inside the screen", async ({
+test("deck: on a phone, a drawing from Insert ▾ is made in a dialog that fills the screen, with Done reachable by finger; tiny office Doc's field and OK are one row inside the screen", async ({
   page,
 }, info) => {
   test.skip(info.project.name !== 'phone', 'phone only');
@@ -172,9 +172,9 @@ test("deck: on a phone, a drawing from Insert ▾ is made in a dialog that fills
   await expect(page.locator('to-doc-dialog')).toHaveCount(0);
   await expect.poll(() => link(page)).toMatch(/#\/v1\/deck\/[ryz]/);
   await expect(page.locator('figure.deck-sub')).toBeVisible();
-  // Tiny Little Office Doc: the link and OK on one row, both inside the screen, the field 16px.
+  // tiny office Doc: the link and OK on one row, both inside the screen, the field 16px.
   await page.getByRole('button', { name: 'Insert', exact: true }).tap();
-  await page.getByRole('menuitem', { name: 'Tiny Little Office Doc…' }).tap();
+  await page.getByRole('menuitem', { name: 'tiny office Doc…' }).tap();
   const field = page.locator('.to-ask-doc .to-ask-url');
   const ok = page.locator('.to-ask-doc .to-ask-ok');
   await expect(field).toBeVisible();
