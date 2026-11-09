@@ -49,6 +49,7 @@ async function before(inner: string) {
 afterAll(() => applySize());
 
 for (const [w, h] of [
+  [320, 640],
   [390, 844],
   [1100, 800],
 ]) {
@@ -62,7 +63,7 @@ for (const [w, h] of [
     expect(hidden(first.querySelector('p')!), 'the line for agents').toBe(true);
     expect(first.querySelector('p')!.textContent).toMatch(/^Agents: /);
     const mark = words(first.querySelector('h1')!);
-    const names = [...first.querySelectorAll('li > a')].map((a) => [a.textContent!, words(a)] as const);
+    const names = [...first.querySelectorAll('li > a > span')].map((a) => [a.textContent!, words(a)] as const);
     const header = boxOf(first.querySelector('h1')!.getBoundingClientRect());
 
     applySize();

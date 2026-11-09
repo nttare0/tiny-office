@@ -28,7 +28,7 @@
  * hamburger (handOver; Paul, 2026-10-10: "the outer one hands over"). The dialogs it opens are drawn beside its own
  * <dialog>, not in it.
  */
-import { LitElement, html, nothing, type TemplateResult } from 'lit';
+import { LitElement, html, nothing, svg, type TemplateResult } from 'lit';
 import type { AppDef } from '../core/app.ts';
 import { apps, siteRoot } from '../core/apps.ts';
 import { mark } from '../draw/mark.ts';
@@ -65,6 +65,28 @@ export interface Offer {
 
 /** The size of everything's commands, drawn as the stepper rather than as rows of This document. */
 const STEPPER: readonly Command<never>[] = [SMALLER, NORMAL_SIZE, LARGER];
+
+/* Google Drive icon adapted from SuperTiny Icons (https://github.com/edent/SuperTinyIcons).
+ * SuperTiny Icons Copyright © 2017 Terence Eden. MIT License:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+ * documentation files (the "Software"), to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+ * THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * Google Drive and its logo are trademarks of Google LLC.
+ */
+const driveLogo = () => svg`<svg viewBox="60 80 390 345" width="18" height="18" aria-hidden="true" focusable="false">
+  <path d="m126 417q9 5 19 5H367q9 0 19-5V313H99" fill="#4285f4" />
+  <path d="m196 87q9-5 20-5h80q12 0 20 5v104h-68" fill="#188038" />
+  <path d="m66 313q0-10 5-19l110-191q6-11 15-16l60 104-72 125" fill="#34a853" />
+  <path d="M316 87q10 6 15 16L438 289q8 12 8 24l-118 3-72-125" fill="#fbbc04" />
+  <path d="m185.714 313H66q0 8 3 15l40 70q7 13 17 19" fill="#1967d2" />
+  <path d="m386 417q9-5 16-17l38-66q6-10 6-21H326.3" fill="#ea4335" />
+</svg>`;
 
 /** A translated sentence with links in it: each {name} the template given for it, the words around it as the language puts them (t() leaves a placeholder it is given no value for). */
 const linked = (sentence: string, links: Record<string, TemplateResult>) => sentence.split(/\{(\w+)\}/).map((part, i) => (i % 2 ? (links[part] ?? `{${part}}`) : part));
@@ -269,6 +291,11 @@ export class ToDrawer extends LitElement {
             <input type="checkbox" role="switch" .checked=${keeping()} @change=${(e: Event) => void this.togglePrivate(e)} />
             <span class="to-switch-words"><b>${t('drawer-save-in-browser')}</b><small>${keeping() ? t('drawer-turn-off-to-remove-all') : t('drawer-turn-on-to-save-files')}</small></span>
           </label>
+        </section>
+        <section class="to-drawer-section to-drawer-connections" aria-labelledby="to-drawer-connections-heading">
+          <h3 id="to-drawer-connections-heading" class="to-drawer-head3">${t('drawer-connections')}</h3>
+          <button type="button" class="to-btn to-drawer-drive" disabled aria-describedby="to-drawer-drive-note">${driveLogo()}<span>${t('drawer-connect-google-drive')}</span></button>
+          <p id="to-drawer-drive-note" class="to-hint">${t('drawer-google-drive-unavailable')}</p>
         </section>
         <!-- The size of everything: the eye and the stepper, no words (Paul, 2026-10-12); its name is the screen reader's. -->
         <div class="to-field to-size" role="group" aria-label=${t('drawer-size-of-everything')}>${icon(UI.view, 18)}<div class="to-size-step">

@@ -241,7 +241,7 @@ whose rows are the document's own data (the sheet's column kinds, the formula fu
 | Keys | Command | Where |
 |---|---|---|
 |  | Table | insert ▾ |
-|  | Tiny Little Office Doc… | insert ▾ |
+|  | tiny office Doc… | insert ▾ |
 |  | QR code of this document | insert ▾ |
 |  | Date | insert ▾ |
 |  | Horizontal rule | insert ▾ |
@@ -274,7 +274,7 @@ whose rows are the document's own data (the sheet's column kinds, the formula fu
 | Keys | Command | Where |
 |---|---|---|
 |  | Item | insert ▾ |
-|  | Tiny Little Office Doc… | insert ▾ |
+|  | tiny office Doc… | insert ▾ |
 |  | Task | insert ▾ |
 |  | Due date | insert ▾ |
 |  | Statuses | insert ▾ |
@@ -314,7 +314,7 @@ whose rows are the document's own data (the sheet's column kinds, the formula fu
 |  | Big icon slide | insert ▾ |
 |  | Four more pages | insert ▾ |
 |  | Table | insert ▾ |
-|  | Tiny Little Office Doc… | insert ▾ |
+|  | tiny office Doc… | insert ▾ |
 |  | QR code of this document | insert ▾ |
 | `Mod+Alt+Enter` | Present | bar, at: slide, drawer on a phone |
 |  | Print layout | bar, drawer on a phone |

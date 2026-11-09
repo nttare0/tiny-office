@@ -16,6 +16,43 @@
       margin-top: var(--to-bar-h);
     }
   }
+  /* Compact phones can show two tappable app cards without making people scroll through a long single column.
+     The static first paint uses the same grid and link rules as the live home page. Narrower screens keep one column. */
+  @media (min-width: 320px) and (max-width: 600px) {
+    .to-apps,
+    #to-first > ul {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .to-app > .to-app-open,
+    #to-first li > a {
+      gap: 0.5em;
+      padding-inline: 0.5em;
+    }
+  }
+  @media (max-width: 480px) {
+    .to-library {
+      margin-top: 2rem;
+      padding: 1rem;
+    }
+    .to-library-empty {
+      padding: 1rem;
+    }
+    .to-drive-open {
+      gap: 0.5rem;
+      padding: 0.5rem;
+    }
+    .to-drive-words > span,
+    .to-drive-words small {
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+    .to-drive .to-tool {
+      margin-inline-end: 0.25rem;
+    }
+    .to-found-docs a {
+      overflow-wrap: anywhere;
+    }
+  }
   @media (max-width: 760px) {
     :root {
       --to-gutter-k: 0.75;

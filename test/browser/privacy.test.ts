@@ -61,7 +61,7 @@ test('a sealed link opens with the unlock dialog: nothing of the document shown,
   // 16 of the nav's pixels (a phone never zooms on less), at the normal size BASE × 16px.
   expect(parseFloat(getComputedStyle(field).fontSize)).toBeCloseTo(16 * BASE, 1);
   // The title is the ciphertext's too: hidden.
-  expect(document.title).toBe('Locked document · Tiny Little Office');
+  expect(document.title).toBe('Locked document · tiny office');
   expect(shell.textContent).not.toContain('Salaries');
   expect(shell.querySelector('to-write-editor')).toBeNull();
   expect(pill(shell).classList.contains('locked')).toBe(true);
@@ -76,7 +76,7 @@ test('a sealed link opens with the unlock dialog: nothing of the document shown,
   shell.querySelector<HTMLButtonElement>('.to-unlock-go')!.click();
   await until(() => !d.dialog.open && !!shell.querySelector('to-write-editor to-text .tx p'));
   expect(shell.querySelector('to-text .tx p')!.textContent).toBe('The secret words.');
-  expect(document.title).toBe('Locked document · Tiny Little Office');
+  expect(document.title).toBe('Locked document · tiny office');
   expect(pill(shell).classList.contains('quiet')).toBe(true);
   expect(pill(shell).textContent!.trim()).toBe('Protected by a password');
   // The address still holds the ciphertext alone.

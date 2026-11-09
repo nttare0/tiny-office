@@ -1,5 +1,5 @@
-// The home page's cards (2026-11-08): a grid of the apps, each a card of its icon and name and nothing else — no
-// Templates button, no Blank, no action — and its kept documents under it. A card opens a small question, "How would you
+// The home page's cards: a grid of the apps, each a card of its icon and name and nothing else — no
+// Templates button, no Blank, no action — and a shared saved-documents section below. A card opens a small question, "How would you
 // like to start?": Blank page goes to the app's own page, Use a template to the app's template gallery. The foot that
 // stood under the apps ("An Aboard Foundry project… · Beta version · GitHub · Email") is gone, and the version with it.
 import { afterEach, expect, test } from 'vitest';
@@ -38,7 +38,45 @@ test('the home page is a grid of cards: each its icon and its name and nothing e
   expect(rows.size).toBeLessThan(all.length);
   // Nothing of the old foot, and no version asked for: the page reads no /version.json.
   expect(shell.querySelector('to-home footer, .to-home-foot')).toBeNull();
-  expect(shell.querySelector('to-home p')!.textContent).toBe('');
+  expect(shell.querySelector('.to-library h2')!.textContent).toBe('Saved documents');
+});
+
+test('the home and saved library fit narrow phones, tablets and desktops', async () => {
+  const { keep, forgetAll } = await import('../../src/kit/share/library.ts');
+  const { setKeeping } = await import('../../src/kit/core/store.ts');
+  setKeeping(true);
+  forgetAll();
+  try {
+    keep({ id: 'responsive', app: 'deck', title: 'A very long saved document title for a small screen', hash: `#/v1/deck/${encodeDoc('Hello')}`, at: Date.now() });
+    for (const width of [240, 320, 390, 768, 1440]) {
+      await page.viewport(width, width <= 390 ? 640 : 800);
+      const shell = await mount('');
+      await until(() => !!shell.querySelector('.to-drive li'));
+      const main = shell.querySelector<HTMLElement>('.to-main')!;
+      const panel = shell.querySelector<HTMLElement>('.to-library')!;
+      expect(main.scrollWidth, `${width}px main`).toBeLessThanOrEqual(main.clientWidth + 1);
+      expect(panel.scrollWidth, `${width}px library`).toBeLessThanOrEqual(panel.clientWidth + 1);
+      const all = cards(shell);
+      for (const card of all) {
+        const box = card.querySelector('.to-app-open')!.getBoundingClientRect();
+        expect(box.width, `${width}px card`).toBeGreaterThanOrEqual(44);
+        expect(box.height, `${width}px card`).toBeGreaterThanOrEqual(44);
+      }
+      const first = all[0].getBoundingClientRect();
+      const second = all[1].getBoundingClientRect();
+      if (width === 240) expect(second.top).toBeGreaterThan(first.top);
+      if (width === 320 || width === 390) expect(second.top).toBeCloseTo(first.top, 0);
+      expect(panel.getBoundingClientRect().top).toBeGreaterThan(shell.querySelector('.to-apps')!.getBoundingClientRect().bottom);
+      const search = panel.querySelector<HTMLInputElement>('.to-search')!;
+      search.value = 'saved';
+      search.dispatchEvent(new Event('input', { bubbles: true }));
+      await until(() => !!panel.querySelector('.to-found-docs a'));
+      expect(panel.scrollWidth, `${width}px search`).toBeLessThanOrEqual(panel.clientWidth + 1);
+    }
+  } finally {
+    forgetAll();
+    setKeeping(false);
+  }
 });
 
 test('a card tapped asks how to start; Blank page opens the app’s own page, editing at once', async () => {
@@ -214,64 +252,28 @@ test('no search box under Private, a library in memory or not; none when Saved w
   }
 });
 
-// The kept documents under an app line up with it (Paul, 2026-10-12: "The preview documents are supposed to be aligned
-// with the app names and icons. They're indented very much to the right"): a preview's edge on the icon's, the gap from
-// the preview to the words the gap from the icon to the name, and "n more" with them.
-async function drive(lang: string | null) {
+test('saved documents from different apps appear together below the cards, newest first', async () => {
   const { keep, forgetAll } = await import('../../src/kit/share/library.ts');
   const { setKeeping } = await import('../../src/kit/core/store.ts');
   setKeeping(true);
   forgetAll();
-  for (let i = 0; i < 7; i++) keep({ id: `d${i}`, app: 'write', title: `Plan ${i}`, hash: `#/v1/write/${encodeDoc(`---\ntitle: Plan ${i}\n---\nGo.\n`)}`, at: Date.now() - i });
-  const shell = await mount('');
-  if (lang) {
-    await setLanguage(lang);
-    await until(() => document.documentElement.lang === lang);
+  try {
+    keep({ id: 'one', app: 'write', title: 'Notes', hash: `#/v1/write/${encodeDoc('Notes')}`, at: Date.now() - 1000 });
+    keep({ id: 'two', app: 'sheet', title: 'Budget', hash: `#/v1/sheet/${encodeDoc('Budget')}`, at: Date.now() });
+    const shell = await mount('');
+    await until(() => shell.querySelectorAll('.to-drive li').length === 2);
+    const grid = shell.querySelector('.to-apps')!.getBoundingClientRect();
+    const panel = shell.querySelector('.to-library')!.getBoundingClientRect();
+    expect(panel.top).toBeGreaterThan(grid.bottom);
+    expect([...shell.querySelectorAll('.to-drive-words > span')].map((el) => el.textContent)).toEqual(['Budget', 'Notes']);
+    expect(shell.querySelector('.to-drive-words small')!.textContent).toContain('Spreadsheet');
+    expect(shell.querySelectorAll('.to-app .to-drive')).toHaveLength(0);
+    expect(shell.querySelectorAll('.to-drive to-preview')).toHaveLength(2);
+  } finally {
+    forgetAll();
+    setKeeping(false);
   }
-  await until(() => !!shell.querySelector('.to-drive-open to-preview'));
-  await document.fonts.ready;
-  const app = shell.querySelector<HTMLElement>('.to-app:has(.to-drive)')!;
-  const rtl = getComputedStyle(app).direction === 'rtl';
-  const box = (sel: string) => app.querySelector(sel)!.getBoundingClientRect();
-  // The start edge (left, or right in a right-to-left language), and how far past `from`'s far edge `to` begins.
-  const start = (r: DOMRect) => (rtl ? -r.right : r.left);
-  const after = (from: DOMRect, to: DOMRect) => (rtl ? from.left - to.right : to.left - from.right);
-  const ico = box('.to-app-open > .to-icon');
-  const name = box('.to-app-name');
-  const more = app.querySelector<HTMLElement>('.to-drive-more')!;
-  const ms = getComputedStyle(more);
-  const moreWords = start(more.getBoundingClientRect()) + parseFloat(rtl ? ms.paddingRight : ms.paddingLeft);
-  const rows = [...app.querySelectorAll('.to-drive-open')].map((a) => ({
-    preview: a.querySelector('to-preview')!.getBoundingClientRect(),
-    words: a.querySelector('.to-drive-words')!.getBoundingClientRect(),
-  }));
-  return {
-    shell,
-    forget: () => (forgetAll(), setKeeping(false)),
-    rows: rows.map((r) => ({ edge: start(r.preview) - start(ico), gap: after(r.preview, r.words) - after(ico, name) })),
-    more: moreWords - start(ico),
-  };
-}
-
-for (const [w, h, lang] of [
-  [390, 844, null],
-  [1100, 800, null],
-  [390, 844, 'ar'],
-] as const)
-  test(`at ${w}px${lang ? `, in ${lang}` : ''}, a kept document's preview sits on its app's icon's edge, its words as far from it as the name from the icon, "n more" with them`, async () => {
-    await page.viewport(w, h);
-    const d = await drive(lang);
-    try {
-      expect(d.rows.length).toBe(5);
-      for (const r of d.rows) {
-        expect(Math.abs(r.edge), `preview ${r.edge}px off the icon`).toBeLessThan(1);
-        expect(Math.abs(r.gap), `words ${r.gap}px off`).toBeLessThan(1);
-      }
-      expect(Math.abs(d.more), `"n more" ${d.more}px off`).toBeLessThan(1);
-    } finally {
-      d.forget();
-    }
-  });
+});
 
 // The wordmark stands on the apps' edge (Paul, 2026-10-12: "On desktop, keep the logo aligned with the list of apps
 // below"): its first letter on the first app's icon's edge at every width, the header's start the column's start and the

@@ -71,6 +71,23 @@ test("the hamburger opens the drawer, the home page's drawer has no app rows, Fi
   await until(() => document.activeElement === burger);
 });
 
+test('Google Drive is shown as unavailable, not a working connection', async () => {
+  const shell = await mount('');
+  const dialog = await openDrawer(shell);
+  const section = dialog.querySelector<HTMLElement>('.to-drawer-connections')!;
+  const button = section.querySelector<HTMLButtonElement>('.to-drawer-drive')!;
+  const note = section.querySelector<HTMLElement>('#to-drawer-drive-note')!;
+  expect(section.querySelector('h3')!.textContent).toBe('Connections');
+  expect(button.textContent).toContain('Connect Google Drive');
+  const logo = button.querySelector('svg')!;
+  expect(logo.getAttribute('aria-hidden')).toBe('true');
+  expect(logo.querySelectorAll('path').length).toBe(6);
+  expect(button.disabled).toBe(true);
+  expect(button.getAttribute('aria-describedby')).toBe(note.id);
+  expect(note.textContent).toBe('Google Drive backup is not available yet. No documents are sent to Google Drive.');
+  dialog.close();
+});
+
 test('Find finds kept documents by title and templates by name or app, each under its heading; Enter opens the first', async () => {
   const { setPrivate } = await import('../../src/kit/share/privacy.ts');
   const { keep } = await import('../../src/kit/share/library.ts');
@@ -504,7 +521,7 @@ test("About's body is Paul's three sentences, Aboard, email us and the repositor
   expect(quote.querySelector('footer')!.textContent!.replace(/\s+/g, ' ').trim()).toBe('Eugène Ionesco, Discoveries');
   expect(quote.querySelector('footer cite')!.textContent).toBe('Discoveries');
   expect(words.textContent!.replace(/\s+/g, ' ').trim()).toBe(
-    'Tiny Little Office is an experiment by Aboard, a digital and AI strategy and software development firm in New York City. To reach out with questions, email us. If you find bugs, please file them in our GitHub repository.',
+    'tiny office is an experiment by Aboard, a digital and AI strategy and software development firm in New York City. To reach out with questions, email us. If you find bugs, please file them in our GitHub repository.',
   );
   const links = [...words.querySelectorAll('a')].map((a) => [a.textContent, a.getAttribute('href')]);
   expect(links).toEqual([
@@ -557,11 +574,11 @@ test("What is this? is the drawer's first row, above Save in browser, and opens 
   // Under the head's line, above the switch.
   expect(dialog.querySelector('.to-drawer-head')!.compareDocumentPosition(row) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   expect(row.compareDocumentPosition(dialog.querySelector('.to-drawer-save')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-  // A tap closes the drawer and opens the deck, "Introducing Tiny Little Office".
+  // A tap closes the drawer and opens the deck, "Introducing tiny office".
   row.click();
   await until(() => !dialog.open);
   await until(() => !!shell.querySelector('to-deck-editor'));
   expect(location.hash).toBe(manualHash());
-  await until(() => shell.querySelector<HTMLInputElement>('.to-title')?.value === 'Introducing Tiny Little Office');
+  await until(() => shell.querySelector<HTMLInputElement>('.to-title')?.value === 'Introducing tiny office');
   history.replaceState(null, '', location.pathname);
 });

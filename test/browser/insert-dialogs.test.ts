@@ -1,4 +1,4 @@
-// Insert ▾'s Tiny Little Office Doc (kit/ui/insert-dialogs.ts) and another document edited in place (kit/ui/doc-dialog.ts),
+// Insert ▾'s tiny office Doc (kit/ui/insert-dialogs.ts) and another document edited in place (kit/ui/doc-dialog.ts),
 // in a real Chromium: the link and OK are one row with the field taking the room, what the link will be shows under
 // them, OK answers with what is put in; the doc dialog holds the app's own
 // editor, Done answers its text, Cancel nothing, and a table's Rows and Columns set its size.
@@ -35,10 +35,10 @@ function oneRow() {
   expect(parseFloat(getComputedStyle(field()).fontSize)).toBeGreaterThanOrEqual(16);
 }
 
-test("Tiny Little Office Doc: a long link shows the document's first page small; OK answers its fence", async () => {
+test("tiny office Doc: a long link shows the document's first page small; OK answers its fence", async () => {
   const got = askDocLink();
   await until(() => !!document.querySelector('.to-ask-doc dialog[open]'));
-  expect(document.querySelector('.to-ask-doc h2')!.textContent).toBe('Tiny Little Office Doc');
+  expect(document.querySelector('.to-ask-doc h2')!.textContent).toBe('tiny office Doc');
   oneRow();
   await typeUrl('https://example.com/not-a-document');
   expect(document.querySelector('.to-ask-broken')).not.toBeNull();
@@ -53,7 +53,7 @@ test("Tiny Little Office Doc: a long link shows the document's first page small;
   expect(await got).toEqual({ k: 'fence', lang: 'write', body: text.replace(/\n$/, '') });
 });
 
-test('Tiny Little Office Doc: a short link is opened from the shortener, and only from it', async () => {
+test('tiny office Doc: a short link is opened from the shortener, and only from it', async () => {
   const raw = crypto.getRandomValues(new Uint8Array(32));
   const key = toBase64Url(raw);
   const iv = crypto.getRandomValues(new Uint8Array(12));

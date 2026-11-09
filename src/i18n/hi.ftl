@@ -70,8 +70,6 @@ home-blank = खाली
 common-templates = टेम्पलेट
 # The button under an app's tile, naming the template list: "Start Text from"
 # The list of an app's documents kept on this device, under its tile: "Write documents"
-# en: c647789831582ba7f4b6aad72ea6f425b98aad6f
-home-app-documents = { $app } के दस्तावेज़
 # en: f6fdbe48dc54dd86f63097a03bd24094dedd713a
 common-forget = मिटाएँ
 # The button that forgets one kept document: "Forget Launch notes"
@@ -135,12 +133,13 @@ drawer-dark = डार्क
 # en: 6b21fb791ac05170893860c248401cd24a59b732
 drawer-about = जानकारी
 # The name itself is translated too (Paul, 2026-10-10): each language says it in its own words.
-# en: 515e0d24040d094379cfdc94e3c6c2f63a26f1f6
-common-tiny-little-office = नन्हा सा दफ़्तर
-# en: 399d4aacd52f76ac8090ce08a31e550e2123645d
-drawer-about-tiny-little-office = नन्हा सा दफ़्तर के बारे में
-# en: 6218d1c0ab69084ed45fb0f022b95f382310184a
-drawer-tiny-little-office-is-experiment = नन्हा सा दफ़्तर { $aboard } का एक प्रयोग है, जो न्यूयॉर्क सिटी की एक डिजिटल और AI स्ट्रैटेजी और सॉफ़्टवेयर डेवलपमेंट कंपनी है।
+# same
+# en: 583d77f71f2d846a236165a8e7b7e0db4ec6312e
+common-tiny-little-office = tiny office
+# en: 75c88384fed7f2da8325a7a95dfa84a4e5b1a675
+drawer-about-tiny-little-office = tiny office के बारे में
+# en: 79408f4240869d625cd0091c444f27f4d69aefef
+drawer-tiny-little-office-is-experiment = tiny office { $aboard } का एक प्रयोग है, जो न्यूयॉर्क सिटी की एक डिजिटल और AI स्ट्रैटेजी और सॉफ़्टवेयर डेवलपमेंट कंपनी है।
 # en: 04a1291dcc6e5d304f04516685710a331963f630
 drawer-to-reach-out-with-questions = कोई सवाल हो तो { $email }।
 # en: 522edc71559293b5713cff3f13c2dbafd37a56a3
@@ -167,19 +166,19 @@ drawer-nothing-by-that-name = कोई नतीजा नहीं
 drawer-add-to-home-screen = होम स्क्रीन में जोड़ें
 # en: 9b3cbed5c490c07473546a88768ba29b787e9e52
 drawer-size-of-everything = ज़ूम
-# en: 943c5ac9fa7766d7c1ebecbc95c4e0d27b4ef9d4
-drawer-to-add-tiny-little-office = नन्हा सा दफ़्तर को होम स्क्रीन में जोड़ने के लिए: शेयर, फिर होम स्क्रीन में जोड़ें।
+# en: 465d75cc3d56b1d2083660937c96b07e629ab2de
+drawer-to-add-tiny-little-office = tiny office को होम स्क्रीन में जोड़ने के लिए: शेयर, फिर होम स्क्रीन में जोड़ें।
 
 ## links that leave the site (kit/ui/link-guard.ts)
 
 # The menu button's tooltip: the Office mark is the menu.
-# en: 4a48e81d0d023913c2155eb30954f58853a5591d
-leave-tiny-little-office-menu = नन्हा सा दफ़्तर मेन्यू
+# en: eaf6b2359502e97b2edccfc417f0e863fd11011d
+leave-tiny-little-office-menu = tiny office मेन्यू
 # The question before a link that leaves the site: "You are leaving Tiny Little Office for" over the site's name, large.
 # en: 92ad7c004fe14dea34666631ff31b016eb39ee40
 leave-do-you-trust-this-link = क्या आप इस लिंक पर भरोसा करते हैं?
-# en: 8d85feca3f164857fc84014a8f2ed5cc4846d4c9
-leave-you-are-leaving-tiny-little = आप नन्हा सा दफ़्तर छोड़कर जा रहे हैं:
+# en: 370f6d3e47c9a5c43be1628613d856f75a527af5
+leave-you-are-leaving-tiny-little = आप tiny office छोड़कर जा रहे हैं:
 # en: 50ef68d5c205237951dae42aa775a66480171c46
 leave-this-link-writes-email-to = यह लिंक इस पते पर ईमेल लिखता है:
 # en: 102dce223fdc2f3bbdda71f28108e2a6fdf21710
@@ -608,8 +607,8 @@ download-data-json = डेटा (JSON)
 download-downloaded-name = { $name } डाउनलोड हुआ
 # en: 01125e1be1f56cdaa47c6314a158e1219af819b3
 download-failed = डाउनलोड नहीं हुआ
-# en: e7f6a6728b280414756d238ae70084720018ba47
-common-open-in-tiny-little-office = नन्हा सा दफ़्तर में खोलें
+# en: 985d4c41146ab250eb5cad39c0019f54f287c731
+common-open-in-tiny-little-office = tiny office में खोलें
 # Under a document cut off at a slide's foot: a link that opens it whole, in its own app.
 # en: c510d6c04c0951500c8e43f623e9f8886c378aec
 download-see-more = और देखें
@@ -933,18 +932,18 @@ write-name-this-column = इस कॉलम को नाम दें
 
 ## Insert's dialog (kit/ui/insert-dialogs.ts): Tiny Little Office Doc
 
-# en: d5674bb4dcb8c5fe378eb9cd0bb9d1849ed37581
-insert-tiny-little-office-link = नन्हा सा दफ़्तर का लिंक
+# en: a97beee4da5784616730d55cffa45a843fda1fd3
+insert-tiny-little-office-link = tiny office का लिंक
 # en: cdea71ff947c2b49dd7d7ea146fd3efeb9fa5677
 insert-opening-short-link = शॉर्ट लिंक खुल रहा है…
-# en: 9d2d34c4b04d8410e0025beb7899a31d1bc57c04
-insert-paste-link-of-another-tiny = नन्हा सा दफ़्तर के किसी और दस्तावेज़ का लिंक पेस्ट करें, लंबा या छोटा: उसका पहला पेज यहाँ दिखेगा।
-# en: 7e4861cdc8de2c0c4cf87ca37c9130a92051b5b0
-insert-this-is-not-tiny-little = यह नन्हा सा दफ़्तर का लिंक नहीं है, या खत्म हो चुका है।
-# en: 1eb05dc15f4e90a6a61c46b111812e974555cd81
-insert-tiny-little-office-doc = नन्हा सा दफ़्तर दस्तावेज़
-# en: 7bb236efe4e244196e506d65542626cfe368bb09
-common-tiny-little-office-doc-ellipsis = नन्हा सा दफ़्तर दस्तावेज़…
+# en: 7df3672bf02dca90ed5a0b290985679a49ca4341
+insert-paste-link-of-another-tiny = tiny office के किसी और दस्तावेज़ का लिंक पेस्ट करें, लंबा या छोटा: उसका पहला पेज यहाँ दिखेगा।
+# en: bc2da51d84a11a35800f1fda007539a543ba2c80
+insert-this-is-not-tiny-little = यह tiny office का लिंक नहीं है, या खत्म हो चुका है।
+# en: 0bc7f64e8bf252e78b758bd5310ab6ff9d953ff0
+insert-tiny-little-office-doc = tiny office दस्तावेज़
+# en: 9f8e6e6789be96b126d7a544dc8c14d7890ccc4e
+common-tiny-little-office-doc-ellipsis = tiny office दस्तावेज़…
 # Insert ▾'s group of the apps a new document can be made in, inside this one.
 # en: f9f93f3f14cfa3eea1bfcfee97ae22cd15b25e0d
 common-new-document = एक नया दस्तावेज़
@@ -3148,8 +3147,8 @@ compare-changes = बदलाव
 compare-compare = तुलना करें
 # en: 24512a18bc6d2c27213ad28b26ce9271d94175af
 compare-no-difference = कोई फ़र्क नहीं
-# en: 8f0fb2d2ece91d9de4ed64f23a12b475c3e18970
-compare-not-link-to-tiny-little = नन्हा सा दफ़्तर के दस्तावेज़ का लिंक नहीं है
+# en: 1282a438873abd50f0053ba629d0fb3b18dc7247
+compare-not-link-to-tiny-little = tiny office के दस्तावेज़ का लिंक नहीं है
 # en: e82be1221a13b593fd3fd58ffe24f3c3ba58f783
 compare-paste-second-link-to-see = क्या बदला यह देखने के लिए दूसरा लिंक पेस्ट करें।
 # en: 442aef6fc360061295985657c4489b3c4d360cc3
@@ -3185,8 +3184,8 @@ compare-n-put-in = { $n ->
 
 # en: c99db7abba3f7227854d93a163ad3494de4e1571
 open-opened-name = { $name } खुला
-# en: f917dee4211bd4af58db8efec79e354e1ffb4912
-open-that-file-is-not-words = नन्हा सा दफ़्तर वह फ़ाइल नहीं पढ़ सकता।
+# en: 88aea8831d2018f50b24741aa203dadc57805e47
+open-that-file-is-not-words = tiny office वह फ़ाइल नहीं पढ़ सकता।
 # en: 1d08903947cc83b648f8ad96b1e23466a2dbed11
 open-that-file-is-too-large = वह फ़ाइल बहुत बड़ी है।
 # en: 8f432852569edbf7610713a6554e7a61396327d5
@@ -3263,5 +3262,25 @@ write-preview-as = इस रूप में पूर्वावलोकन
 write-preview-is-simpler-than-the-document = यह पूर्वावलोकन है: दस्तावेज़ स्वयं अपरिवर्तित रहता है, और संपादित इसे इसके अपने ऐप में खोलता है।
 # en: 7b4598aaa31887ec8b09c6ae3539fc51019267be
 write-preview-keeps-raw-formulas = यह पूर्वावलोकन है, सूत्र जैसे लिखे हैं वैसे ही: दस्तावेज़ स्वयं अपरिवर्तित रहता है, और संपादित इसे इसके अपने ऐप में खोलता है।
-# en: f197c39442fbdac5ee88061ba58902e81013c070
-write-this-link-could-not-be-read = यह लिंक Tiny Little Office दस्तावेज़ नहीं है, या इसे पढ़ा नहीं जा सका।
+# en: 61a47f106fe5fa72bbd2094bd84b6ca7843acb6c
+write-this-link-could-not-be-read = यह लिंक tiny office दस्तावेज़ नहीं है, या इसे पढ़ा नहीं जा सका।
+
+## Google Drive connection (not available yet)
+
+# en: 8f3509b64e0ea82c53329cb49a7756bd1ced3566
+drawer-connections = कनेक्शन
+# en: 4a12c0a38a37f47916b8037a02c48bfd0e511dab
+drawer-connect-google-drive = Google Drive कनेक्ट करें
+# en: b1bedcfb599ba7a22e3a6cca61920dac4da55f46
+drawer-google-drive-unavailable = Google Drive बैकअप अभी उपलब्ध नहीं है। Google Drive पर कोई दस्तावेज़ नहीं भेजा जाता।
+
+## Saved documents
+
+# en: d0d345f50784d6824741e549ee71454543c78be3
+home-saved-documents = सहेजे गए दस्तावेज़
+# en: 1f3373ce03a346bdee93171c4bb8f4e2c86b2580
+home-saved-description = इस डिवाइस पर सहेजे गए दस्तावेज़।
+# en: 6413428b392bec57ed1ee47b8037b4fb575f77bf
+home-saved-empty = आपके सहेजे गए दस्तावेज़ यहाँ दिखाई देंगे।
+# en: d3eb87bb0712c0bcadf289763a38e3daf615f2b8
+home-saved-private = इस डिवाइस पर दस्तावेज़ रखने के लिए सेटिंग में ब्राउज़र में सहेजना चालू करें।

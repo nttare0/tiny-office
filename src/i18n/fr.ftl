@@ -75,8 +75,6 @@ home-blank = Vierge
 common-templates = Modèles
 # The button under an app's tile, naming the template list: "Start Text from"
 # The list of an app's documents kept on this device, under its tile: "Write documents"
-# en: c647789831582ba7f4b6aad72ea6f425b98aad6f
-home-app-documents = Documents { $app }
 # en: f6fdbe48dc54dd86f63097a03bd24094dedd713a
 common-forget = Supprimer
 # The button that forgets one kept document: "Forget Launch notes"
@@ -141,12 +139,13 @@ drawer-light = Clair
 drawer-dark = Sombre
 # en: 6b21fb791ac05170893860c248401cd24a59b732
 drawer-about = À propos
-# en: 515e0d24040d094379cfdc94e3c6c2f63a26f1f6
-common-tiny-little-office = Tout Petit Bureau
-# en: 399d4aacd52f76ac8090ce08a31e550e2123645d
-drawer-about-tiny-little-office = À propos de Tout Petit Bureau
-# en: 6218d1c0ab69084ed45fb0f022b95f382310184a
-drawer-tiny-little-office-is-experiment = Tout Petit Bureau est une expérience d’{ $aboard }, un cabinet de stratégie numérique et IA et de développement logiciel à New York.
+# same
+# en: 583d77f71f2d846a236165a8e7b7e0db4ec6312e
+common-tiny-little-office = tiny office
+# en: 75c88384fed7f2da8325a7a95dfa84a4e5b1a675
+drawer-about-tiny-little-office = À propos de tiny office
+# en: 79408f4240869d625cd0091c444f27f4d69aefef
+drawer-tiny-little-office-is-experiment = tiny office est une expérience d’{ $aboard }, un cabinet de stratégie numérique et IA et de développement logiciel à New York.
 # en: 04a1291dcc6e5d304f04516685710a331963f630
 drawer-to-reach-out-with-questions = Pour toute question, { $email }.
 # en: 522edc71559293b5713cff3f13c2dbafd37a56a3
@@ -176,19 +175,19 @@ drawer-add-to-home-screen = Ajouter à l’écran d’accueil
 # same
 # en: 9b3cbed5c490c07473546a88768ba29b787e9e52
 drawer-size-of-everything = Zoom
-# en: 943c5ac9fa7766d7c1ebecbc95c4e0d27b4ef9d4
-drawer-to-add-tiny-little-office = Pour ajouter Tout Petit Bureau à l’écran d’accueil : Partager, puis Sur l’écran d’accueil.
+# en: 465d75cc3d56b1d2083660937c96b07e629ab2de
+drawer-to-add-tiny-little-office = Pour ajouter tiny office à l’écran d’accueil : Partager, puis Sur l’écran d’accueil.
 
 ## links that leave the site (kit/ui/link-guard.ts)
 
 # The menu button's tooltip: the Office mark is the menu.
-# en: 4a48e81d0d023913c2155eb30954f58853a5591d
-leave-tiny-little-office-menu = Menu Tout Petit Bureau
+# en: eaf6b2359502e97b2edccfc417f0e863fd11011d
+leave-tiny-little-office-menu = Menu tiny office
 # The question before a link that leaves the site: "You are leaving Tiny Little Office for" over the site's name, large.
 # en: 92ad7c004fe14dea34666631ff31b016eb39ee40
 leave-do-you-trust-this-link = Faites-vous confiance à ce lien ?
-# en: 8d85feca3f164857fc84014a8f2ed5cc4846d4c9
-leave-you-are-leaving-tiny-little = Vous quittez Tout Petit Bureau pour
+# en: 370f6d3e47c9a5c43be1628613d856f75a527af5
+leave-you-are-leaving-tiny-little = Vous quittez tiny office pour
 # en: 50ef68d5c205237951dae42aa775a66480171c46
 leave-this-link-writes-email-to = Ce lien écrit un e-mail à
 # en: 102dce223fdc2f3bbdda71f28108e2a6fdf21710
@@ -631,8 +630,8 @@ download-data-json = Données (JSON)
 download-downloaded-name = { $name } téléchargé
 # en: 01125e1be1f56cdaa47c6314a158e1219af819b3
 download-failed = Échec du téléchargement
-# en: e7f6a6728b280414756d238ae70084720018ba47
-common-open-in-tiny-little-office = Ouvrir dans Tout Petit Bureau
+# en: 985d4c41146ab250eb5cad39c0019f54f287c731
+common-open-in-tiny-little-office = Ouvrir dans tiny office
 # Under a document cut off at a slide's foot: a link that opens it whole, in its own app.
 # en: c510d6c04c0951500c8e43f623e9f8886c378aec
 download-see-more = Voir plus
@@ -965,18 +964,18 @@ write-name-this-column = Nommer cette colonne
 
 ## Insert's dialog (kit/ui/insert-dialogs.ts): Tiny Little Office Doc
 
-# en: d5674bb4dcb8c5fe378eb9cd0bb9d1849ed37581
-insert-tiny-little-office-link = Un lien Tout Petit Bureau
+# en: a97beee4da5784616730d55cffa45a843fda1fd3
+insert-tiny-little-office-link = Un lien tiny office
 # en: cdea71ff947c2b49dd7d7ea146fd3efeb9fa5677
 insert-opening-short-link = Ouverture du lien court…
-# en: 9d2d34c4b04d8410e0025beb7899a31d1bc57c04
-insert-paste-link-of-another-tiny = Collez le lien d’un autre document Tout Petit Bureau, long ou court : sa première page s’affiche ici.
-# en: 7e4861cdc8de2c0c4cf87ca37c9130a92051b5b0
-insert-this-is-not-tiny-little = Ce n’est pas un lien Tout Petit Bureau, ou il a expiré.
-# en: 1eb05dc15f4e90a6a61c46b111812e974555cd81
-insert-tiny-little-office-doc = Document Tout Petit Bureau
-# en: 7bb236efe4e244196e506d65542626cfe368bb09
-common-tiny-little-office-doc-ellipsis = Document Tout Petit Bureau…
+# en: 7df3672bf02dca90ed5a0b290985679a49ca4341
+insert-paste-link-of-another-tiny = Collez le lien d’un autre document tiny office, long ou court : sa première page s’affiche ici.
+# en: bc2da51d84a11a35800f1fda007539a543ba2c80
+insert-this-is-not-tiny-little = Ce n’est pas un lien tiny office, ou il a expiré.
+# en: 0bc7f64e8bf252e78b758bd5310ab6ff9d953ff0
+insert-tiny-little-office-doc = Document tiny office
+# en: 9f8e6e6789be96b126d7a544dc8c14d7890ccc4e
+common-tiny-little-office-doc-ellipsis = Document tiny office…
 # Insert ▾'s group of the apps a new document can be made in, inside this one.
 # en: f9f93f3f14cfa3eea1bfcfee97ae22cd15b25e0d
 common-new-document = Un nouveau document
@@ -3216,8 +3215,8 @@ compare-changes = Modifications
 compare-compare = Comparer
 # en: 24512a18bc6d2c27213ad28b26ce9271d94175af
 compare-no-difference = Aucune différence
-# en: 8f0fb2d2ece91d9de4ed64f23a12b475c3e18970
-compare-not-link-to-tiny-little = Ce n’est pas un lien vers un document Tout Petit Bureau
+# en: 1282a438873abd50f0053ba629d0fb3b18dc7247
+compare-not-link-to-tiny-little = Ce n’est pas un lien vers un document tiny office
 # en: e82be1221a13b593fd3fd58ffe24f3c3ba58f783
 compare-paste-second-link-to-see = Collez un second lien pour voir ce qui a changé.
 # en: 442aef6fc360061295985657c4489b3c4d360cc3
@@ -3255,8 +3254,8 @@ compare-n-put-in = { $n ->
 
 # en: c99db7abba3f7227854d93a163ad3494de4e1571
 open-opened-name = { $name } ouvert
-# en: f917dee4211bd4af58db8efec79e354e1ffb4912
-open-that-file-is-not-words = Tout Petit Bureau ne peut pas lire ce fichier.
+# en: 88aea8831d2018f50b24741aa203dadc57805e47
+open-that-file-is-not-words = tiny office ne peut pas lire ce fichier.
 # en: 1d08903947cc83b648f8ad96b1e23466a2dbed11
 open-that-file-is-too-large = Ce fichier est trop volumineux.
 # en: 8f432852569edbf7610713a6554e7a61396327d5
@@ -3335,5 +3334,25 @@ write-preview-as = Aperçu en
 write-preview-is-simpler-than-the-document = Un aperçu : le document lui-même n’est pas modifié, et Modifier l’ouvre dans son application.
 # en: 7b4598aaa31887ec8b09c6ae3539fc51019267be
 write-preview-keeps-raw-formulas = Un aperçu, avec les formules telles qu’elles sont écrites : le document lui-même n’est pas modifié, et Modifier l’ouvre dans son application.
-# en: f197c39442fbdac5ee88061ba58902e81013c070
-write-this-link-could-not-be-read = Ce lien n’est pas un document Tiny Little Office, ou il n’a pas pu être lu.
+# en: 61a47f106fe5fa72bbd2094bd84b6ca7843acb6c
+write-this-link-could-not-be-read = Ce lien n’est pas un document tiny office, ou il n’a pas pu être lu.
+
+## Google Drive connection (not available yet)
+
+# en: 8f3509b64e0ea82c53329cb49a7756bd1ced3566
+drawer-connections = Connexions
+# en: 4a12c0a38a37f47916b8037a02c48bfd0e511dab
+drawer-connect-google-drive = Connecter Google Drive
+# en: b1bedcfb599ba7a22e3a6cca61920dac4da55f46
+drawer-google-drive-unavailable = La sauvegarde sur Google Drive n’est pas encore disponible. Aucun document n’est envoyé à Google Drive.
+
+## Saved documents
+
+# en: d0d345f50784d6824741e549ee71454543c78be3
+home-saved-documents = Documents enregistrés
+# en: 1f3373ce03a346bdee93171c4bb8f4e2c86b2580
+home-saved-description = Documents enregistrés sur cet appareil.
+# en: 6413428b392bec57ed1ee47b8037b4fb575f77bf
+home-saved-empty = Vos documents enregistrés apparaîtront ici.
+# en: d3eb87bb0712c0bcadf289763a38e3daf615f2b8
+home-saved-private = Activez l’enregistrement dans le navigateur dans les paramètres pour conserver les documents sur cet appareil.

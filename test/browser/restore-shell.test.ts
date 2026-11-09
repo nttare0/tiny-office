@@ -47,8 +47,8 @@ test('the home page searches the library: every word somewhere, the title and th
     expect(found.map((li) => li.querySelector('b')!.textContent)).toEqual(['Errands', 'Harbour notes']);
     expect(found[1].querySelector('mark')!.textContent).toBe('café');
     expect(found[1].textContent).toContain('The café opens at seven.');
-    // The apps step aside while a search is on; every word must be there.
-    expect(shell.querySelector<HTMLElement>('.to-apps')!.hidden).toBe(true);
+    // Searching stays within the library; the app cards remain available.
+    expect(shell.querySelector<HTMLElement>('.to-apps')!.hidden).toBe(false);
     box.value = 'ferry café';
     box.dispatchEvent(new Event('input'));
     await until(() => shell.querySelectorAll('.to-found-docs li').length === 1);

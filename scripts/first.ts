@@ -15,7 +15,7 @@ export interface Listed {
   templates: string[];
 }
 
-export const SITE_NAME = 'Tiny Little Office';
+export const SITE_NAME = 'tiny office';
 export const text = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 /**
@@ -31,7 +31,7 @@ export const agents = (site: string) => `Agents: ${site}llms.txt says how to mak
 
  */
 export const homeFirst = (site: string, apps: Listed[]) =>
-  `<p class="sr-only">${text(agents(site))}</p><h1>${SITE_NAME}</h1><ul>${apps.map((a) => `<li><a href="${a.id}/">${text(a.name)}</a></li>`).join('')}</ul>`;
+  `<p class="sr-only">${text(agents(site))}</p><h1>${SITE_NAME}</h1><ul>${apps.map((a) => `<li><a href="${a.id}/"><span>${text(a.name)}</span></a></li>`).join('')}</ul>`;
 
 /** An app's page's first text: its name, its line, its templates' names. */
 export const appFirst = (app: Listed) => `<h1>${text(app.name)}</h1><p>${text(app.blurb)}</p><ul class="sr-only">${app.templates.map((n) => `<li>${text(n)}</li>`).join('')}</ul>`;

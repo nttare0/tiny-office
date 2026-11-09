@@ -59,9 +59,10 @@ test('the templates list and the kept documents draw a wide document in the one 
     localStorage.setItem('tinyoffice.library', JSON.stringify(all.map((k, i) => ({ id: 'k' + i, app: ids[k.app], title: k.app, hash: k.hash, at: Date.now() - i }))));
   }, kept);
   await page.reload();
+  const ids: Record<string, string> = { Spreadsheet: 'sheet', Calendar: 'cal', 'Diagram Maker': 'diagram', 'Presentation Builder': 'deck' };
   for (const [app] of WIDE) {
     // A preview is drawn once it scrolls into sight (kit/ui/preview.ts): the box is brought there, then its drawing looked for.
-    const preview = page.locator(`section.to-app[aria-label="${app}"] .to-drive to-preview`).first();
+    const preview = page.locator(`.to-drive li[data-app="${ids[app]}"] to-preview`).first();
     await preview.scrollIntoViewIfNeeded();
     await expect(preview.locator('svg')).toBeVisible();
     const box = (await preview.boundingBox())!;
@@ -69,6 +70,6 @@ test('the templates list and the kept documents draw a wide document in the one 
     expect(Math.round(box.width), app).toBe(Math.round(72 * (await base(page))));
   }
   expect(await overflow(page)).toBeLessThanOrEqual(0);
-  await page.locator('section.to-app[aria-label="Spreadsheet"]').scrollIntoViewIfNeeded();
+  await page.locator('.to-library').scrollIntoViewIfNeeded();
   await shot(page, 'kept');
 });

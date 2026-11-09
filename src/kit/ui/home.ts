@@ -7,12 +7,9 @@
  * templates and their previews. A modified click (a new tab, a window) is a link followed as ever: only a plain click
  * asks. The gallery is not opened before the choice, and neither is anything fetched for it.
  *
- * Under a card, the documents of that app kept on this device (kit/share/library.ts), newest first, each preview on
- * the edge of the app's icon (kit.css .to-drive). Each document shows its first page small at its left
- * (<to-preview>, drawn as it scrolls into sight: "When you list documents under apps, show them with
- * previews"). An app's templates are a file of their own, asked for when its list opens (Blank shown at once, the
- * rest added as they arrive, no spinner) or ahead of the tap, as a pointer comes over its row (`loadTemplates`);
- * offline, a file the service worker never kept is not there, and the list says so under Blank.
+ * Below the app cards, the saved documents from every app are in one library, newest first. A document's preview
+ * (<to-preview>) is drawn as it scrolls into sight. An app's templates are a file of their own, asked for when its
+ * list opens (Blank shown at once, the rest added as they arrive, no spinner) or ahead of a tap (`loadTemplates`).
  * <to-templates> is the drawer's too: there a row's button (`via`) hands over to the drawer's one dialog
  * (`bare`, drawn outside the drawer's own), the drawer closing first (one modal at a time: kit/ui/drawer.ts).
  *
@@ -22,8 +19,7 @@
  * drawer, still reads it (kit/ui/drawer.ts), which is where the build and the repository are said. About, the license and
  * the templates' translations are untouched by this.
  *
- * Above the apps, while Save in browser is on and something is kept, a search box over the library (kit/share/search.ts):
- * under Private there is nothing to search, so nothing says so (Paul, 2026-10-12). Every word of it
+ * In the library, while Save in browser is on and something is kept, a search box (kit/share/search.ts). Every word of it
  * somewhere in a document's title or text, the best first, each found document with its title and the
  * lines that hold the words, the words marked. Each document's link is decoded once, when first searched.
  */
@@ -47,7 +43,7 @@ import { focusBack } from './dialog.ts';
 /** Where to write: About's "email us" (kit/ui/drawer.ts). The home page's own foot is gone, but About still writes to it. */
 export const MAIL = 'mailto:hello+tlo@aboard.com';
 
-/** The documents shown under an app before "n more". */
+/** The documents shown in the library before "n more". */
 const SHOWN = 5;
 
 let n = 0;
@@ -348,15 +344,15 @@ export class ToHome extends LitElement {
   static properties = { unfolded: { state: true }, query: { state: true } };
   /** What the search box holds. */
   declare query: string;
-  /** The apps whose whole list of documents is shown, past the first five. */
-  declare unfolded: Set<string>;
+  /** Whether the whole list of saved documents is shown, past the first five. */
+  declare unfolded: boolean;
   private offs: (() => void)[] = [];
   private redraw = () => this.requestUpdate();
   private onVisible = () => document.visibilityState === 'visible' && this.redraw();
 
   constructor() {
     super();
-    this.unfolded = new Set();
+    this.unfolded = false;
     this.query = '';
   }
   createRenderRoot() {
@@ -374,29 +370,39 @@ export class ToHome extends LitElement {
   }
   private forget(k: Kept) {
     forget(k.id);
+    if (!library().length) this.query = '';
     this.redraw();
   }
-  /** An app's kept documents, newest first: five, then "n more". Nothing kept, nothing shown. */
-  private drive(app: AppDef, kept: Kept[]) {
+  /** Saved documents from every app, newest first: five, then “n more”. */
+  private drive(kept: Kept[]) {
     if (!kept.length) return nothing;
-    const all = this.unfolded.has(app.id);
-    const shown = all ? kept : kept.slice(0, SHOWN);
+    const shown = this.unfolded ? kept : kept.slice(0, SHOWN);
+    const names = new Map(apps().map((a) => [a.id, a.name]));
     const lang = document.documentElement.lang;
-    return html`<ul class="to-drive" aria-label=${t('home-app-documents', { app: app.name })}>
+    return html`<ul class="to-drive" aria-label=${t('home-saved-documents')}>
         ${shown.map((k) => {
           const title = k.title || (isSealed(parseHash(k.hash).payload) ? t('common-locked-document') : t('common-untitled'));
-          return html`<li>
-            <a class="to-drive-open" href=${k.hash}><to-preview hash=${k.hash}></to-preview><span class="to-drive-words"><span>${title}</span><small>${ago(k.at, lang)}</small></span></a>
-            <button type="button" class="to-btn to-tool" aria-label=${t('home-forget-title', { title })} title=${t('common-forget')} @click=${() => this.forget(k)}>${icon(UI.close, 16)}</button>
+          return html`<li data-app=${k.app}>
+            <a class="to-drive-open" href=${k.hash}><to-preview hash=${k.hash}></to-preview><span class="to-drive-words"><span>${title}</span><small>${names.get(k.app) ?? k.app} · ${ago(k.at, lang)}</small></span></a>
+            <button type="button" class="to-btn to-tool" aria-label=${t('home-forget-title', { title })} title=${t('common-forget')} @click=${() => this.forget(k)}>${icon(UI.trash, 16)}</button>
           </li>`;
         })}
       </ul>
-      ${kept.length > SHOWN && !all ? html`<button type="button" class="to-btn to-drive-more" @click=${() => (this.unfolded = new Set([...this.unfolded, app.id]))}>${t('home-n-more', { n: kept.length - SHOWN })}</button>` : nothing}`;
+      ${kept.length > SHOWN && !this.unfolded ? html`<button type="button" class="to-btn to-drive-more" @click=${() => (this.unfolded = true)}>${t('home-n-more', { n: kept.length - SHOWN })}</button>` : nothing}`;
   }
   /** The kept documents the search finds, the best first: the title and up to two lines, the words marked. */
   private renderFound(kept: Kept[]) {
     const names = new Map(apps().map((a) => [a.id, a]));
-    const docs = kept.filter((k) => names.has(k.app)).map((k) => ({ id: k.id, title: k.title || t('common-untitled'), app: names.get(k.app)!.name, folder: '', lines: keptLines(k), at: k.at }));
+    const docs = kept
+      .filter((k) => names.has(k.app))
+      .map((k) => ({
+        id: k.id,
+        title: k.title || (isSealed(parseHash(k.hash).payload) ? t('common-locked-document') : t('common-untitled')),
+        app: names.get(k.app)!.name,
+        folder: '',
+        lines: keptLines(k),
+        at: k.at,
+      }));
     const found = search(docs, this.query);
     const byId = new Map(kept.map((k) => [k.id, k]));
     if (!found.length) return html`<p class="to-hint" role="status">${t('home-no-document-here-has-those')}</p>`;
@@ -423,23 +429,25 @@ export class ToHome extends LitElement {
     const want = this.query.trim();
     return html`<div class="to-home">
       <h1 class="sr-only">${t('common-tiny-little-office')}</h1>
-      ${
-        keeping() && kept.length
-          ? html`<input class="to-search" type="search" placeholder=${t('home-search-your-documents')} aria-label=${t('home-search-your-documents')} autocomplete="off" .value=${this.query} @input=${(e: Event) => (this.query = (e.target as HTMLInputElement).value)} @keydown=${(e: KeyboardEvent) => e.key === 'Enter' && (e.preventDefault(), this.querySelector<HTMLElement>('.to-found-docs a')?.click())} />`
-          : nothing
-      }
-      ${want ? this.renderFound(kept) : nothing}
-      <div class="to-apps" ?hidden=${!!want}>
+      <div class="to-apps">
         ${apps().map(
           (a) => html`<section class="to-app" aria-label=${a.name}>
             <a class="to-app-open" href=${routeHash(a.id)} @click=${(e: MouseEvent) => this.ask(e, a)}>${icon(a.icon, 20)}<span class="to-app-name">${a.name}</span></a>
-            ${this.drive(
-              a,
-              kept.filter((k) => k.app === a.id),
-            )}
           </section>`,
         )}
       </div>
+      <section class="to-library" aria-labelledby="to-library-heading">
+        <div class="to-library-header">
+          <div><h2 id="to-library-heading">${t('home-saved-documents')}</h2><p>${t('home-saved-description')}</p></div>
+          ${kept.length ? html`<span class="to-library-count" aria-hidden="true">${kept.length}</span>` : nothing}
+        </div>
+        ${
+          kept.length
+            ? html`<input class="to-search" type="search" placeholder=${t('home-search-your-documents')} aria-label=${t('home-search-your-documents')} autocomplete="off" .value=${this.query} @input=${(e: Event) => (this.query = (e.target as HTMLInputElement).value)} @keydown=${(e: KeyboardEvent) => e.key === 'Enter' && (e.preventDefault(), this.querySelector<HTMLElement>('.to-found-docs a')?.click())} />
+              ${want ? this.renderFound(kept) : this.drive(kept)}`
+            : html`<div class="to-library-empty">${icon(UI.folder, 24)}<p>${keeping() ? t('home-saved-empty') : t('home-saved-private')}</p></div>`
+        }
+      </section>
       <to-start></to-start>
       <to-templates bare></to-templates>
     </div>`;

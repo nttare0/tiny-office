@@ -96,7 +96,7 @@ export async function openPicked(fallback: string): Promise<boolean> {
 }
 
 /** What the picker offers first: a document, words, or a zip of them (anything else is still choosable). */
-const OPEN_TYPES = [{ description: 'Tiny Little Office', accept: { 'text/plain': ['.tlo', '.md', '.markdown', '.txt'], 'application/json': ['.json'], 'application/zip': ['.zip'] } }];
+const OPEN_TYPES = [{ description: 'tiny office', accept: { 'text/plain': ['.tlo', '.md', '.markdown', '.txt'], 'application/json': ['.json'], 'application/zip': ['.zip'] } }];
 
 /** The hidden input, for the browsers and phones with no showOpenFilePicker. */
 function chosen(): Promise<File | null> {

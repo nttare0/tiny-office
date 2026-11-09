@@ -1,6 +1,6 @@
 /**
  * The library: the documents this device has made or opened, kept so they can be found again without their
- * links (the home page lists them under their apps). Kept through kit/core/store.ts and only while the device is
+ * links (the home page lists them below the apps). Kept through kit/core/store.ts and only while the device is
  * Saved: under Private the list is empty and nothing is written. Nothing here leaves the device; a document
  * is still, entirely, its link.
  */

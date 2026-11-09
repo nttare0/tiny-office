@@ -48,7 +48,7 @@ test('a link in Write’s words asks first: the site large, the whole address; C
     expect(guardShut()).toBe(true);
     a.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, ctrlKey: true }));
     let g = await guardOpen();
-    expect(g.querySelector('.lg-what')!.textContent).toContain('You are leaving Tiny Little Office');
+    expect(g.querySelector('.lg-what')!.textContent).toContain('You are leaving tiny office');
     expect(g.querySelector('.lg-host')!.textContent).toBe('reports.example');
     expect(g.querySelector('.lg-url')!.textContent).toBe('https://reports.example/2026/q3?ref=a');
     expect(parseFloat(getComputedStyle(g.querySelector('.lg-host')!).fontSize)).toBeGreaterThanOrEqual(26);
@@ -207,7 +207,7 @@ test('the menu is a hamburger without a border, 44px, at the right; the Office m
   expect(burger.querySelector('svg.to-mark')).toBeNull();
   expect(burger.querySelector('svg')).not.toBeNull();
   expect(burger.getAttribute('aria-label')).toBe('Menu');
-  expect(burger.getAttribute('title')).toBe('Tiny Little Office menu');
+  expect(burger.getAttribute('title')).toBe('tiny office menu');
   const box = burger.getBoundingClientRect();
   // 44 of the stylesheet's pixels, drawn at the size of everything, at the right edge ("let's move it to the right").
   expect(Math.round(box.width / remScale())).toBe(44);
@@ -236,7 +236,7 @@ test('the guard describes itself: its dialog’s description is what the link do
   const ids = (dialog.getAttribute('aria-describedby') ?? '').split(/\s+/).filter(Boolean);
   expect(ids.length).toBeGreaterThan(0);
   const said = ids.map((id) => document.getElementById(id)?.textContent ?? '').join(' ');
-  expect(said).toContain('You are leaving Tiny Little Office for');
+  expect(said).toContain('You are leaving tiny office for');
   expect(said).toContain('plain.example');
   expect(said).toContain('Not a secure (HTTPS) address');
   // A dialog that names no description has none.
